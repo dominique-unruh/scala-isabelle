@@ -1,8 +1,11 @@
 name := "scala-isabelle"
 
-version := "0.1"
+version := "0.1.0-SNAPSHOT"
 
 scalaVersion := "2.13.3"
+
+Global / onChangedBuildSource := ReloadOnSourceChanges
+
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.2" % "test"
 // https://mvnrepository.com/artifact/org.log4s/log4s
