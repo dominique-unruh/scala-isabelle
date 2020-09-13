@@ -1,9 +1,8 @@
-package de.unruh.isabelle
+package de.unruh.isabelle.pure
 
-import org.scalatest.funsuite.AnyFunSuite
 import de.unruh.isabelle.control.IsabelleException
 import de.unruh.isabelle.control.IsabelleTest.{isabelle => isa}
-import de.unruh.isabelle.pure.Theory
+import org.scalatest.funsuite.AnyFunSuite
 
 import scala.concurrent.ExecutionContext.Implicits.global
 

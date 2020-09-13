@@ -1,20 +1,15 @@
-package de.unruh.isabelle.control
+package de.unruh.isabelle.mlvalue
 
-import java.nio.file.Paths
-
-import de.unruh.isabelle.pure.{Context, Theory, Thm}
-import de.unruh.isabelle.control.Isabelle.Setup
-import de.unruh.isabelle.mlvalue.MLValue
+import de.unruh.isabelle.control.IsabelleTest.isabelle
+import de.unruh.isabelle.control.{Isabelle, IsabelleTest}
+import de.unruh.isabelle.mlvalue.MLValue.Converter
+import de.unruh.isabelle.mlvalue.MLValue.Implicits._
+import de.unruh.isabelle.pure.{Context, Thm}
 import org.scalatest.funsuite.AnyFunSuite
 
-import scala.concurrent.{Await, Awaitable, ExecutionContext, ExecutionContextExecutor}
-import de.unruh.isabelle.mlvalue.MLValue.Implicits._
-import de.unruh.isabelle.pure.Context.Implicits._
-
-import scala.concurrent.duration.Duration
 import scala.concurrent.ExecutionContext.Implicits.global
-import de.unruh.isabelle.control.IsabelleTest.isabelle
-import de.unruh.isabelle.mlvalue.MLValue.Converter
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Awaitable}
 
 class MLValueTest extends AnyFunSuite {
   test ("two instances of Isabelle") {

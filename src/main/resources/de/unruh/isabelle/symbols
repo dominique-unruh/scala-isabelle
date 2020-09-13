@@ -1,3 +1,7 @@
+# The content below is copied from the symbols file from the Isabelle2020 distribution.
+# It is subject to the license described in COPYRIGHT.Isabelle
+
+
 # Default interpretation of some Isabelle symbols
 
 \<zero>                 code: 0x01d7ec  group: digit

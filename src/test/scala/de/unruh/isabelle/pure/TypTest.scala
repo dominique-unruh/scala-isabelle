@@ -1,11 +1,10 @@
-package de.unruh.isabelle
+package de.unruh.isabelle.pure
 
-import de.unruh.isabelle.control.{Isabelle, IsabelleTest}
+import de.unruh.isabelle.control.IsabelleTest
+import de.unruh.isabelle.control.IsabelleTest.{isabelle => isa}
 import org.scalatest.funsuite.AnyFunSuite
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import IsabelleTest.{isabelle => isa}
-import de.unruh.isabelle.pure.{Context, Typ, Type}
 
 class TypTest extends AnyFunSuite {
   lazy val ctxt: Context = Context("Main")
