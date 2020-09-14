@@ -93,7 +93,7 @@ class Isabelle(val setup: Setup, build: Boolean = true) {
       @tailrec def drain(): Unit = garbageQueue.poll() match {
         case null =>
         case obj =>
-          buffer.addOne(DInt(obj))
+          buffer += DInt(obj)
           drain()
       }
 
@@ -171,7 +171,7 @@ class Isabelle(val setup: Setup, build: Boolean = true) {
         val len = stream.readLong()
         val list = ListBuffer[Data]()
         for (_ <- 1L to len)
-          list.addOne(readData(stream))
+          list += readData(stream)
         DList(list.toSeq:_*)
       case 4 =>
         val id = stream.readLong()

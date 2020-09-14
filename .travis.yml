@@ -2,6 +2,7 @@ language: scala
 
 scala:
   - 2.13.3
+  - 2.12.12
 
 sbt_args: -Dorg.slf4j.simpleLogger.defaultLogLevel=debug
 
