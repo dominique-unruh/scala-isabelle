@@ -12,55 +12,80 @@ import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 /** A type safe wrapper for values stored in the Isabelle process managed by [[control.Isabelle Isabelle]].
- *
- * As explained in the documentation of [[control.Isabelle Isabelle]], the Isabelle process has an object store of values,
- * and the class [[control.Isabelle.ID Isabelle.ID]] is a reference to an object in that object store. However, values of different
- * types share the same object store. Thus [[control.Isabelle.ID Isabelle.ID]] is not type safe: there are compile time guarantees
- * that the value referenced by that ID has a specific type.
- *
- * [[MLValue]][A] is a thin wrapper around an ID [[id]] (more precisely, a future holding an ID). It is guaranteed
- * that [[id]] references a value in the Isabelle process of an ML type corresponding to `A` (or throw an exception).
- * (It is possible to violate this guarantee by type-casting the [[MLValue]] though.) For supported types `A`,
- * it is possible to automatically translate a Scala value `x` of type `A` into an `MLValue[A]` (which behind the scenes
- * means that `x` is transferred to the Isabelle process and added to the object store) and also to automatically
- * translate an `MLValue[A]` back to a Scala value of type `A`. Supported types are [[scala.Int Int]], [[scala.Long Long]],
- * [[scala.Boolean Boolean]], [[scala.Unit Unit]], [[java.lang.String String]], and lists and tuples (max. 7 elements)
- * of supported types. (It is also possible for `A` to be the type `MLValue[...]`, see [[MLValueConverter]] for
- * explanations (TODO add explanations).) It is possible to
- * add support for other types, see [[MLValue.Converter]] for instructions (TODO add instructions). Using this
- * mechanism, support for the terms, types, theories, contexts, and theorems has been added in package
- * [[de.unruh.isabelle.pure]].
- *
- * In more detail:
- *  - For any supported Scala type `A` there should be a unique corresponding ML type `a`.
- *    (This is not enforced if we add support for new types, but if we violate this, we loose type safety.)
- *  - Several Scala types `A` are allowed to correspond to the same ML type `a`. (E.g., both [[scala.Long Long]] and [[scala.Int Int]]
- *    correspond to the unbounded `int` in ML.)
- *  - For each supported type `A`, the following must be specified (via an implicit [[MLValue.Converter]]):
- *    - an encoding of `a` as an exception (to be able to store it in the object store)
- *    - ML functions to translate between `a` and exceptions and back
- *    - retrieve function: how to retrieve an exception encoding an ML value of type `a` and translate it into an `A` in Scala
- *    - store function: how to translate an `A` in Scala into an an exception encoding an ML value of type `a` and store it in the
- *      object store.
- *  - `MLValue(x)` automatically translates `x:A` into a value of type `a` (using the retrieve function) and returns
- *    an `MLValue[A]`.
- *  - If `m : MLValue[A]`, then `m.`[[retrieve]] (asynchronous) and `m.`[[retrieveNow]] (synchronous) decode the ML
- *    value in the object store and return a Scala value of type `A`.
- *  - ML code that operates on values in the Isabelle process can be specified using [[MLValue.compileValue]]
- *    and [[MLValue.compileFunction]]. This ML code directly operates on the corresponding ML type `a` and
- *    does not need to consider the encoding of ML values as exceptions or how ML types are serialized to be transferred
- *    to Scala (all this is handled automatically behind the scenes using the information provided by the implicit
- *    [[MLValue.Converter]]).
- *  - To be able to use the automatic conversions etc., converters need to be imported for supported types.
- *    The converters provided by this package can be imported by `import [[de.unruh.isabelle.mlvalue.MLValue.Implicits._]]`.
- *
- * // TODO examples
- *
- * // TODO add package documentation that points to this documentation
- *
- * @param id an ID referencing an object in the Isabelle process
- * @tparam A the Scala type corresponding to the ML type of the value referenced by [[id]]
- * */
+  *
+  * As explained in the documentation of [[control.Isabelle Isabelle]], the Isabelle process has an object store of values,
+  * and the class [[control.Isabelle.ID Isabelle.ID]] is a reference to an object in that object store. However, values of different
+  * types share the same object store. Thus [[control.Isabelle.ID Isabelle.ID]] is not type safe: there are compile time guarantees
+  * that the value referenced by that ID has a specific type.
+  *
+  * [[MLValue]][A] is a thin wrapper around an ID [[id]] (more precisely, a future holding an ID). It is guaranteed
+  * that [[id]] references a value in the Isabelle process of an ML type corresponding to `A` (or throw an exception).
+  * (It is possible to violate this guarantee by type-casting the [[MLValue]] though.) For supported types `A`,
+  * it is possible to automatically translate a Scala value `x` of type `A` into an `MLValue[A]` (which behind the scenes
+  * means that `x` is transferred to the Isabelle process and added to the object store) and also to automatically
+  * translate an `MLValue[A]` back to a Scala value of type `A`. Supported types are [[scala.Int Int]], [[scala.Long Long]],
+  * [[scala.Boolean Boolean]], [[scala.Unit Unit]], [[java.lang.String String]], and lists and tuples (max. 7 elements)
+  * of supported types. (It is also possible for `A` to be the type `MLValue[...]`, see [[MLValueConverter]] for
+  * explanations (TODO add these explanations).) It is possible to
+  * add support for other types, see [[MLValue.Converter]] for instructions (TODO add these instructions). Using this
+  * mechanism, support for the terms, types, theories, contexts, and theorems has been added in package
+  * [[de.unruh.isabelle.pure]].
+  *
+  * In more detail:
+  *  - For any supported Scala type `A` there should be a unique corresponding ML type `a`.
+  *    (This is not enforced if we add support for new types, but if we violate this, we loose type safety.)
+  *  - Several Scala types `A` are allowed to correspond to the same ML type `a`. (E.g., both [[scala.Long Long]] and [[scala.Int Int]]
+  *    correspond to the unbounded `int` in ML.)
+  *  - For each supported type `A`, the following must be specified (via an implicit [[MLValue.Converter]]):
+  *    - an encoding of `a` as an exception (to be able to store it in the object store)
+  *    - ML functions to translate between `a` and exceptions and back
+  *    - retrieve function: how to retrieve an exception encoding an ML value of type `a` and translate it into an `A` in Scala
+  *    - store function: how to translate an `A` in Scala into an an exception encoding an ML value of type `a` and store it in the
+  *      object store.
+  *  - `MLValue(x)` automatically translates `x:A` into a value of type `a` (using the retrieve function) and returns
+  *    an `MLValue[A]`.
+  *  - If `m : MLValue[A]`, then `m.`[[retrieve]] (asynchronous) and `m.`[[retrieveNow]] (synchronous) decode the ML
+  *    value in the object store and return a Scala value of type `A`.
+  *  - ML code that operates on values in the Isabelle process can be specified using [[MLValue.compileValue]]
+  *    and [[MLValue.compileFunction[D,R]*]]. This ML code directly operates on the corresponding ML type `a` and
+  *    does not need to consider the encoding of ML values as exceptions or how ML types are serialized to be transferred
+  *    to Scala (all this is handled automatically behind the scenes using the information provided by the implicit
+  *    [[MLValue.Converter]]).
+  *  - To be able to use the automatic conversions etc., converters need to be imported for supported types.
+  *    The converters provided by this package can be imported by `import [[de.unruh.isabelle.mlvalue.MLValue.Implicits]]._`.
+  *
+  * A full example:
+  * {{{
+  *     implicit val isabelle: Isabelle = new Isabelle(...)
+  *     import scala.concurrent.ExecutionContext.Implicits._
+  *
+  *     // Create an MLValue containing an integer
+  *     val intML : MLValue[Int] = MLValue(123)
+  *     // 123 is now stored in the object store
+  *
+  *     // Fetching the integer back
+  *     val int : Int = intML.retrieveNow
+  *     assert(int==123)
+  *
+  *     // The type parameter of MLValue ensures that the following does not compile:
+  *     // val string : String = intML.retrieveNow
+  *
+  *     // We write an ML function that squares an integer and converts it into a string
+  *     val mlFunction : MLFunction[Int, String] =
+  *       MLValue.compileFunction[Int, String]("fn i => string_of_int (i*i)")
+  *
+  *     // We can apply the function to an integer stored in the Isabelle process
+  *     val result : MLValue[String] = mlFunction(intML)
+  *     // The result is still stored in the Isabelle process, but we can retrieve it:
+  *     val resultHere : String = result.retrieveNow
+  *     assert(resultHere == "15129")
+  * }}}
+  * Not that the type annotations in this example are all optional, the compiler infers them automatically.
+  * We have included them for clarity only.
+  *
+  * @param id an ID referencing an object in the Isabelle process
+  * @tparam A the Scala type corresponding to the ML type of the value referenced by [[id]]
+  */
 class MLValue[A] private[isabelle](val id: Future[Isabelle.ID]) {
   def logError(message: => String)(implicit executionContext: ExecutionContext): this.type = {
     id.onComplete {
@@ -78,6 +103,8 @@ class MLValue[A] private[isabelle](val id: Future[Isabelle.ID]) {
     case Some(Failure(_)) => " (failed)"
     case None => " (loading)"
   }
+
+  def ready(implicit ec: ExecutionContext) : Future[Unit] = id map { _ => () }
 
   def isReady: Boolean = id.isCompleted
 

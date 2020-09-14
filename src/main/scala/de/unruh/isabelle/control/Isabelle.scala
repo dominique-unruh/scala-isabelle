@@ -589,24 +589,30 @@ object Isabelle {
   }
 
   /** An algebraic datatype that allows to encode trees of data containing integers ([[DInt]]), strings ([[DString]]), and IDs of
-   * objects ([[DObject]]) in the object store of the Isabelle process. A constructor [[DList]] is used to create a tree
-   * structure.
-   *
-   * No particular semantics is given to these trees, their purpose is to be a sufficiently flexible datatype to be able
-   * to encode arbitrary data types for transfer.
-   *
-   * A corresponding datatype is defined in the `Control_Isabelle` ML structure in the Isabelle process:
-   * {{{
-   * datatype data = D_String of string | D_Int of int | D_List of data list | D_Object of exn
-   * }}}
-   * Note that while [[DObject]] on the Scala side contains an ID of an object, on the ML side we instead
-   * directly have the object that is references (of type `exn`). Serialization and deserialization creates and
-   * dereferences object IDs as needed.
-   *
-   * TODO: Document limitations (int-size, string-encoding, string-length)
-   *
-   * @see [[Isabelle.applyFunction(f:de* applyFunction]] for details how to use this type to transfer data
-   * */
+    * objects ([[DObject]]) in the object store of the Isabelle process. A constructor [[DList]] is used to create a tree
+    * structure.
+    *
+    * No particular semantics is given to these trees, their purpose is to be a sufficiently flexible datatype to be able
+    * to encode arbitrary data types for transfer.
+    *
+    * A corresponding datatype is defined in the `Control_Isabelle` ML structure in the Isabelle process:
+    * {{{
+    * datatype data = D_String of string | D_Int of int | D_List of data list | D_Object of exn
+    * }}}
+    * Note that while [[DObject]] on the Scala side contains an ID of an object, on the ML side we instead
+    * directly have the object that is references (of type `exn`). Serialization and deserialization creates and
+    * dereferences object IDs as needed.
+    *
+    * The data that can be stored in these trees is subject to the following additional limitations:
+    *  - Strings must be ASCII (non-ASCII characters will be replaced by default characters).
+    *  - Integers must be 64bit signed integers (this is enforced in Scala due to the size of the type
+    *    [[scala.Long Long]] but ML integers have no size limit (like [[scala.BigInt BigInt]])). Larger integers will
+    *    be truncated to 64 bits.
+    *  - Strings must be at most 67.108.856 characters long (`String.maxSize` in ML). Otherwise there an exception is
+    *    raised in the Isabelle process
+    *
+    * @see [[Isabelle.applyFunction(f:de* applyFunction]] for details how to use this type to transfer data
+    * */
   sealed trait Data
   final case class DInt(int: Long) extends Data
   final case class DString(string: String) extends Data

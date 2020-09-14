@@ -2,11 +2,14 @@ package de.unruh.isabelle.control
 
 import java.nio.file.Paths
 
-import de.unruh.isabelle.control.Isabelle.{DInt, Setup}
-import de.unruh.isabelle.control.IsabelleTest.{isabelle => isa}
+import de.unruh.isabelle.control.Isabelle.{DInt, DList, DString, Data, Setup}
+import de.unruh.isabelle.control.IsabelleTest.isabelle
+import org.scalatest.concurrent.{Signaler, ThreadSignaler}
+import org.scalatest.concurrent.TimeLimits.failAfter
 import org.scalatest.funsuite.AnyFunSuite
+import org.scalatest.time.{Seconds, Span}
 
-import scala.concurrent.{Await, Awaitable}
+import scala.concurrent.{Await, Awaitable, Future}
 import scala.concurrent.duration.Duration
 
 class IsabelleTest extends AnyFunSuite {
@@ -14,21 +17,73 @@ class IsabelleTest extends AnyFunSuite {
 
   test("handle compilation error") {
     assertThrows[IsabelleException] {
-      isa.executeMLCodeNow("1+true")
+      isabelle.executeMLCodeNow("1+true")
     }
   }
 
   test("initialize Isabelle") {
-    isa
+    isabelle
   }
 
   test("executeMLCode") {
     println("Sending code")
-    val exec = isa.executeMLCode("val _ = tracing \"Hello\"")
+    val exec = isabelle.executeMLCode("val _ = tracing \"Hello\"")
     println("Waiting for completion")
     await(exec)
   }
 
+  lazy val identityId: Isabelle.ID = await(isabelle.storeValue("E_Function (fn x => x)"))
+  def roundTrip(data: Data): Unit = {
+    val future = isabelle.applyFunction(identityId, data)
+    val returned = await(future)
+    assert(returned == data)
+  }
+
+  test("roundtrip DInt") {
+    roundTrip(DInt(4356))
+  }
+
+  test("roundtrip DString") {
+    roundTrip(DString("hello"))
+  }
+
+  test("roundtrip DInt negative") {
+    roundTrip(DInt(-235345))
+  }
+
+  test("roundtrip DList") {
+    roundTrip(DList(DInt(1), DString("2")))
+  }
+
+  test("non ASCII string") {
+    roundTrip(DString("ä"))
+  }
+
+  test("too long string") {
+    val builder = new StringBuilder
+    for (i <- 1 to 10000000)
+      builder ++= i.toString += '.'
+    val str = builder.toString()
+    assertThrows[IsabelleException] {
+      roundTrip(DString(str))
+    }
+  }
+
+  test("too long string & continue") {
+    val builder = new StringBuilder
+    for (i <- 1 to 10000000)
+      builder ++= i.toString += '.'
+    val str = builder.toString()
+    assertThrows[IsabelleException] {
+      roundTrip(DString(str))
+    }
+    println("Roundtrip of string finished")
+
+    implicit val signaler: ThreadSignaler.type = ThreadSignaler
+    failAfter(Span(5, Seconds)) {
+      roundTrip(DInt(0))
+    }
+  }
 }
 
 object IsabelleTest {

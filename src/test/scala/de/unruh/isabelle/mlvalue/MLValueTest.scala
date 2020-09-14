@@ -75,5 +75,33 @@ class MLValueTest extends AnyFunSuite {
     roundTrip(None : Option[Int])
   }
 
+  test("MLValue documentation example") {
+
+    // implicit val isabelle: Isabelle = new Isabelle(...)
+    import scala.concurrent.ExecutionContext.Implicits._
+
+    // Create an MLValue containing an integer
+    val intML : MLValue[Int] = MLValue(123)
+    // 123 is now stored in the object store
+
+    // Fetching the integer back
+    val int : Int = intML.retrieveNow
+    assert(int==123)
+
+    // The type parameter of MLValue ensures that the following does not compile:
+    // val string : String = intML.retrieveNow
+
+    // We write an ML function that squares an integer and converts it into a string
+    val mlFunction : MLFunction[Int, String] =
+      MLValue.compileFunction[Int, String]("fn i => string_of_int (i*i)")
+
+    // We can apply the function to an integer stored in the Isabelle process
+    val result : MLValue[String] = mlFunction(intML)
+    // The result is still stored in the Isabelle process, but we can retrieve it:
+    val resultHere : String = result.retrieveNow
+    assert(resultHere == "15129")
+
+  }
+
   def await[A](x: Awaitable[A]): A = Await.result(x, Duration.Inf)
 }
