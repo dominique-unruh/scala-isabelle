@@ -33,7 +33,6 @@ class IsabelleTest extends AnyFunSuite {
 
 object IsabelleTest {
   val setup: Setup = Setup(
-    workingDirectory = Paths.get("/home/unruh/svn/qrhl-tool"),
     isabelleHome = Paths.get("/opt/Isabelle2020"),
     sessionRoots = Nil,
     userDir = None

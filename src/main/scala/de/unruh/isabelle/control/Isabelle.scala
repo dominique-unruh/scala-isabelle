@@ -73,7 +73,7 @@ import scala.util.{Failure, Success, Try}
   *              the heap was already built.
   */
 
-class Isabelle(val setup: Setup, build: Boolean = false) {
+class Isabelle(val setup: Setup, build: Boolean = true) {
   import Isabelle._
 
   private val sendQueue : BlockingQueue[(DataOutputStream => Unit, Try[Data] => Unit)] = new ArrayBlockingQueue(1000)

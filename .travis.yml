@@ -1,0 +1,17 @@
+language: scala
+
+scala:
+  - 2.13.3
+
+sbt_args: -Dorg.slf4j.simpleLogger.defaultLogLevel=debug
+
+# Caching is not needed if we only use the HOL logic in tests
+# because Isabelle comes with a prebuilt HOL
+#cache:
+#  - /opt
+#  - $HOME/.isabelle
+
+before_script:
+  - mkdir -p /opt
+  - if ! [ -e /opt/Isabelle2020 ]; then curl https://isabelle.in.tum.de/dist/Isabelle2020_linux.tar.gz | tar -x -z -C /opt/; fi
+#  - /opt/Isabelle2020/bin/isabelle build -b -v HOL-Analysis
