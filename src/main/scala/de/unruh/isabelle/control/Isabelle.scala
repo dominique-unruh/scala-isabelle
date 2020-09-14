@@ -7,6 +7,7 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.{FileSystemNotFoundException, Files, Path, Paths}
 import java.util.concurrent.{ArrayBlockingQueue, BlockingQueue, ConcurrentHashMap, ConcurrentLinkedQueue}
 
+import com.google.common.util.concurrent.Striped
 import de.unruh.isabelle.control.Isabelle.Setup
 import de.unruh.isabelle.mlvalue.MLValue
 import de.unruh.isabelle.pure.Term
@@ -244,6 +245,10 @@ class Isabelle(val setup: Setup, build: Boolean = true) {
     }
   }
 
+  /** Invokes the Isabelle process.
+   * This function is not portable.
+   * To make the library run with Windows (and maybe OS/X), this function needs to be rewritten.
+   * */
   private def startProcess() : java.lang.Process = {
     def wd = setup.workingDirectory
     /** Path to absolute string, interpreted relative to wd */
@@ -258,7 +263,6 @@ class Isabelle(val setup: Setup, build: Boolean = true) {
 
     assert(setup.userDir.forall(_.endsWith(".isabelle")))
 
-
     val inputPipe = tempDir.resolve("in-fifo").toAbsolutePath
     inputPipe.toFile.deleteOnExit()
     val outputPipe = tempDir.resolve("out-fifo").toAbsolutePath
@@ -267,7 +271,6 @@ class Isabelle(val setup: Setup, build: Boolean = true) {
       throw new IOException(s"Cannot create fifo $inputPipe")
     if (Process(List("mkfifo", outputPipe.toString)).! != 0)
       throw new IOException(s"Cannot create fifo $outputPipe")
-
 
     val cmd = ListBuffer[String]()
 
@@ -301,11 +304,21 @@ class Isabelle(val setup: Setup, build: Boolean = true) {
     parseIsabelleThread.setDaemon(true)
     parseIsabelleThread.start()
 
-    val process = processBuilder.start()
+    val lock = Isabelle.buildLocks.get(wd.resolve(setup.isabelleHome).toAbsolutePath.normalize).readLock
 
-    logStream(process.getErrorStream, Warn) // stderr
-    logStream(process.getInputStream, Debug) // stdout
+    lock.lockInterruptibly()
+    try {
+      val process = processBuilder.start()
 
+      logStream(process.getErrorStream, Warn) // stderr
+      logStream(process.getInputStream, Debug) // stdout
+    } finally {
+      // This happens almost immediately, so it would be possible that a build process starts *after*
+      // we initiated the Isabelle process. So ideally, the lock.unlock() should be delayed until we know that
+      // the current Isabelle process has loaded any files that would be written by a build. But this is
+      // a very exotic situation, so we just release the lock right away.
+      lock.unlock()
+    }
     process
   }
 
@@ -524,6 +537,10 @@ object Isabelle {
                    sessionRoots : Seq[Path] = Nil,
                    userDir : Option[Path] = None)
 
+
+  //noinspection UnstableApiUsage
+  private val buildLocks = Striped.lazyWeakReadWriteLock(10)
+
   /** Runs the Isabelle build process to build the session heap image `setup.logic`
     *
     * This is done automatically by the constructors of [[Isabelle]] unless `build=false`.
@@ -531,7 +548,6 @@ object Isabelle {
     * @param setup Configuration of Isabelle.
     */
   def buildSession(setup: Setup) : Unit = {
-    // TODO: Use global lock so that only one build can happen at a time? Or one per Isabelle home?
     def wd = setup.workingDirectory
     /** Path to absolute string, interpreted relative to wd */
     def str(path: Path) = wd.resolve(path).toAbsolutePath.toString
@@ -554,9 +570,15 @@ object Isabelle {
 
     val processBuilder = scala.sys.process.Process(cmd.toSeq, wd.toAbsolutePath.toFile, extraEnv :_*)
     val errors = ListBuffer[String]()
-    if (0 != processBuilder.!(ProcessLogger(line => logger.debug(s"Isabelle build: $line"),
-      {line => errors.append(line); logger.warn(s"Isabelle build: $line")})))
-      throw IsabelleBuildException(s"Isabelle build for session ${setup.logic} failed", errors.toList)
+
+    val lock = buildLocks.get(wd.resolve(setup.isabelleHome).toAbsolutePath.normalize).writeLock
+    lock.lockInterruptibly()
+    try {
+      if (0 != processBuilder.!(ProcessLogger(line => logger.debug(s"Isabelle build: $line"),
+        { line => errors.append(line); logger.warn(s"Isabelle build: $line") })))
+        throw IsabelleBuildException(s"Isabelle build for session ${setup.logic} failed", errors.toList)
+    } finally
+      lock.unlock()
   }
 
   /**
@@ -564,6 +586,7 @@ object Isabelle {
     *
     * @param setup Isabelle configuration
     * @param files Files to open in jEdit
+    * @throws IsabelleJEditException if jEdit fails (returns return code ≠0)
     */
   def jedit(setup: Setup, files: Seq[Path]) : Unit = {
     def wd = setup.workingDirectory
@@ -589,10 +612,15 @@ object Isabelle {
         yield ("USER_HOME", str(userDir.getParent))
 
     val processBuilder = scala.sys.process.Process(cmd.toSeq, wd.toAbsolutePath.toFile, extraEnv :_*)
-    val errors = ListBuffer[String]()
-    if (0 != processBuilder.!(ProcessLogger(line => logger.debug(s"Isabelle build: $line"),
-      {line => errors.append(line); logger.warn(s"Isabelle build: $line")})))
-      throw IsabelleBuildException(s"Isabelle build for session ${setup.logic} failed", errors.toList)
+
+    val lock = buildLocks.get(wd.resolve(setup.isabelleHome).toAbsolutePath.normalize).readLock
+    lock.lockInterruptibly()
+    try {
+      if (0 != processBuilder.!(ProcessLogger(line => logger.debug(s"Isabelle jedit: $line"),
+        { line => logger.warn(s"Isabelle jedit: $line") })))
+        throw IsabelleJEditException("Could not start Isabelle/jEdit")
+    } finally
+      lock.unlock()
   }
 
   /** An algebraic datatype that allows to encode trees of data containing integers ([[DInt]]), strings ([[DString]]), and IDs of
@@ -632,6 +660,8 @@ abstract class IsabelleControllerException(message: String) extends IOException(
 
 /** Thrown if an operation cannot be executed because [[Isabelle.destroy]] has already been invoked. */
 case class IsabelleDestroyedException(message: String) extends IsabelleControllerException(message)
+/** Thrown if running Isabelle/jEdit fails */
+case class IsabelleJEditException(message: String) extends IsabelleControllerException(message)
 /** Thrown if the build process of Isabelle fails */
 case class IsabelleBuildException(message: String, errors: List[String])
   extends IsabelleControllerException(if (errors.nonEmpty) message + ": " + errors.last else message)

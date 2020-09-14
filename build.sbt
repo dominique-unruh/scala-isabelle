@@ -8,7 +8,6 @@ scalaVersion := "2.13.3"
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
-
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.2" % "test"
 // https://mvnrepository.com/artifact/org.log4s/log4s
 libraryDependencies += "org.log4s" %% "log4s" % "1.8.2"
@@ -20,3 +19,5 @@ libraryDependencies += "commons-io" % "commons-io" % "2.8.0"
 libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.3.2"
 // https://mvnrepository.com/artifact/org.apache.commons/commons-lang3
 libraryDependencies += "org.apache.commons" % "commons-lang3" % "3.11"
+// https://mvnrepository.com/artifact/com.google.guava/guava
+libraryDependencies += "com.google.guava" % "guava" % "29.0-jre"
