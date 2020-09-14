@@ -12,7 +12,7 @@ import de.unruh.isabelle.mlvalue.MLValue.Implicits._
 import de.unruh.isabelle.pure.Theory.Implicits.theoryConverter
 
 final class Theory private [Theory](val name: String, val mlValue : MLValue[Theory]) {
-  override def toString: String = s"theory $name${if (mlValue.isReady) " (loaded)" else ""}"
+  override def toString: String = s"theory $name${mlValue.stateString}"
   def importMLStructure(name: String, newName: String)
                        (implicit isabelle: Isabelle, executionContext: ExecutionContext): Unit =
     Ops.importMLStructure(this, name, newName).retrieveNow

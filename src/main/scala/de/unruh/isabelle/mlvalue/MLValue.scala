@@ -1,7 +1,7 @@
 package de.unruh.isabelle.mlvalue
 
 import de.unruh.isabelle.control.Isabelle.{DInt, DList, DObject, DString, Data, ID}
-import de.unruh.isabelle.control.{Isabelle, OperationCollection}
+import de.unruh.isabelle.control.{Isabelle, IsabelleException, OperationCollection}
 import de.unruh.isabelle.mlvalue.MLValue.Implicits.{booleanConverter, intConverter, listConverter, longConverter, mlValueConverter, optionConverter, stringConverter, tuple2Converter, tuple3Converter, tuple4Converter, tuple5Converter, tuple6Converter, tuple7Converter}
 import MLValue.{Converter, Ops, logger}
 import org.log4s
@@ -42,7 +42,7 @@ import scala.util.{Failure, Success}
   *    - retrieve function: how to retrieve an exception encoding an ML value of type `a` and translate it into an `A` in Scala
   *    - store function: how to translate an `A` in Scala into an an exception encoding an ML value of type `a` and store it in the
   *      object store.
-  *  - `MLValue(x)` automatically translates `x:A` into a value of type `a` (using the retrieve function) and returns
+  *  - `[[MLValue.apply MLValue]](x)` automatically translates `x:A` into a value of type `a` (using the retrieve function) and returns
   *    an `MLValue[A]`.
   *  - If `m : MLValue[A]`, then `m.`[[retrieve]] (asynchronous) and `m.`[[retrieveNow]] (synchronous) decode the ML
   *    value in the object store and return a Scala value of type `A`.
@@ -53,6 +53,9 @@ import scala.util.{Failure, Success}
   *    [[MLValue.Converter]]).
   *  - To be able to use the automatic conversions etc., converters need to be imported for supported types.
   *    The converters provided by this package can be imported by `import [[de.unruh.isabelle.mlvalue.MLValue.Implicits]]._`.
+  *
+  * Note: Some operations take an [[control.Isabelle Isabelle]] instance as an implicit argument. It is required that this instance
+  *       the same as the one relative to which the MLValue was created.
   *
   * A full example:
   * {{{
@@ -65,7 +68,7 @@ import scala.util.{Failure, Success}
   *
   *     // Fetching the integer back
   *     val int : Int = intML.retrieveNow
-  *     assert(int==123)
+  *     assert(int == 123)
   *
   *     // The type parameter of MLValue ensures that the following does not compile:
   *     // val string : String = intML.retrieveNow
@@ -83,10 +86,10 @@ import scala.util.{Failure, Success}
   * Not that the type annotations in this example are all optional, the compiler infers them automatically.
   * We have included them for clarity only.
   *
-  * @param id an ID referencing an object in the Isabelle process
+  * @param id the ID of the referenced object in the Isabelle process
   * @tparam A the Scala type corresponding to the ML type of the value referenced by [[id]]
   */
-class MLValue[A] private[isabelle](val id: Future[Isabelle.ID]) {
+class MLValue[A] private[isabelle](/** the ID of the referenced object in the Isabelle process */ val id: Future[Isabelle.ID]) {
   def logError(message: => String)(implicit executionContext: ExecutionContext): this.type = {
     id.onComplete {
       case Success(_) =>
@@ -95,47 +98,114 @@ class MLValue[A] private[isabelle](val id: Future[Isabelle.ID]) {
     this
   }
 
+  /** Returns a textual representation of the value in the ML process as it is stored in the object store
+   * (i.e., encoded as an exception). E.g., an integer 3 would be represented as "E_Int 3". */
   def debugInfo(implicit isabelle: Isabelle, ec: ExecutionContext): String =
     Ops.debugInfo[A](this).retrieveNow
 
+  /** A utility method that returns "" if this MLValue was successfully computed (i.e., `this.[[retrieveNow]]`
+   * would immediately return), " (computing)" if it still computes (`this.[[retrieveNow]]` would block),
+   * and " (failed)" if it finited with an exception (`this.[[retrieveNow]]` would throw an exception).
+   *
+   * This can be useful to constructing human readable messages about this MLValue.
+   *  */
   def stateString: String = id.value match {
     case Some(Success(_)) => ""
     case Some(Failure(_)) => " (failed)"
-    case None => " (loading)"
+    case None => " (computing)"
   }
 
-  def ready(implicit ec: ExecutionContext) : Future[Unit] = id map { _ => () }
+  /** Waits till the computation of this MLValue (in the Isabelle process) has finished.
+   * @throws control.IsabelleException if the computation fails in the Isabelle process
+   * @return this [[MLValue]], but it is guaranteed to have completed the computation
+   * */
+  def force : this.type = {
+    Await.result(id, Duration.Inf)
+    this
+  }
 
-  def isReady: Boolean = id.isCompleted
+  /** A future containing this MLValue with the computation completed.
+   * In particular, if this MLValue throws an exception upon computation,
+   * the future holds that exception.
+   *
+   * Roughly the same as `[[scala.concurrent.Future.apply Future]] { this.[[force]] }`.
+   *
+   * @throws control.IsabelleException if the computation fails in the Isabelle process
+   */
+  def forceFuture(implicit ec: ExecutionContext) : Future[this.type] = id.map { _ => this }
 
+  /** Retrieves the value referenced by this MLValue from the Isabelle process.
+   *
+   * In particular, the value in the Isabelle process (a value in ML) is translated to a Scala value.
+   *
+   * @return Future holding the value (as a Scala value) or an [[control.IsabelleException IsabelleException]] if the computation of that
+   *         value or the transfer to Scala failed.
+   * @param converter This converter specifies how the value is to be retrieved from the Isabelle process and
+   *                  translated into a Scala value of type `A`
+   * @param isabelle The [[control.Isabelle Isabelle]] instance holding the value. This must be the same `Isabelle` instance
+   *                 relative to which the `MLValue` was created. (Otherwise unspecified data is returned or an
+   *                 exception thrown.) In an application with only a single `Isabelle` instance that instance
+   *                 can safely be declared as an implicit.
+   */
   @inline def retrieve(implicit converter: Converter[A], isabelle: Isabelle, ec: ExecutionContext): Future[A] =
     converter.retrieve(this)
 
+  /** Like retrieve but returns the Scala value directly instread of a future (blocks till the computation
+   * and transfer finish. */
   @inline def retrieveNow(implicit converter: Converter[A], isabelle: Isabelle, ec: ExecutionContext): A =
     Await.result(retrieve, Duration.Inf)
 
+  /** Returns this MLValue as an [[MLFunction]], assuming this MLValue has a type of the form `MLValue[D => R]`.
+   * If this MLValue is `MLValue[D => R]`, it means it references a function value in the ML process. Converting it
+   * to an `MLFunction <: MLValue` gives us access to additional methods for applying this function.
+   * @see [[MLFunction]]
+   */
   def function[D, R](implicit ev: MLValue[A] =:= MLValue[D => R]): MLFunction[D, R] =
     new MLFunction(id)
 
+  /** Analogous to [[function]] but for functions that take a pair as argument, i.e., `this : MLValue[((D1, D2)) => R]`.
+   * @see [[MLFunction2]] */
   def function2[D1, D2, R](implicit ev: MLValue[A] =:= MLValue[((D1, D2)) => R]): MLFunction2[D1, D2, R] =
     new MLFunction2(id)
 
+  /** Analogous to [[function]] but for functions that take a 3-tuple as argument, i.e., `this : MLValue[((D1, D2, D3)) => R]`.
+   * @see [[MLFunction3]] */
   def function3[D1, D2, D3, R](implicit ev: MLValue[A] =:= MLValue[((D1, D2, D3)) => R]): MLFunction3[D1, D2, D3, R] =
     new MLFunction3(id)
 
+  /** Analogous to [[function]] but for functions that take a 4-tuple as argument, i.e., `this : MLValue[((D1, D2, D3, D4)) => R]`.
+   * @see [[MLFunction4]] */
   def function4[D1, D2, D3, D4, R](implicit ev: MLValue[A] =:= MLValue[((D1, D2, D3, D4)) => R]): MLFunction4[D1, D2, D3, D4, R] =
     new MLFunction4(id)
 
+  /** Analogous to [[function]] but for functions that take a 5-tuple as argument, i.e., `this : MLValue[((D1, D2, D3, D4, D5)) => R]`.
+   * @see [[MLFunction5]] */
   def function5[D1, D2, D3, D4, D5, R](implicit ev: MLValue[A] =:= MLValue[((D1, D2, D3, D4, D5)) => R]): MLFunction5[D1, D2, D3, D4, D5, R] =
     new MLFunction5(id)
 
+  /** Analogous to [[function]] but for functions that take a 6-tuple as argument, i.e., `this : MLValue[((D1, D2, D3, D4, D5, D6)) => R]`.
+   * @see [[MLFunction6]] */
   def function6[D1, D2, D3, D4, D5, D6, R](implicit ev: MLValue[A] =:= MLValue[((D1, D2, D3, D4, D5, D6)) => R]): MLFunction6[D1, D2, D3, D4, D5, D6, R] =
     new MLFunction6(id)
 
+  /** Analogous to [[function]] but for functions that take a 7-tuple as argument, i.e., `this : MLValue[((D1, D2, D3, D4, D5, D6, D7)) => R]`.
+   * @see [[MLFunction7]] */
   def function7[D1, D2, D3, D4, D5, D6, D7, R](implicit ev: MLValue[A] =:= MLValue[((D1, D2, D3, D4, D5, D6, D7)) => R]): MLFunction7[D1, D2, D3, D4, D5, D6, D7, R] =
     new MLFunction7(id)
 
+  /** Specialized type cast that inserts `MLValue[]` in arbitrary positions in the type parameter of this MLValue.
+   * E.g., we can type cast `this : MLValue[List[X]]` to `MLValue[List[MLValue[X]]]` by invoking `this.insertMLValue[List,X]`
+   * Such type casts are safe because the the way `MLValue[...]` is interpreted in the type parameter to `MLValue` (see
+   * [[MLValueConverter]] (TODO: document that one)). The same type cast could be achieved using `.asInstanceOf`, but
+   * `insertMLValue` guarantees that no unsafe cast is accidentally performed.
+   */
   @inline def insertMLValue[C[_],B](implicit ev: A =:= C[B]): MLValue[C[MLValue[B]]] = this.asInstanceOf[MLValue[C[MLValue[B]]]]
+  /** Specialized type cast that removes `MLValue[]` in arbitrary positions in the type parameter of this MLValue.
+   * E.g., we can type cast `this : MLValue[List[MLValue[X]]]` to `MLValue[List[X]]` by invoking `this.removeMLValue[List,X]`
+   * Such type casts are safe because the the way `MLValue[...]` is interpreted in the type parameter to `MLValue` (see
+   * [[MLValueConverter]] (TODO: document that one)). The same type cast could be achieved using `.asInstanceOf`, but
+   * `insertMLValue` guarantees that no unsafe cast is accidentally performed.
+   */
   @inline def removeMLValue[C[_],B](implicit ev: A =:= C[MLValue[B]]): MLValue[C[B]] = this.asInstanceOf[MLValue[C[B]]]
 }
 
@@ -145,7 +215,7 @@ class MLFunction[D,R] private[isabelle](id: Future[ID]) extends MLValue[D => R](
     new MLValue(
       for (fVal <- this.id;
            xVal <- arg.id;
-           fx <- isabelle.applyFunctionOld(fVal, xVal))
+           DObject(fx) <- isabelle.applyFunction(fVal, DObject(xVal)))
         yield fx
     )
   }

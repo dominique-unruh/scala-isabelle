@@ -7,8 +7,7 @@ import de.unruh.isabelle.mlvalue.{MLFunction, MLValue}
 import scala.concurrent.{ExecutionContext, Future}
 
 final class Context private [Context](val mlValue : MLValue[Context]) {
-  override def toString: String =
-    if (mlValue.isReady) "context (loaded)" else "context"
+  override def toString: String = "context" + mlValue.stateString
 }
 
 object Context extends OperationCollection {

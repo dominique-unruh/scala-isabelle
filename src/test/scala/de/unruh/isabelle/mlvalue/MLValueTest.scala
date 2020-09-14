@@ -86,7 +86,7 @@ class MLValueTest extends AnyFunSuite {
 
     // Fetching the integer back
     val int : Int = intML.retrieveNow
-    assert(int==123)
+    assert(int == 123)
 
     // The type parameter of MLValue ensures that the following does not compile:
     // val string : String = intML.retrieveNow

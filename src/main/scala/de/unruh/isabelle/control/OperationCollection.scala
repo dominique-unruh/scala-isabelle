@@ -142,7 +142,10 @@ trait OperationCollection {
   }
 
   /** Returns an instance of type [[Ops]]. It is guaranteed that for each instance `isabelle`, exactly one
-    * instance of `Obs` is created (using the `ec` from the first such invocation). */
+    * instance of `Obs` is created (using the `ec` from the first such invocation).
+    * (If you see this doc string in a class different from [[OperationCollection]] but no definition of the
+    * class [[Ops]], treat this function as if it was private.)
+    */
   def Ops(implicit isabelle: Isabelle, ec: ExecutionContext): Ops = {
     @tailrec
     def get(instances: List[(Isabelle, Ops)]): Ops = instances match {

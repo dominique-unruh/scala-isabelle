@@ -323,7 +323,7 @@ class Isabelle(val setup: Setup, build: Boolean = true) {
     */
   def destroy(): Unit = destroy(IsabelleDestroyedException("Isabelle process has been destroyed"))
 
-  def destroy(cause: Throwable): Unit = {
+  private def destroy(cause: Throwable): Unit = {
     destroyed = cause
     garbageQueue.clear()
     process.destroy()
@@ -468,11 +468,6 @@ class Isabelle(val setup: Setup, build: Boolean = true) {
   /** Like [[applyFunction(f:de* applyFunction(ID,Data)]], except `f` is a future. */
   def applyFunction(f: Future[ID], x: Data)(implicit ec: ExecutionContext) : Future[Data] =
     for (f2 <- f; fx <- applyFunction(f2, x)) yield fx
-
-  @deprecated
-  def applyFunctionOld(f: ID, x: ID)(implicit ec: ExecutionContext): Future[ID] = {
-    applyFunction(f, DObject(x)).map { case DObject(id) => id }
-  }
 }
 
 object Isabelle {
