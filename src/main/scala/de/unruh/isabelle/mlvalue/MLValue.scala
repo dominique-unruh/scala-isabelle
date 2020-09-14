@@ -340,19 +340,6 @@ object MLValue extends OperationCollection {
     val storeList : MLStoreFunction[List[MLValue[Nothing]]] =
       MLStoreFunction(s"fn D_List list => map (fn D_Object obj => obj | ${matchFailData("storeList.map")}) list | ${matchFailData("storeList")}")
 
-/*    private val listCons_  =
-      MLValue.compileFunctionRaw[(Nothing,List[Nothing]), List[Nothing]]("fn E_Pair (x, E_List xs) => E_List (x::xs)")
-        .function2[Nothing, List[Nothing], List[Nothing]]
-    def listCons[A]: MLFunction2[A, List[A], List[A]] =
-      listCons_.asInstanceOf[MLFunction2[A, List[A], List[A]]]
-    private val listNil_ : MLValue[List[_]] = MLValue.compileValueRaw("E_List []")
-    def listNil[A]: MLValue[List[A]] = listNil_.asInstanceOf[MLValue[List[A]]]
-    val listIsNil_ : MLFunction[List[_], Boolean] =
-      MLValue.compileFunctionRaw[List[_], Boolean]("fn E_List [] => E_Bool true | E_List _ => E_Bool false")
-    def listIsNil[A]: MLFunction[List[A], Boolean] = listIsNil_.asInstanceOf[MLFunction[List[A], Boolean]]
-    val destCons_ : MLFunction[List[_], (_,List[_])] = MLValue.compileFunctionRaw[List[_], (_,List[_])]("fn E_List (x::xs) => E_Pair (x, E_List xs)")
-    def destCons[A]: MLFunction[List[A], (A, List[A])] = destCons_.asInstanceOf[MLFunction[List[A], (A,List[A])]]*/
-
     val debugInfo_ : MLFunction[MLValue[Nothing], String] =
       compileFunctionRaw[MLValue[Nothing], String]("E_String o string_of_exn")
     def debugInfo[A]: MLFunction[MLValue[A], String] = debugInfo_.asInstanceOf[MLFunction[MLValue[A], String]]

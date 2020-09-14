@@ -55,7 +55,7 @@ fun readInt32 () : int = let
   val word = Word32.orb (word, Word32.<< (b, 0w8))
   val b = readByte () |> Word8.toLargeWord |> Word32.fromLargeWord
   val word = Word32.orb (word, b)
-  in Word32.toInt word end
+  in Word32.toIntX word end
 
 fun sendInt64 i = let
   val word = Word64.fromInt i
@@ -77,7 +77,7 @@ fun readInt64 () : int = let
   val b = readByte () |> Word8.toLargeWord |> Word64.fromLargeWord
   val word = Word64.orb (word, Word64.<< (b, 0w40))
   val b = readByte () |> Word8.toLargeWord |> Word64.fromLargeWord
-  val word = Word64.orb (word, Word64.<< (b, 0w64))
+  val word = Word64.orb (word, Word64.<< (b, 0w32))
   val b = readByte () |> Word8.toLargeWord |> Word64.fromLargeWord
   val word = Word64.orb (word, Word64.<< (b, 0w24))
   val b = readByte () |> Word8.toLargeWord |> Word64.fromLargeWord
@@ -86,7 +86,7 @@ fun readInt64 () : int = let
   val word = Word64.orb (word, Word64.<< (b, 0w8))
   val b = readByte () |> Word8.toLargeWord |> Word64.fromLargeWord
   val word = Word64.orb (word, b)
-  in Word64.toInt word end
+  in Word64.toIntX word end
 
 fun sendString str = let
   val len = size str
@@ -94,9 +94,15 @@ fun sendString str = let
   val _ = BinIO.output (outStream, Byte.stringToBytes str)
   in () end
 
+fun discardNBytes (n:int) =
+  if n <= 0 then ()
+  else (readByte(); discardNBytes (n-1))
+
 fun readString () = let
   val len = readInt32 ()
   val bytes = BinIO.inputN (inStream, len)
+              handle Size => (discardNBytes len;
+                error ("Received string longer than ML can handle ("^string_of_int len^" bytes)"))
   val str = Byte.bytesToString bytes
   in str end
 
@@ -166,11 +172,15 @@ fun store seq exn = sendReply1 seq (addToObjects exn)
 fun storeMLValue seq ml =
   executeML ("let open Control_Isabelle val result = ("^ml^") in store "^string_of_int seq^" result end")
 
-fun string_of_exn exn = Runtime.pretty_exn exn |> Pretty.unformatted_string_of
+fun string_of_exn exn = 
+  Runtime.pretty_exn exn |> Pretty.unformatted_string_of
+  handle Size => "<exn description too long>"
 
 fun string_of_data (D_Int i) = string_of_int i
-  | string_of_data (D_String s) = "\"" ^ s ^ "\""
-  | string_of_data (D_List l) = "[" ^ (String.concatWith ", " (map string_of_data l)) ^ "]"
+  | string_of_data (D_String s) = ("\"" ^ s ^ "\""
+        handle Size => "<data description too long>")
+  | string_of_data (D_List l) = ("[" ^ (String.concatWith ", " (map string_of_data l)) ^ "]"
+        handle Size => "<data description too long>")
   | string_of_data (D_Object e) = string_of_exn e
 
 fun applyFunc seq f (x:data) = case Inttab.lookup (!objects) f of

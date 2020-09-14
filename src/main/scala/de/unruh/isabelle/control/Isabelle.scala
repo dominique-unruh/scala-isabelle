@@ -205,6 +205,9 @@ class Isabelle(val setup: Setup, build: Boolean = true) {
       val seq = output.readLong()
       val answerType = output.readByte()
       val callback = callbacks.remove(seq)
+      if (callback==null)
+        throw IsabelleProtocolException(s"Received a protocol response from Isabelle with seq# $seq, answerType $answerType, " +
+          s"but no callback is registered for that seq#. Probably the communication is out of sync now")
 //      logger.debug(s"Seq: $seq, type: $answerType, callback: $callback")
       answerType match {
         case 1 =>
@@ -213,9 +216,15 @@ class Isabelle(val setup: Setup, build: Boolean = true) {
         case 2 =>
           val msg = readString(output)
           callback(Failure(IsabelleException(msg)))
+        case _ =>
+          throw IsabelleProtocolException(s"Received a protocol response from Isabelle with seq# $seq and invalid" +
+            s"answerType $answerType. Probably the communication is out of sync now")
       }
     } catch {
       case _ : EOFException =>
+      case e : Throwable =>
+        destroy(e)
+        throw e
     }
   }
 
@@ -304,20 +313,23 @@ class Isabelle(val setup: Setup, build: Boolean = true) {
   private val process: lang.Process = startProcess()
 
   /** Returns whether the Isabelle process has been destroyed (via [[destroy]]) */
-  def isDestroyed: Boolean = destroyed
+  def isDestroyed: Boolean = destroyed != null
 
-  @volatile private var destroyed = false
+  @volatile private var destroyed : Throwable = null
+
   /** Kills the running Isabelle process.
     * After this, no more operations on values in the object store are possible.
     * Futures corresponding to already running computations will throw an [[IsabelleDestroyedException]].
     */
-  def destroy(): Unit = {
-    destroyed = true
+  def destroy(): Unit = destroy(IsabelleDestroyedException("Isabelle process has been destroyed"))
+
+  def destroy(cause: Throwable): Unit = {
+    destroyed = cause
     garbageQueue.clear()
     process.destroy()
 
     def callCallback(cb: Try[Data] => Unit): Unit =
-      cb(Failure(IsabelleDestroyedException("Isabelle process has been destroyed")))
+      cb(Failure(cause))
 
     for ((_,cb) <- sendQueue.asScala)
       callCallback(cb)
@@ -328,8 +340,8 @@ class Isabelle(val setup: Setup, build: Boolean = true) {
   }
 
   private def send(str: DataOutputStream => Unit, callback: Try[Data] => Unit) : Unit = {
-    if (destroyed)
-      throw new IllegalStateException("Isabelle instance has been destroyed")
+    if (destroyed!=null)
+      throw destroyed
     sendQueue.put((str,callback))
   }
 
@@ -630,5 +642,5 @@ case class IsabelleBuildException(message: String, errors: List[String])
   extends IsabelleControllerException(if (errors.nonEmpty) message + ": " + errors.last else message)
 /** Thrown in case of an error in the ML process (ML compilation errors, exceptions thrown by ML code) */
 case class IsabelleException(message: String) extends IsabelleControllerException(message)
-
-
+/** Thrown in case of protocol errors in Isabelle process */
+case class IsabelleProtocolException(message: String) extends IsabelleControllerException(message)

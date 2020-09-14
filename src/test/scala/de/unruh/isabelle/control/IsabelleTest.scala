@@ -4,11 +4,13 @@ import java.nio.file.Paths
 
 import de.unruh.isabelle.control.Isabelle.{DInt, DList, DString, Data, Setup}
 import de.unruh.isabelle.control.IsabelleTest.isabelle
+import de.unruh.isabelle.mlvalue.MLValue
 import org.scalatest.concurrent.{Signaler, ThreadSignaler}
 import org.scalatest.concurrent.TimeLimits.failAfter
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.time.{Seconds, Span}
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Await, Awaitable, Future}
 import scala.concurrent.duration.Duration
 
@@ -56,7 +58,8 @@ class IsabelleTest extends AnyFunSuite {
   }
 
   test("non ASCII string") {
-    roundTrip(DString("ä"))
+    val result = await(isabelle.applyFunction(identityId, DString("eĥoŝanĝo ĉiuĵaŭde")))
+    assert(result == DString("e?o?an?o ?iu?a?de"))
   }
 
   test("too long string") {
@@ -69,6 +72,7 @@ class IsabelleTest extends AnyFunSuite {
     }
   }
 
+  // Checks that the protocol doesn't get desynced by too long strings.
   test("too long string & continue") {
     val builder = new StringBuilder
     for (i <- 1 to 10000000)

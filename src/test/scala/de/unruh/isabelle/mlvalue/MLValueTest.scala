@@ -97,9 +97,11 @@ class MLValueTest extends AnyFunSuite {
 
     // We can apply the function to an integer stored in the Isabelle process
     val result : MLValue[String] = mlFunction(intML)
+
     // The result is still stored in the Isabelle process, but we can retrieve it:
     val resultHere : String = result.retrieveNow
     assert(resultHere == "15129")
+
 
   }
 
