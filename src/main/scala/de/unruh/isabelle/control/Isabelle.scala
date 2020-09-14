@@ -438,8 +438,8 @@ class Isabelle(val setup: Setup, build: Boolean = true) {
    *
    * This approach is very low level. In particular, there is no type system support to ensure that the IDs contained
    * in the serialized data actually refer to objects of the right type. A higher level typesafe approach for accessing data
-   * in the object store is given by [[MLValue]] (see there). However, [[MLValue]]s internally use the mechanism
-   * described here to transfer data to/from the Isabelle process. Thus, to add support for [[MLValue]]s of new types,
+   * in the object store is given by [[de.unruh.isabelle.mlvalue.MLValue]] (see there). However, `MLValue`s internally use the mechanism
+   * described here to transfer data to/from the Isabelle process. Thus, to add support for `MLValue`s of new types,
    * the `applyFunction` needs to be used.
    *
    * @return A future holding the ID of the result (or holding an exception
@@ -453,7 +453,7 @@ class Isabelle(val setup: Setup, build: Boolean = true) {
     promise.future
   }
 
-  /** Like [[applyFunction(f:isa* applyFunction(ID,Data)]], except `f` is a future. */
+  /** Like [[applyFunction(f:de* applyFunction(ID,Data)]], except `f` is a future. */
   def applyFunction(f: Future[ID], x: Data)(implicit ec: ExecutionContext) : Future[Data] =
     for (f2 <- f; fx <- applyFunction(f2, x)) yield fx
 
@@ -605,7 +605,7 @@ object Isabelle {
    *
    * TODO: Document limitations (int-size, string-encoding, string-length)
    *
-   * @see [[Isabelle.applyFunction(f:isa* applyFunction]] for details how to use this type to transfer data
+   * @see [[Isabelle.applyFunction(f:de* applyFunction]] for details how to use this type to transfer data
    * */
   sealed trait Data
   final case class DInt(int: Long) extends Data
