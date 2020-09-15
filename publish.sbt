@@ -31,3 +31,5 @@ publishTo := {
 publishMavenStyle := true
 
 credentials += Credentials(Path.userHome / ".sbt" / "sonatype_credentials")
+
+publish := publish.dependsOn(test in Test).value
