@@ -5,6 +5,7 @@ import de.unruh.isabelle.mlvalue.MLValue.{Converter, Ops}
 
 import scala.concurrent.{ExecutionContext, Future}
 
+// TODO: Document API
 object UnitConverter extends Converter[Unit] {
   override def retrieve(value: MLValue[Unit])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Unit] =
     for (_ <- value.id) yield ()

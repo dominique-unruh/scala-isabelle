@@ -8,6 +8,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 import MLValue.Implicits._
 
+// TODO: Document API
 @inline class Tuple2Converter[A, B](converterA: Converter[A], converterB: Converter[B]) extends Converter[(A, B)] {
   @inline override def retrieve(value: MLValue[(A, B)])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[(A, B)] = {
     for (DList(DObject(aID), DObject(bID)) <- Ops.retrieveTuple2(value.id);
@@ -24,6 +25,6 @@ import MLValue.Implicits._
       .asInstanceOf[MLValue[(A, B)]]
   }
 
-  override lazy val exnToValue: String = s"fn E_Pair (a,b) => ((${converterA.exnToValue}) a, (${converterB.exnToValue}) b) | ${MLValue.matchFailExn("Tuple2Converter.exnToValue")}"
-  override lazy val valueToExn: String = s"fn (a,b) => E_Pair ((${converterA.valueToExn}) a, (${converterB.valueToExn}) b)"
+  @inline override def exnToValue: String = s"fn E_Pair (a,b) => ((${converterA.exnToValue}) a, (${converterB.exnToValue}) b) | ${MLValue.matchFailExn("Tuple2Converter.exnToValue")}"
+  @inline override def valueToExn: String = s"fn (a,b) => E_Pair ((${converterA.valueToExn}) a, (${converterB.valueToExn}) b)"
 }

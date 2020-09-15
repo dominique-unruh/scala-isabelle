@@ -6,6 +6,7 @@ import java.net.URL
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 import scala.util.matching.Regex
 
+// TODO: Document API
 class Symbols(symbolsFile: URL = classOf[Symbols].getResource("symbols"),
               extraSymbols: Traversable[(String,Int)] = Nil) {
   import Symbols._

@@ -209,6 +209,7 @@ class MLValue[A] private[isabelle](/** the ID of the referenced object in the Is
   @inline def removeMLValue[C[_],B](implicit ev: A =:= C[MLValue[B]]): MLValue[C[B]] = this.asInstanceOf[MLValue[C[B]]]
 }
 
+// TODO: Document API
 class MLFunction[D,R] private[isabelle](id: Future[ID]) extends MLValue[D => R](id) {
   def apply(arg: MLValue[D])
            (implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[R] = {
@@ -224,6 +225,7 @@ class MLFunction[D,R] private[isabelle](id: Future[ID]) extends MLValue[D => R](
     apply(MLValue(arg))
 }
 
+// TODO: Document API
 class MLFunction2[D1, D2, R] private[isabelle](id: Future[ID]) extends MLFunction[(D1, D2), R](id) {
   def apply(arg1: D1, arg2: D2)
            (implicit isabelle: Isabelle, ec: ExecutionContext, converter1: Converter[D1], converter2: Converter[D2]): MLValue[R] =
@@ -236,6 +238,7 @@ class MLFunction2[D1, D2, R] private[isabelle](id: Future[ID]) extends MLFunctio
   }
 }
 
+// TODO: Document API
 class MLFunction3[D1, D2, D3, R] private[isabelle](id: Future[ID]) extends MLFunction[(D1, D2, D3), R](id) {
   def apply(arg1: D1, arg2: D2, arg3: D3)
            (implicit isabelle: Isabelle, ec: ExecutionContext,
@@ -247,6 +250,7 @@ class MLFunction3[D1, D2, D3, R] private[isabelle](id: Future[ID]) extends MLFun
   }
 }
 
+// TODO: Document API
 class MLFunction4[D1, D2, D3, D4, R] private[isabelle](id: Future[ID]) extends MLFunction[(D1, D2, D3, D4), R](id) {
   def apply(arg1: D1, arg2: D2, arg3: D3, arg4: D4)
            (implicit isabelle: Isabelle, ec: ExecutionContext,
@@ -258,6 +262,7 @@ class MLFunction4[D1, D2, D3, D4, R] private[isabelle](id: Future[ID]) extends M
   }
 }
 
+// TODO: Document API
 class MLFunction5[D1, D2, D3, D4, D5, R] private[isabelle](id: Future[ID]) extends MLFunction[(D1, D2, D3, D4, D5), R](id) {
   def apply(arg1: D1, arg2: D2, arg3: D3, arg4: D4, arg5: D5)
            (implicit isabelle: Isabelle, ec: ExecutionContext,
@@ -270,6 +275,7 @@ class MLFunction5[D1, D2, D3, D4, D5, R] private[isabelle](id: Future[ID]) exten
   }
 }
 
+// TODO: Document API
 class MLFunction6[D1, D2, D3, D4, D5, D6, R] private[isabelle](id: Future[ID]) extends MLFunction[(D1, D2, D3, D4, D5, D6), R](id) {
   def apply(arg1: D1, arg2: D2, arg3: D3, arg4: D4, arg5: D5, arg6: D6)
            (implicit isabelle: Isabelle, ec: ExecutionContext,
@@ -282,6 +288,7 @@ class MLFunction6[D1, D2, D3, D4, D5, D6, R] private[isabelle](id: Future[ID]) e
   }
 }
 
+// TODO: Document API
 class MLFunction7[D1, D2, D3, D4, D5, D6, D7, R] private[isabelle](id: Future[ID]) extends MLFunction[(D1, D2, D3, D4, D5, D6, D7), R](id) {
   def apply(arg1: D1, arg2: D2, arg3: D3, arg4: D4, arg5: D5, arg6: D6, arg7: D7)
            (implicit isabelle: Isabelle, ec: ExecutionContext,
@@ -294,6 +301,7 @@ class MLFunction7[D1, D2, D3, D4, D5, D6, D7, R] private[isabelle](id: Future[ID
   }
 }
 
+// TODO: Document API
 class MLStoreFunction[A](val id: Future[ID]) {
   def apply(data: Data)(implicit isabelle: Isabelle, ec: ExecutionContext, converter: Converter[A]): MLValue[A] =
     new MLValue(isabelle.applyFunction(this.id, data).map { case DObject(id) => id})
@@ -301,11 +309,13 @@ class MLStoreFunction[A](val id: Future[ID]) {
     new MLValue(for (data <- data; DObject(id) <- isabelle.applyFunction(this.id, data)) yield id)
 }
 
+// TODO: Document API
 object MLStoreFunction {
   def apply[A](ml: String)(implicit isabelle: Isabelle, converter: Converter[A]) : MLStoreFunction[A] =
     new MLStoreFunction(isabelle.storeValue(s"E_Function (D_Object o (${converter.valueToExn}) o ($ml))"))
 }
 
+// TODO: Document API
 class MLRetrieveFunction[A](val id: Future[ID]) {
   def apply(id: ID)(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Isabelle.Data] =
     isabelle.applyFunction(this.id, DObject(id))
@@ -315,11 +325,13 @@ class MLRetrieveFunction[A](val id: Future[ID]) {
     apply(value.id)
 }
 
+// TODO: Document API
 object MLRetrieveFunction {
   def apply[A](ml: String)(implicit isabelle: Isabelle, converter: Converter[A]) : MLRetrieveFunction[A] =
     new MLRetrieveFunction(isabelle.storeValue(s"E_Function (fn D_Object x => ($ml) ((${converter.exnToValueProtected}) x))"))
 }
 
+// TODO: Document API
 object MLValue extends OperationCollection {
   def matchFailExn(name: String) =
     s""" exn => error ("Match failed in ML code generated for $name: " ^ string_of_exn exn)"""
@@ -418,8 +430,14 @@ object MLValue extends OperationCollection {
   abstract class Converter[A] {
     def retrieve(value: MLValue[A])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[A]
     def store(value: A)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[A]
-    val exnToValue : String
-    val valueToExn : String
+    /** This function should always return the same value. (It is declared as a `def` only to make sure
+     * Scala does not include an extra field or perform an unnecessary computation in the class when this function
+     * is not used. */
+    def exnToValue : String
+    /** This function should always return the same value. (It is declared as a `def` only to make sure
+     * Scala does not include an extra field or perform an unnecessary computation in the class when this function
+     * is not used. */
+    def valueToExn : String
     final def exnToValueProtected = s"""fn e => (($exnToValue) e handle Match => error ("Match failed in exnToValue (" ^ string_of_exn e ^ ")"))"""
   }
 

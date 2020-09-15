@@ -8,6 +8,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 import MLValue.Implicits._
 
+// TODO: Document API
 object LongConverter extends Converter[Long] {
   @inline override def store(value: Long)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[Long] =
     Ops.storeLong(DInt(value))
@@ -16,6 +17,6 @@ object LongConverter extends Converter[Long] {
                                (implicit isabelle: Isabelle, ec: ExecutionContext): Future[Long] =
     for (DInt(i) <- Ops.retrieveLong(value.id)) yield i
 
-  override lazy val exnToValue: String = s"fn E_Int i => i | ${matchFailExn("LongConverter.exnToValue")}"
-  override lazy val valueToExn: String = "E_Int"
+  @inline override def exnToValue: String = s"fn E_Int i => i | ${matchFailExn("LongConverter.exnToValue")}"
+  @inline override def valueToExn: String = "E_Int"
 }

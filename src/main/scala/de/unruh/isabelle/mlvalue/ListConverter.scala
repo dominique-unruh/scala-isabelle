@@ -8,6 +8,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 import MLValue.Implicits._
 
+// TODO: Document API
 @inline class ListConverter[A](implicit converter: Converter[A]) extends Converter[List[A]] {
   @inline override def store(value: List[A])(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[List[A]] = {
     val listID: Future[List[ID]] = Future.traverse(value) {
@@ -27,6 +28,6 @@ import MLValue.Implicits._
       yield list.toList
   }
 
-  override lazy val exnToValue: String = s"fn E_List list => map (${converter.exnToValue}) list | ${matchFailExn("ListConverter.exnToValue")}"
-  override lazy val valueToExn: String = s"E_List o map (${converter.valueToExn})"
+  @inline override def exnToValue: String = s"fn E_List list => map (${converter.exnToValue}) list | ${matchFailExn("ListConverter.exnToValue")}"
+  @inline override def valueToExn: String = s"E_List o map (${converter.valueToExn})"
 }
