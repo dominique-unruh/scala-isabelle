@@ -12,10 +12,10 @@ import MLValue.Implicits._
 @inline class Tuple4Converter[A, B, C, D](converterA: Converter[A], converterB: Converter[B], converterC: Converter[C], converterD: Converter[D]) extends Converter[(A, B, C, D)] {
   override def retrieve(value: MLValue[(A, B, C, D)])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[(A, B, C, D)] = {
     for (DList(DObject(aID), DObject(bID), DObject(cID), DObject(dID)) <- Ops.retrieveTuple4(value.id);
-         a <- converterA.retrieve(new MLValue[A](Future.successful(aID)));
-         b <- converterB.retrieve(new MLValue[B](Future.successful(bID)));
-         c <- converterC.retrieve(new MLValue[C](Future.successful(cID)));
-         d <- converterD.retrieve(new MLValue[D](Future.successful(dID))))
+         a <- converterA.retrieve(MLValue.unsafeFromId[A](Future.successful(aID)));
+         b <- converterB.retrieve(MLValue.unsafeFromId[B](Future.successful(bID)));
+         c <- converterC.retrieve(MLValue.unsafeFromId[C](Future.successful(cID)));
+         d <- converterD.retrieve(MLValue.unsafeFromId[D](Future.successful(dID))))
       yield (a, b, c, d)
   }
 

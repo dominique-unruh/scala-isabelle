@@ -13,11 +13,11 @@ class Tuple5Converter[A, B, C, D, E](converterA: Converter[A], converterB: Conve
   extends Converter[(A, B, C, D, E)] {
   override def retrieve(value: MLValue[(A, B, C, D, E)])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[(A, B, C, D, E)] = {
     for (DList(DObject(aID), DObject(bID), DObject(cID), DObject(dID), DObject(eID)) <- Ops.retrieveTuple5(value.id);
-         a <- converterA.retrieve(new MLValue[A](Future.successful(aID)));
-         b <- converterB.retrieve(new MLValue[B](Future.successful(bID)));
-         c <- converterC.retrieve(new MLValue[C](Future.successful(cID)));
-         d <- converterD.retrieve(new MLValue[D](Future.successful(dID)));
-         e <- converterE.retrieve(new MLValue[E](Future.successful(eID))))
+         a <- converterA.retrieve(MLValue.unsafeFromId[A](Future.successful(aID)));
+         b <- converterB.retrieve(MLValue.unsafeFromId[B](Future.successful(bID)));
+         c <- converterC.retrieve(MLValue.unsafeFromId[C](Future.successful(cID)));
+         d <- converterD.retrieve(MLValue.unsafeFromId[D](Future.successful(dID)));
+         e <- converterE.retrieve(MLValue.unsafeFromId[E](Future.successful(eID))))
       yield (a, b, c, d, e)
   }
 

@@ -14,13 +14,13 @@ import MLValue.Implicits._
                                                    converterG: Converter[G]) extends Converter[(A, B, C, D, E, F, G)] {
   @inline override def retrieve(value: MLValue[(A, B, C, D, E, F, G)])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[(A, B, C, D, E, F, G)] = {
     for (DList(DObject(aID), DObject(bID), DObject(cID), DObject(dID), DObject(eID), DObject(fID), DObject(gID)) <- Ops.retrieveTuple7(value.id);
-         a <- converterA.retrieve(new MLValue[A](Future.successful(aID)));
-         b <- converterB.retrieve(new MLValue[B](Future.successful(bID)));
-         c <- converterC.retrieve(new MLValue[C](Future.successful(cID)));
-         d <- converterD.retrieve(new MLValue[D](Future.successful(dID)));
-         e <- converterE.retrieve(new MLValue[E](Future.successful(eID)));
-         f <- converterF.retrieve(new MLValue[F](Future.successful(fID)));
-         g <- converterG.retrieve(new MLValue[G](Future.successful(gID))))
+         a <- converterA.retrieve(MLValue.unsafeFromId[A](Future.successful(aID)));
+         b <- converterB.retrieve(MLValue.unsafeFromId[B](Future.successful(bID)));
+         c <- converterC.retrieve(MLValue.unsafeFromId[C](Future.successful(cID)));
+         d <- converterD.retrieve(MLValue.unsafeFromId[D](Future.successful(dID)));
+         e <- converterE.retrieve(MLValue.unsafeFromId[E](Future.successful(eID)));
+         f <- converterF.retrieve(MLValue.unsafeFromId[F](Future.successful(fID)));
+         g <- converterG.retrieve(MLValue.unsafeFromId[G](Future.successful(gID))))
       yield (a, b, c, d, e, f, g)
   }
 

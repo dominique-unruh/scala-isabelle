@@ -12,8 +12,8 @@ import MLValue.Implicits._
 @inline class Tuple2Converter[A, B](converterA: Converter[A], converterB: Converter[B]) extends Converter[(A, B)] {
   @inline override def retrieve(value: MLValue[(A, B)])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[(A, B)] = {
     for (DList(DObject(aID), DObject(bID)) <- Ops.retrieveTuple2(value.id);
-         a <- converterA.retrieve(new MLValue[A](Future.successful(aID)));
-         b <- converterB.retrieve(new MLValue[B](Future.successful(bID))))
+         a <- converterA.retrieve(MLValue.unsafeFromId[A](Future.successful(aID)));
+         b <- converterB.retrieve(MLValue.unsafeFromId[B](Future.successful(bID))))
       yield (a, b)
   }
 

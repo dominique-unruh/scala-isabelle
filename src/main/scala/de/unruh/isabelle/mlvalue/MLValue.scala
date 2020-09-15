@@ -89,7 +89,7 @@ import scala.util.{Failure, Success}
   * @param id the ID of the referenced object in the Isabelle process
   * @tparam A the Scala type corresponding to the ML type of the value referenced by [[id]]
   */
-class MLValue[A] private[isabelle](/** the ID of the referenced object in the Isabelle process */ val id: Future[Isabelle.ID]) {
+class MLValue[A] protected (/** the ID of the referenced object in the Isabelle process */ val id: Future[Isabelle.ID]) {
   def logError(message: => String)(implicit executionContext: ExecutionContext): this.type = {
     id.onComplete {
       case Success(_) =>
@@ -161,37 +161,37 @@ class MLValue[A] private[isabelle](/** the ID of the referenced object in the Is
    * @see [[MLFunction]]
    */
   def function[D, R](implicit ev: MLValue[A] =:= MLValue[D => R]): MLFunction[D, R] =
-    new MLFunction(id)
+    MLFunction.unsafeFromId(id)
 
   /** Analogous to [[function]] but for functions that take a pair as argument, i.e., `this : MLValue[((D1, D2)) => R]`.
    * @see [[MLFunction2]] */
   def function2[D1, D2, R](implicit ev: MLValue[A] =:= MLValue[((D1, D2)) => R]): MLFunction2[D1, D2, R] =
-    new MLFunction2(id)
+    MLFunction2.unsafeFromId(id)
 
   /** Analogous to [[function]] but for functions that take a 3-tuple as argument, i.e., `this : MLValue[((D1, D2, D3)) => R]`.
    * @see [[MLFunction3]] */
   def function3[D1, D2, D3, R](implicit ev: MLValue[A] =:= MLValue[((D1, D2, D3)) => R]): MLFunction3[D1, D2, D3, R] =
-    new MLFunction3(id)
+    MLFunction3.unsafeFromId(id)
 
   /** Analogous to [[function]] but for functions that take a 4-tuple as argument, i.e., `this : MLValue[((D1, D2, D3, D4)) => R]`.
    * @see [[MLFunction4]] */
   def function4[D1, D2, D3, D4, R](implicit ev: MLValue[A] =:= MLValue[((D1, D2, D3, D4)) => R]): MLFunction4[D1, D2, D3, D4, R] =
-    new MLFunction4(id)
+    MLFunction4.unsafeFromId(id)
 
   /** Analogous to [[function]] but for functions that take a 5-tuple as argument, i.e., `this : MLValue[((D1, D2, D3, D4, D5)) => R]`.
    * @see [[MLFunction5]] */
   def function5[D1, D2, D3, D4, D5, R](implicit ev: MLValue[A] =:= MLValue[((D1, D2, D3, D4, D5)) => R]): MLFunction5[D1, D2, D3, D4, D5, R] =
-    new MLFunction5(id)
+    MLFunction5.unsafeFromId(id)
 
   /** Analogous to [[function]] but for functions that take a 6-tuple as argument, i.e., `this : MLValue[((D1, D2, D3, D4, D5, D6)) => R]`.
    * @see [[MLFunction6]] */
   def function6[D1, D2, D3, D4, D5, D6, R](implicit ev: MLValue[A] =:= MLValue[((D1, D2, D3, D4, D5, D6)) => R]): MLFunction6[D1, D2, D3, D4, D5, D6, R] =
-    new MLFunction6(id)
+    MLFunction6.unsafeFromId(id)
 
   /** Analogous to [[function]] but for functions that take a 7-tuple as argument, i.e., `this : MLValue[((D1, D2, D3, D4, D5, D6, D7)) => R]`.
    * @see [[MLFunction7]] */
   def function7[D1, D2, D3, D4, D5, D6, D7, R](implicit ev: MLValue[A] =:= MLValue[((D1, D2, D3, D4, D5, D6, D7)) => R]): MLFunction7[D1, D2, D3, D4, D5, D6, D7, R] =
-    new MLFunction7(id)
+    MLFunction7.unsafeFromId(id)
 
   /** Specialized type cast that inserts `MLValue[]` in arbitrary positions in the type parameter of this MLValue.
    * E.g., we can type cast `this : MLValue[List[X]]` to `MLValue[List[MLValue[X]]]` by invoking `this.insertMLValue[List,X]`
@@ -209,104 +209,14 @@ class MLValue[A] private[isabelle](/** the ID of the referenced object in the Is
   @inline def removeMLValue[C[_],B](implicit ev: A =:= C[MLValue[B]]): MLValue[C[B]] = this.asInstanceOf[MLValue[C[B]]]
 }
 
-// TODO: Document API
-class MLFunction[D,R] private[isabelle](id: Future[ID]) extends MLValue[D => R](id) {
-  def apply(arg: MLValue[D])
-           (implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[R] = {
-    new MLValue(
-      for (fVal <- this.id;
-           xVal <- arg.id;
-           DObject(fx) <- isabelle.applyFunction(fVal, DObject(xVal)))
-        yield fx
-    )
-  }
 
-  def apply(arg: D)(implicit isabelle: Isabelle, ec: ExecutionContext, converter: Converter[D]): MLValue[R] =
-    apply(MLValue(arg))
-}
-
-// TODO: Document API
-class MLFunction2[D1, D2, R] private[isabelle](id: Future[ID]) extends MLFunction[(D1, D2), R](id) {
-  def apply(arg1: D1, arg2: D2)
-           (implicit isabelle: Isabelle, ec: ExecutionContext, converter1: Converter[D1], converter2: Converter[D2]): MLValue[R] =
-    apply((arg1,arg2))
-  def apply(arg1: MLValue[D1], arg2: MLValue[D2])
-           (implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[R] = {
-    type C1[X] = Tuple2[X,MLValue[D2]]
-    type C2[X] = Tuple2[D1,X]
-    apply(MLValue((arg1, arg2)).removeMLValue[C1, D1].removeMLValue[C2, D2])
-  }
-}
-
-// TODO: Document API
-class MLFunction3[D1, D2, D3, R] private[isabelle](id: Future[ID]) extends MLFunction[(D1, D2, D3), R](id) {
-  def apply(arg1: D1, arg2: D2, arg3: D3)
-           (implicit isabelle: Isabelle, ec: ExecutionContext,
-            converter1: Converter[D1], converter2: Converter[D2], converter3: Converter[D3]): MLValue[R] =
-    apply((arg1,arg2,arg3))
-  def apply(arg1: MLValue[D1], arg2: MLValue[D2], arg3: MLValue[D3])
-           (implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[R] = {
-    apply(MLValue((arg1,arg2,arg3)).asInstanceOf[MLValue[(D1,D2,D3)]])
-  }
-}
-
-// TODO: Document API
-class MLFunction4[D1, D2, D3, D4, R] private[isabelle](id: Future[ID]) extends MLFunction[(D1, D2, D3, D4), R](id) {
-  def apply(arg1: D1, arg2: D2, arg3: D3, arg4: D4)
-           (implicit isabelle: Isabelle, ec: ExecutionContext,
-            converter1: Converter[D1], converter2: Converter[D2], converter3: Converter[D3], converter4: Converter[D4]): MLValue[R] =
-    apply((arg1,arg2,arg3,arg4))
-  def apply(arg1: MLValue[D1], arg2: MLValue[D2], arg3: MLValue[D3], arg4: MLValue[D4])
-           (implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[R] = {
-    apply(MLValue((arg1,arg2,arg3,arg4)).asInstanceOf[MLValue[(D1,D2,D3,D4)]])
-  }
-}
-
-// TODO: Document API
-class MLFunction5[D1, D2, D3, D4, D5, R] private[isabelle](id: Future[ID]) extends MLFunction[(D1, D2, D3, D4, D5), R](id) {
-  def apply(arg1: D1, arg2: D2, arg3: D3, arg4: D4, arg5: D5)
-           (implicit isabelle: Isabelle, ec: ExecutionContext,
-            converter1: Converter[D1], converter2: Converter[D2], converter3: Converter[D3], converter4: Converter[D4],
-            converter5: Converter[D5]): MLValue[R] =
-    apply((arg1,arg2,arg3,arg4,arg5))
-  def apply(arg1: MLValue[D1], arg2: MLValue[D2], arg3: MLValue[D3], arg4: MLValue[D4], arg5: MLValue[D5])
-           (implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[R] = {
-    apply(MLValue((arg1,arg2,arg3,arg4,arg5)).asInstanceOf[MLValue[(D1,D2,D3,D4,D5)]])
-  }
-}
-
-// TODO: Document API
-class MLFunction6[D1, D2, D3, D4, D5, D6, R] private[isabelle](id: Future[ID]) extends MLFunction[(D1, D2, D3, D4, D5, D6), R](id) {
-  def apply(arg1: D1, arg2: D2, arg3: D3, arg4: D4, arg5: D5, arg6: D6)
-           (implicit isabelle: Isabelle, ec: ExecutionContext,
-            converter1: Converter[D1], converter2: Converter[D2], converter3: Converter[D3], converter4: Converter[D4],
-            converter5: Converter[D5], converter6: Converter[D6]): MLValue[R] =
-    apply((arg1,arg2,arg3,arg4,arg5,arg6))
-  def apply(arg1: MLValue[D1], arg2: MLValue[D2], arg3: MLValue[D3], arg4: MLValue[D4], arg5: MLValue[D5], arg6: MLValue[D6])
-           (implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[R] = {
-    apply(MLValue((arg1,arg2,arg3,arg4,arg5,arg6)).asInstanceOf[MLValue[(D1,D2,D3,D4,D5,D6)]])
-  }
-}
-
-// TODO: Document API
-class MLFunction7[D1, D2, D3, D4, D5, D6, D7, R] private[isabelle](id: Future[ID]) extends MLFunction[(D1, D2, D3, D4, D5, D6, D7), R](id) {
-  def apply(arg1: D1, arg2: D2, arg3: D3, arg4: D4, arg5: D5, arg6: D6, arg7: D7)
-           (implicit isabelle: Isabelle, ec: ExecutionContext,
-            converter1: Converter[D1], converter2: Converter[D2], converter3: Converter[D3], converter4: Converter[D4],
-            converter5: Converter[D5], converter6: Converter[D6], converter7: Converter[D7]): MLValue[R] =
-    apply((arg1,arg2,arg3,arg4,arg5,arg6,arg7))
-  def apply(arg1: MLValue[D1], arg2: MLValue[D2], arg3: MLValue[D3], arg4: MLValue[D4], arg5: MLValue[D5], arg6: MLValue[D6], arg7: MLValue[D7])
-           (implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[R] = {
-    apply(MLValue((arg1,arg2,arg3,arg4,arg5,arg6,arg7)).asInstanceOf[MLValue[(D1,D2,D3,D4,D5,D6,D7)]])
-  }
-}
 
 // TODO: Document API
 class MLStoreFunction[A](val id: Future[ID]) {
   def apply(data: Data)(implicit isabelle: Isabelle, ec: ExecutionContext, converter: Converter[A]): MLValue[A] =
-    new MLValue(isabelle.applyFunction(this.id, data).map { case DObject(id) => id})
+    MLValue.unsafeFromId(isabelle.applyFunction(this.id, data).map { case DObject(id) => id})
   def apply(data: Future[Data])(implicit isabelle: Isabelle, ec: ExecutionContext, converter: Converter[A]): MLValue[A] =
-    new MLValue(for (data <- data; DObject(id) <- isabelle.applyFunction(this.id, data)) yield id)
+    MLValue.unsafeFromId(for (data <- data; DObject(id) <- isabelle.applyFunction(this.id, data)) yield id)
 }
 
 // TODO: Document API
@@ -333,6 +243,8 @@ object MLRetrieveFunction {
 
 // TODO: Document API
 object MLValue extends OperationCollection {
+  def unsafeFromId[A](id: Future[Isabelle.ID]) = new MLValue[A](id)
+
   def matchFailExn(name: String) =
     s""" exn => error ("Match failed in ML code generated for $name: " ^ string_of_exn exn)"""
 
@@ -451,7 +363,7 @@ object MLValue extends OperationCollection {
     compileValueRaw[A](s"(${converter.valueToExn}) ($ml)")
 
   def compileFunctionRaw[D, R](ml: String)(implicit isabelle: Isabelle, ec: ExecutionContext): MLFunction[D, R] =
-    new MLFunction[D,R](isabelle.storeValue(s"E_Function (fn D_Object x => ($ml) x |> D_Object)")).logError(s"""Error while compiling function "$ml":""")
+    MLFunction.unsafeFromId[D,R](isabelle.storeValue(s"E_Function (fn D_Object x => ($ml) x |> D_Object)")).logError(s"""Error while compiling function "$ml":""")
 
   def compileFunction[D, R](ml: String)(implicit isabelle: Isabelle, ec: ExecutionContext, converterA: Converter[D], converterB: Converter[R]): MLFunction[D, R] =
     compileFunctionRaw(s"(${converterB.valueToExn}) o ($ml) o (${converterA.exnToValueProtected})")
@@ -463,12 +375,14 @@ object MLValue extends OperationCollection {
 
   def compileFunction[D1, D2, D3, R](ml: String)
                                     (implicit isabelle: Isabelle, ec: ExecutionContext,
-                                     converter1: Converter[D1], converter2: Converter[D2], converter3: Converter[D3], converterR: Converter[R]): MLFunction3[D1, D2, D3, R] =
+                                     converter1: Converter[D1], converter2: Converter[D2], converter3: Converter[D3],
+                                     converterR: Converter[R]): MLFunction3[D1, D2, D3, R] =
     compileFunction[(D1,D2,D3), R](ml).function3
 
   def compileFunction[D1, D2, D3, D4, R](ml: String)
                                     (implicit isabelle: Isabelle, ec: ExecutionContext,
-                                     converter1: Converter[D1], converter2: Converter[D2], converter3: Converter[D3], converter4: Converter[D4], converterR: Converter[R]): MLFunction4[D1, D2, D3, D4, R] =
+                                     converter1: Converter[D1], converter2: Converter[D2], converter3: Converter[D3],
+                                     converter4: Converter[D4], converterR: Converter[R]): MLFunction4[D1, D2, D3, D4, R] =
     compileFunction[(D1,D2,D3,D4), R](ml).function4
 
   def compileFunction[D1, D2, D3, D4, D5, R](ml: String)
@@ -491,6 +405,7 @@ object MLValue extends OperationCollection {
     compileFunction[(D1,D2,D3,D4,D5,D6,D7), R](ml).function7
 
 
+  // TODO document API
   object Implicits {
     @inline implicit val booleanConverter: BooleanConverter.type = BooleanConverter
     @inline implicit val intConverter: IntConverter.type = IntConverter

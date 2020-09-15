@@ -20,7 +20,7 @@ import MLValue.Implicits._
     for (data <- Ops.retrieveOption(value.id);
          option <- data match {
            case DList() => Future.successful(None): Future[Option[A]]
-           case DList(DObject(id)) => converter.retrieve(new MLValue[A](Future.successful(id))).map(Some(_)): Future[Option[A]]
+           case DList(DObject(id)) => converter.retrieve(MLValue.unsafeFromId[A](Future.successful(id))).map(Some(_)): Future[Option[A]]
          })
       yield option
   }

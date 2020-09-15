@@ -21,7 +21,7 @@ import MLValue.Implicits._
 
   @inline override def retrieve(value: MLValue[List[A]])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[List[A]] = {
     for (DList(listObj@_*) <- Ops.retrieveList(value.asInstanceOf[MLValue[List[MLValue[Nothing]]]]);
-         listMLValue = listObj map { case DObject(id) => new MLValue[A](Future.successful(id)) };
+         listMLValue = listObj map { case DObject(id) => MLValue.unsafeFromId[A](Future.successful(id)) };
          list <- Future.traverse(listMLValue) {
            converter.retrieve(_)
          })
