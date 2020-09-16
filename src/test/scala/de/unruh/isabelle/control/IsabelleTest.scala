@@ -1,6 +1,7 @@
 package de.unruh.isabelle.control
 
-import java.nio.file.Paths
+import java.io.{BufferedReader, FileInputStream, FileReader}
+import java.nio.file.{Files, Path, Paths}
 
 import de.unruh.isabelle.control.Isabelle.{DInt, DList, DString, Data, Setup}
 import de.unruh.isabelle.control.IsabelleTest.isabelle
@@ -91,8 +92,17 @@ class IsabelleTest extends AnyFunSuite {
 }
 
 object IsabelleTest {
+  val isabelleHome: Path = {
+    val config = Paths.get(".isabelle-home") // For setting the home in Travis CI etc.
+    val path = if (Files.exists(config))
+      new BufferedReader(new FileReader(config.toFile)).readLine()
+    else
+      "/opt/Isabelle2020"
+    Paths.get(path)
+  }
+
   val setup: Setup = Setup(
-    isabelleHome = Paths.get("/opt/Isabelle2020"),
+    isabelleHome = isabelleHome,
     sessionRoots = Nil,
     userDir = None
   )
