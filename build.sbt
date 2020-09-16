@@ -1,3 +1,5 @@
+import scala.sys.process._
+
 name := "scala-isabelle"
 
 version := "0.1.0-SNAPSHOT"
@@ -21,3 +23,10 @@ libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.3.2"
 libraryDependencies += "org.apache.commons" % "commons-lang3" % "3.11"
 // https://mvnrepository.com/artifact/com.google.guava/guava
 libraryDependencies += "com.google.guava" % "guava" % "29.0-jre"
+
+lazy val travisRandomize = taskKey[Unit]("Randomize which test is run on Travis next time")
+travisRandomize := {
+  if (Process("git diff --quiet", cwd=baseDirectory.value).! != 0)
+    print(Process("scripts/travis-randomize.py", cwd=baseDirectory.value).!!)
+}
+compile in Compile := (compile in Compile).dependsOn(travisRandomize).value
