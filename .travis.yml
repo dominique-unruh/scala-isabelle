@@ -1,14 +1,16 @@
 language: java
 
-os:
-  - linux
-  - osx
-
 before_script: scripts/travis-setup.sh
 
-script: ~/bin/sbt -Dorg.slf4j.simpleLogger.defaultLogLevel=debug +test
+script: ~/install/sbt -Dorg.slf4j.simpleLogger.defaultLogLevel=debug +test
 
 cache:
   - directories:
     - $HOME/install
     - $HOME/.isabelle
+
+jobs:
+  include:
+    - os: osx
+    - {os: linux, jdk: openjdk11}
+    - {os: linux, jdk: openjdk14}

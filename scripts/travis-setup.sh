@@ -3,8 +3,8 @@
 set -ex
 
 mkdir -p ~/bin
-curl -Ls https://git.io/sbt > ~/bin/sbt
-chmod +x ~/bin/sbt
+curl -Ls https://git.io/sbt > ~/install/sbt
+chmod +x ~/install/sbt
 
 mkdir -p ~/install
 if ! [ -e /opt/Isabelle2020 ]; then
