@@ -3,7 +3,9 @@
 set -ex
 
 mkdir -p ~/bin
-curl -Ls https://git.io/sbt > ~/install/sbt
+if ! [ -e ~/install/sbt ]; then
+  curl -Ls https://git.io/sbt > ~/install/sbt
+fi
 chmod +x ~/install/sbt
 
 mkdir -p ~/install

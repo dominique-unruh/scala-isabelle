@@ -212,7 +212,7 @@ class MLValue[A] protected (/** the ID of the referenced object in the Isabelle 
 
 
 // TODO: Document API
-class MLStoreFunction[A](val id: Future[ID]) {
+class MLStoreFunction[A] private (val id: Future[ID]) {
   def apply(data: Data)(implicit isabelle: Isabelle, ec: ExecutionContext, converter: Converter[A]): MLValue[A] =
     MLValue.unsafeFromId(isabelle.applyFunction(this.id, data).map { case DObject(id) => id})
   def apply(data: Future[Data])(implicit isabelle: Isabelle, ec: ExecutionContext, converter: Converter[A]): MLValue[A] =
@@ -226,7 +226,7 @@ object MLStoreFunction {
 }
 
 // TODO: Document API
-class MLRetrieveFunction[A](val id: Future[ID]) {
+class MLRetrieveFunction[A] private (val id: Future[ID]) {
   def apply(id: ID)(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Isabelle.Data] =
     isabelle.applyFunction(this.id, DObject(id))
   def apply(id: Future[ID])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Isabelle.Data] =
@@ -243,17 +243,35 @@ object MLRetrieveFunction {
 
 // TODO: Document API
 object MLValue extends OperationCollection {
+  /** Unsafe operation for creating an [[MLValue]].
+   * It is the callers responsibility to ensure that `id` refers to an value of the right type in the object store.
+   * Using this function should rarely be necessary, except possibly when defining new [[Converter]]s.
+   */
   def unsafeFromId[A](id: Future[Isabelle.ID]) = new MLValue[A](id)
 
+  /** Utility method for generating ML code.
+   * It returns an ML fragment that can be used as the fallback case when pattern matching exceptions,
+   * the fragment raises an error with a description of the exception.
+   *
+   * Example:
+   * Instead of ML code `"fn E_Int i => i"`, we can write `s"fn E_Int i => i | \${matchFailExn("my function")}"`
+   * to get more informative error messages on pattern match failures.
+   *
+   * @param name A short description of the purpose of the match/ML function that is being written.
+   *             Will be included in the error message.
+   */
   def matchFailExn(name: String) =
     s""" exn => error ("Match failed in ML code generated for $name: " ^ string_of_exn exn)"""
 
+  /** Utlity method for generating ML code. Analogous to [[matchFailExn]], but for cases when we
+   * pattern match a value of type `data`. */
   def matchFailData(name: String) =
     s""" data => error ("Match failed in ML code generated for $name: " ^ string_of_data data)"""
 
   private val logger = log4s.getLogger
 
   override protected def newOps(implicit isabelle: Isabelle, ec: ExecutionContext) : Ops = new Ops()
+
   //noinspection TypeAnnotation
   protected[mlvalue] class Ops(implicit val isabelle: Isabelle, ec: ExecutionContext) {
     isabelle.executeMLCodeNow("exception E_List of exn list; exception E_Bool of bool; exception E_Option of exn option")
