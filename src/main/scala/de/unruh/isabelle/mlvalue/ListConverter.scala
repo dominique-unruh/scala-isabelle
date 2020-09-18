@@ -1,12 +1,11 @@
 package de.unruh.isabelle.mlvalue
 
-import de.unruh.isabelle.control.Isabelle
+import de.unruh.isabelle.control.{Isabelle, IsabelleException}
 import de.unruh.isabelle.control.Isabelle.{DList, DObject, Data, ID}
 import de.unruh.isabelle.mlvalue.MLValue.{Converter, Ops, matchFailExn}
 
 import scala.concurrent.{ExecutionContext, Future}
-
-import MLValue.Implicits._
+import Implicits._
 
 // TODO: Document API
 @inline final class ListConverter[A](implicit converter: Converter[A]) extends Converter[List[A]] {
@@ -21,7 +20,10 @@ import MLValue.Implicits._
 
   @inline override def retrieve(value: MLValue[List[A]])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[List[A]] = {
     for (DList(listObj@_*) <- Ops.retrieveList(value.asInstanceOf[MLValue[List[MLValue[Nothing]]]]);
-         listMLValue = listObj map { case DObject(id) => MLValue.unsafeFromId[A](Future.successful(id)) };
+         listMLValue = listObj map {
+           case DObject(id) => MLValue.unsafeFromId[A](Future.successful(id))
+           case _ => throw IsabelleException("In ListConverter.retrieve: function result is not a DObject (internal error)")
+         };
          list <- Future.traverse(listMLValue) {
            converter.retrieve(_)
          })

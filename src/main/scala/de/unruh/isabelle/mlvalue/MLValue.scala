@@ -2,7 +2,7 @@ package de.unruh.isabelle.mlvalue
 
 import de.unruh.isabelle.control.Isabelle.{DInt, DList, DObject, DString, Data, ID}
 import de.unruh.isabelle.control.{Isabelle, IsabelleException, OperationCollection}
-import de.unruh.isabelle.mlvalue.MLValue.Implicits.{booleanConverter, intConverter, listConverter, longConverter, mlValueConverter, optionConverter, stringConverter, tuple2Converter, tuple3Converter, tuple4Converter, tuple5Converter, tuple6Converter, tuple7Converter}
+import de.unruh.isabelle.mlvalue.Implicits._
 import MLValue.{Converter, Ops, logger}
 import org.log4s
 import scalaz.Id.Id
@@ -52,7 +52,7 @@ import scala.util.{Failure, Success}
   *    to Scala (all this is handled automatically behind the scenes using the information provided by the implicit
   *    [[MLValue.Converter]]).
   *  - To be able to use the automatic conversions etc., converters need to be imported for supported types.
-  *    The converters provided by this package can be imported by `import [[de.unruh.isabelle.mlvalue.MLValue.Implicits]]._`.
+  *    The converters provided by this package can be imported by `import [[de.unruh.isabelle.mlvalue.Implicits]]._`.
   *
   * Note: Some operations take an [[control.Isabelle Isabelle]] instance as an implicit argument. It is required that this instance
   *       the same as the one relative to which the MLValue was created.
@@ -513,25 +513,6 @@ object MLValue extends OperationCollection {
                                                      converter4: Converter[D4], converter5: Converter[D5], converter6: Converter[D6],
                                                      converter7: Converter[D7], converterR: Converter[R]): MLFunction7[D1, D2, D3, D4, D5, D6, D7, R] =
     compileFunction[(D1,D2,D3,D4,D5,D6,D7), R](ml).function7
-
-
-  // TODO document API
-  object Implicits {
-    @inline implicit val booleanConverter: BooleanConverter.type = BooleanConverter
-    @inline implicit val intConverter: IntConverter.type = IntConverter
-    @inline implicit val longConverter: LongConverter.type = LongConverter
-    @inline implicit val unitConverter: UnitConverter.type = UnitConverter
-    @inline implicit val stringConverter: StringConverter.type = StringConverter
-    @inline implicit def listConverter[A](implicit converter: Converter[A]): ListConverter[A] = new ListConverter()(converter)
-    @inline implicit def optionConverter[A](implicit converter: Converter[A]): OptionConverter[A] = new OptionConverter()(converter)
-    @inline implicit def tuple2Converter[A,B](implicit a: Converter[A], b: Converter[B]): Tuple2Converter[A, B] = new Tuple2Converter(a,b)
-    @inline implicit def tuple3Converter[A,B,C](implicit a: Converter[A], b: Converter[B], c: Converter[C]): Tuple3Converter[A, B, C] = new Tuple3Converter(a,b,c)
-    @inline implicit def tuple4Converter[A,B,C,D](implicit a: Converter[A], b: Converter[B], c: Converter[C], d: Converter[D]): Tuple4Converter[A, B, C, D] = new Tuple4Converter(a,b,c,d)
-    @inline implicit def tuple5Converter[A,B,C,D,E](implicit a: Converter[A], b: Converter[B], c: Converter[C], d: Converter[D], e: Converter[E]): Tuple5Converter[A, B, C, D, E] = new Tuple5Converter(a,b,c,d,e)
-    @inline implicit def tuple6Converter[A,B,C,D,E,F](implicit a: Converter[A], b: Converter[B], c: Converter[C], d: Converter[D], e: Converter[E], f: Converter[F]): Tuple6Converter[A, B, C, D, E, F] = new Tuple6Converter(a,b,c,d,e,f)
-    @inline implicit def tuple7Converter[A,B,C,D,E,F,G](implicit a: Converter[A], b: Converter[B], c: Converter[C], d: Converter[D], e: Converter[E], f: Converter[F], g: Converter[G]): Tuple7Converter[A,B,C,D,E,F,G] = new Tuple7Converter(a,b,c,d,e,f,g)
-    @inline implicit def mlValueConverter[A]: MLValueConverter[A] = new MLValueConverter[A]
-  }
 }
 
 

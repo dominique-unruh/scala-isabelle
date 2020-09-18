@@ -6,7 +6,7 @@ import de.unruh.isabelle.mlvalue.MLValue.{Converter, Ops, matchFailExn}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-import MLValue.Implicits._
+import Implicits._
 
 // TODO: Document API
 @inline final class OptionConverter[A](implicit converter: Converter[A]) extends Converter[Option[A]] {

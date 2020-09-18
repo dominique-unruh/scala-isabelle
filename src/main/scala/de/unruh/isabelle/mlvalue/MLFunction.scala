@@ -6,7 +6,7 @@ import de.unruh.isabelle.mlvalue.MLValue.{Converter, unsafeFromId}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-import MLValue.Implicits._
+import Implicits._
 
 /** An [[MLValue]] that refers to an ML function in the Isabelle process.
  * This class extends `[[MLValue]][D => R]` (which by definition refers to an ML function) but provides

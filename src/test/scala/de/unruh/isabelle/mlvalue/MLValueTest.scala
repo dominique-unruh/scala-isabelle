@@ -3,7 +3,7 @@ package de.unruh.isabelle.mlvalue
 import de.unruh.isabelle.control.IsabelleTest.isabelle
 import de.unruh.isabelle.control.{Isabelle, IsabelleTest}
 import de.unruh.isabelle.mlvalue.MLValue.Converter
-import de.unruh.isabelle.mlvalue.MLValue.Implicits._
+import de.unruh.isabelle.mlvalue.Implicits._
 import de.unruh.isabelle.pure.{Context, Thm}
 import org.scalatest.funsuite.AnyFunSuite
 

@@ -8,7 +8,7 @@ import de.unruh.isabelle.pure.Thm.Ops
 import scala.concurrent.{ExecutionContext, Future}
 
 // Implicits
-import de.unruh.isabelle.mlvalue.MLValue.Implicits._
+import de.unruh.isabelle.mlvalue.Implicits._
 import de.unruh.isabelle.pure.Implicits._
 
 // TODO document

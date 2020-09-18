@@ -6,7 +6,7 @@ import de.unruh.isabelle.mlvalue.MLValue.{Converter, Ops}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-import MLValue.Implicits._
+import Implicits._
 
 // TODO: Document API
 @inline final class Tuple2Converter[A, B](converterA: Converter[A], converterB: Converter[B]) extends Converter[(A, B)] {
