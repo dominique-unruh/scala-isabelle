@@ -78,6 +78,8 @@ object Cterm {
         yield new Cterm(ctermMlValue = value)
     override lazy val exnToValue: String = "fn (E_Cterm t) => t"
     override lazy val valueToExn: String = "E_Cterm"
+
+    override def mlType: String = "cterm"
   }
 }
 
@@ -314,5 +316,7 @@ object Term extends OperationCollection {
         yield new MLValueTerm(mlValue = value)
     override lazy val exnToValue: String = "fn (E_Term t) => t"
     override lazy val valueToExn: String = "E_Term"
+
+    override def mlType: String = "term"
   }
 }

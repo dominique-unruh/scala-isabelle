@@ -213,8 +213,14 @@ class MLValue[A] protected (/** the ID of the referenced object in the Isabelle 
 
 // TODO: Document API
 class MLStoreFunction[A] private (val id: Future[ID]) {
-  def apply(data: Data)(implicit isabelle: Isabelle, ec: ExecutionContext, converter: Converter[A]): MLValue[A] =
-    MLValue.unsafeFromId(isabelle.applyFunction(this.id, data).map { case DObject(id) => id})
+  def apply(data: Data)(implicit isabelle: Isabelle, ec: ExecutionContext, converter: Converter[A]): MLValue[A] = {
+    // Maybe inherit from MLFunction instead?
+    MLValue.unsafeFromId(isabelle.applyFunction(this.id, data).map {
+      case DObject(id) => id
+      case _ => throw IsabelleException("MLStoreFunction")
+    })
+  }
+
   def apply(data: Future[Data])(implicit isabelle: Isabelle, ec: ExecutionContext, converter: Converter[A]): MLValue[A] =
     MLValue.unsafeFromId(for (data <- data; DObject(id) <- isabelle.applyFunction(this.id, data)) yield id)
 }
@@ -226,6 +232,7 @@ object MLStoreFunction {
 }
 
 // TODO: Document API
+// Maybe inherit from MLFunction?
 class MLRetrieveFunction[A] private (val id: Future[ID]) {
   def apply(id: ID)(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Isabelle.Data] =
     isabelle.applyFunction(this.id, DObject(id))
@@ -241,7 +248,6 @@ object MLRetrieveFunction {
     new MLRetrieveFunction(isabelle.storeValue(s"E_Function (fn D_Object x => ($ml) ((${converter.exnToValueProtected}) x))"))
 }
 
-// TODO: Document API
 object MLValue extends OperationCollection {
   /** Unsafe operation for creating an [[MLValue]].
    * It is the callers responsibility to ensure that `id` refers to an value of the right type in the object store.
@@ -357,64 +363,150 @@ object MLValue extends OperationCollection {
     def debugInfo[A]: MLFunction[MLValue[A], String] = debugInfo_.asInstanceOf[MLFunction[MLValue[A], String]]
   }
 
+  /** An instance of this class describes the relationship between a Scala type `A`, the corresponding ML type `a`,
+    * and the representation of values of type `a` as exceptions in the object store. To support new types,
+    * a corresponding [[Converter]] object/class needs to be declared.
+    *
+    * We explain how a converter works using the example of [[IntConverter]].
+    *
+    * The first step is to decide which
+    * Scala type and which ML type should be related. In this case, we choose [[scala.Int]] on the Scala side,
+    * and `int` on the ML side.
+    * We declare the correspondence using the [[mlType]] method:
+    * {{{
+    *   final object IntConverter extends MLValue.Converter[A] {
+    *     override def mlType = "int"
+    *     ...
+    *   }
+    * }}}
+    *
+    * Next, we have to decide how decide how code is converted from an `int` to an exception (so that it can be stored
+    * in the object store). In this simple case, we first declare a new exception for holding integers:
+    * {{{
+    *   isabelle.executeMLCodeNow("exception E_Int of int")
+    * }}}
+    * This should be done globally (once per Isabelle instance). Declaring two (even identical) exceptions with the
+    * same name `E_Int` must be avoided! See [[OperationCollection]] for utilities how to manage this. (`E_Int`
+    * specifically is declared in [[MLValue]] when calling [[MLValue.init]].)
+    *
+    * TODO: Currently E_Int is declared in control_isabelle.ML. But we should move E_Int, E_String, E_Pair to MLValue
+    *
+    * We define the method [[valueToExn]] that returns the ML source code to convert an ML value of type `int` to an exception:
+    * {{{
+    * final object IntConverter extends MLValue.Converter[A] {
+    *     ...
+    *     override def valueToExn: String = "fn x => E_Int x"  // or equivalently: = "E_Int"
+    *     ...
+    *   }
+    * }}}
+    *
+    * We also need to convert in the opposite direction:
+    * {{{
+    * final object IntConverter extends MLValue.Converter[A] {
+    *     ...
+    *     override def exnToValue: String = "fn (E_Int x) => x"
+    *     ...
+    *   }
+    * }}}
+    * (Best add some meaningful exception in case of match failure, e.g., using boilerplate from [[MLValue.matchFailExn]].
+    * Omitted for clarity in this example.)
+    *
+    * TODO: Document [[retrieve]], [[store]]
+    *
+    * TODO: Declare implicits
+    *
+    * Notes
+    *  - Several Scala types can correspond to the same ML type (e.g., [[scala.Int]] and
+    *    [[scala.Long]] both correspond to `int`).
+    *  - If the converters for two Scala types `A`,`B` additionally have the same encoding as exceptions (defined via [[valueToExn]],
+    *    [[exnToValue]] in their [[Converter]]s), then [[MLValue[A]]] and [[MLValue[B]]] can be safely typecast into
+    *    each other.
+    *  - TODO how about two ML types with the same Scala type?
+    *
+    * @tparam A the Scala type for which a corresponding ML type is declared
+    */
   abstract class Converter[A] {
+    /** This function should always return the same value. (It is declared as a `def` only to make sure
+      * Scala does not include an extra field or perform an unnecessary computation in the class when this function
+      * is not used. */
+    // TODO: Document
+    // TODO: Mention: If not possible, use "_"
+    def mlType : String
+    // TODO: Document
     def retrieve(value: MLValue[A])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[A]
+    // TODO: Should this give just an ID, maybe?
+    // TODO: Document
     def store(value: A)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[A]
     /** This function should always return the same value. (It is declared as a `def` only to make sure
      * Scala does not include an extra field or perform an unnecessary computation in the class when this function
      * is not used. */
+    // TODO: Document
     def exnToValue : String
     /** This function should always return the same value. (It is declared as a `def` only to make sure
      * Scala does not include an extra field or perform an unnecessary computation in the class when this function
      * is not used. */
+    // TODO: Document
     def valueToExn : String
+    // TODO: Document
+    // TODO: Add name of converter? Needed? What about matchFailExn?
     final def exnToValueProtected = s"""fn e => (($exnToValue) e handle Match => error ("Match failed in exnToValue (" ^ string_of_exn e ^ ")"))"""
   }
 
+  // TODO: Document API
   @inline def apply[A](value: A)(implicit conv: Converter[A], isabelle: Isabelle, executionContext: ExecutionContext) : MLValue[A] =
     conv.store(value)
 
+  // TODO: Document API
   def compileValueRaw[A](ml: String)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[A] =
     new MLValue[A](isabelle.storeValue(ml)).logError(s"""Error while compiling value "$ml":""")
 
+  // TODO: Document API
   def compileValue[A](ml: String)(implicit isabelle: Isabelle, ec: ExecutionContext, converter: Converter[A]): MLValue[A] =
     compileValueRaw[A](s"(${converter.valueToExn}) ($ml)")
 
+  // TODO: Document API
   def compileFunctionRaw[D, R](ml: String)(implicit isabelle: Isabelle, ec: ExecutionContext): MLFunction[D, R] =
     MLFunction.unsafeFromId[D,R](isabelle.storeValue(s"E_Function (fn D_Object x => ($ml) x |> D_Object)")).logError(s"""Error while compiling function "$ml":""")
 
+  // TODO: Document API
   def compileFunction[D, R](ml: String)(implicit isabelle: Isabelle, ec: ExecutionContext, converterA: Converter[D], converterB: Converter[R]): MLFunction[D, R] =
     compileFunctionRaw(s"(${converterB.valueToExn}) o ($ml) o (${converterA.exnToValueProtected})")
 
+  // TODO: Document API
   def compileFunction[D1, D2, R](ml: String)
                                  (implicit isabelle: Isabelle, ec: ExecutionContext,
                                  converter1: Converter[D1], converter2: Converter[D2], converterR: Converter[R]): MLFunction2[D1, D2, R] =
     compileFunction[(D1,D2), R](ml).function2
 
+  // TODO: Document API
   def compileFunction[D1, D2, D3, R](ml: String)
                                     (implicit isabelle: Isabelle, ec: ExecutionContext,
                                      converter1: Converter[D1], converter2: Converter[D2], converter3: Converter[D3],
                                      converterR: Converter[R]): MLFunction3[D1, D2, D3, R] =
     compileFunction[(D1,D2,D3), R](ml).function3
 
+  // TODO: Document API
   def compileFunction[D1, D2, D3, D4, R](ml: String)
                                     (implicit isabelle: Isabelle, ec: ExecutionContext,
                                      converter1: Converter[D1], converter2: Converter[D2], converter3: Converter[D3],
                                      converter4: Converter[D4], converterR: Converter[R]): MLFunction4[D1, D2, D3, D4, R] =
     compileFunction[(D1,D2,D3,D4), R](ml).function4
 
+  // TODO: Document API
   def compileFunction[D1, D2, D3, D4, D5, R](ml: String)
                                         (implicit isabelle: Isabelle, ec: ExecutionContext,
                                          converter1: Converter[D1], converter2: Converter[D2], converter3: Converter[D3],
                                          converter4: Converter[D4], converter5: Converter[D5], converterR: Converter[R]): MLFunction5[D1, D2, D3, D4, D5, R] =
     compileFunction[(D1,D2,D3,D4,D5), R](ml).function5
 
+  // TODO: Document API
   def compileFunction[D1, D2, D3, D4, D5, D6, R](ml: String)
                                                 (implicit isabelle: Isabelle, ec: ExecutionContext,
                                                  converter1: Converter[D1], converter2: Converter[D2], converter3: Converter[D3],
                                                  converter4: Converter[D4], converter5: Converter[D5], converter6: Converter[D6], converterR: Converter[R]): MLFunction6[D1, D2, D3, D4, D5, D6, R] =
     compileFunction[(D1,D2,D3,D4,D5,D6), R](ml).function6
 
+  // TODO: Document API
   def compileFunction[D1, D2, D3, D4, D5, D6, D7, R](ml: String)
                                                     (implicit isabelle: Isabelle, ec: ExecutionContext,
                                                      converter1: Converter[D1], converter2: Converter[D2], converter3: Converter[D3],

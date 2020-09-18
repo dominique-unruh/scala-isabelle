@@ -7,7 +7,7 @@ import scalaz.Id.Id
 import scala.concurrent.{ExecutionContext, Future}
 
 // TODO: Document API
-@inline class MLValueConverter[A] extends Converter[MLValue[A]] {
+@inline final class MLValueConverter[A] extends Converter[MLValue[A]] {
   override def retrieve(value: MLValue[MLValue[A]])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[MLValue[A]] =
     Future.successful(value.removeMLValue[Id, A])
 
@@ -16,4 +16,6 @@ import scala.concurrent.{ExecutionContext, Future}
 
   @inline override def exnToValue: String = "fn x => x"
   @inline override def valueToExn: String = "fn x => x"
+
+  override def mlType: String = "_"
 }

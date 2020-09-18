@@ -9,7 +9,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import MLValue.Implicits._
 
 // TODO: Document API
-@inline class Tuple7Converter[A, B, C, D, E, F, G](converterA: Converter[A], converterB: Converter[B], converterC: Converter[C],
+@inline final class Tuple7Converter[A, B, C, D, E, F, G](converterA: Converter[A], converterB: Converter[B], converterC: Converter[C],
                                                    converterD: Converter[D], converterE: Converter[E], converterF: Converter[F],
                                                    converterG: Converter[G]) extends Converter[(A, B, C, D, E, F, G)] {
   @inline override def retrieve(value: MLValue[(A, B, C, D, E, F, G)])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[(A, B, C, D, E, F, G)] = {
@@ -40,4 +40,6 @@ import MLValue.Implicits._
 
   override def exnToValue: String = s"fn E_Pair (a, E_Pair (b, E_Pair (c, E_Pair (d, E_Pair (e, E_Pair (f, g)))))) => ((${converterA.exnToValue}) a, (${converterB.exnToValue}) b, (${converterC.exnToValue}) c, (${converterD.exnToValue}) d, (${converterE.exnToValue}) e, (${converterF.exnToValue}) f, (${converterG.exnToValue}) g)"
   override def valueToExn: String = s"fn (a,b,c,d,e,f,g) => E_Pair ((${converterA.valueToExn}) a, E_Pair ((${converterB.valueToExn}) b, E_Pair ((${converterC.valueToExn}) c, E_Pair ((${converterD.valueToExn}) d, E_Pair ((${converterE.valueToExn}) e, E_Pair ((${converterF.valueToExn}) f, (${converterG.valueToExn}) g))))))"
+
+  override def mlType: String = s"(${converterA.mlType}) * (${converterB.mlType}) * (${converterC.mlType}) * (${converterD.mlType}) * (${converterE.mlType}) * (${converterF.mlType}) * (${converterG.mlType})"
 }

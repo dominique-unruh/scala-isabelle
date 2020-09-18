@@ -96,5 +96,7 @@ object Context extends OperationCollection {
       value.mlValue
     override lazy val exnToValue: String = "fn E_Context ctxt => ctxt"
     override lazy val valueToExn: String = "E_Context"
+
+    override def mlType: String = "Proof.context"
   }
 }

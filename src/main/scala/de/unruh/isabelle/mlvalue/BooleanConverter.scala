@@ -17,4 +17,6 @@ object BooleanConverter extends Converter[Boolean] {
 
   @inline override def exnToValue: String = s"fn E_Bool b => b | ${matchFailExn("BooleanConverter.exnToValue")}"
   @inline override def valueToExn: String = "E_Bool"
+
+  override def mlType: String = "bool"
 }

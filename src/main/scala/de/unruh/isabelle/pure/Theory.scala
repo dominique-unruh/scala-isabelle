@@ -62,5 +62,7 @@ object Theory extends OperationCollection {
       value.mlValue
     override lazy val exnToValue: String = "fn E_Theory thy => thy"
     override lazy val valueToExn: String = "E_Theory"
+
+    override def mlType: String = "theory"
   }
 }

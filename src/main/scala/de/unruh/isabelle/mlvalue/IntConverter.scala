@@ -19,4 +19,6 @@ object IntConverter extends Converter[Int] {
 
   @inline override def exnToValue: String = s"fn E_Int i => i | ${matchFailExn("IntConverter.exnToValue")}"
   @inline override def valueToExn: String = "E_Int"
+
+  override def mlType: String = "int"
 }

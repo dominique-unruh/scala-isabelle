@@ -197,6 +197,8 @@ object Typ extends OperationCollection {
       value.mlValue
     override lazy val exnToValue: String = "fn E_Typ typ => typ"
     override lazy val valueToExn: String = "E_Typ"
+
+    override def mlType: String = "typ"
   }
 }
 

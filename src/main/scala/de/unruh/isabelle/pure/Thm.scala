@@ -46,6 +46,8 @@ object Thm extends OperationCollection {
       value.mlValue
     override val exnToValue: String = "fn E_Thm thm => thm"
     override val valueToExn: String = "E_Thm"
+
+    override def mlType: String = "thm"
   }
 }
 

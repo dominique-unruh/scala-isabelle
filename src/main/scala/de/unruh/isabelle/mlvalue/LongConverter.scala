@@ -19,4 +19,6 @@ object LongConverter extends Converter[Long] {
 
   @inline override def exnToValue: String = s"fn E_Int i => i | ${matchFailExn("LongConverter.exnToValue")}"
   @inline override def valueToExn: String = "E_Int"
+
+  override def mlType: String = "int"
 }

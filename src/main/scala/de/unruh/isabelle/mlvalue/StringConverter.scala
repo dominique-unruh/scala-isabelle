@@ -20,4 +20,6 @@ object StringConverter extends Converter[String] {
 
   @inline override def exnToValue: String = s"fn E_String str => str | ${matchFailExn("BooleanConverter.exnToValue")}"
   @inline override def valueToExn: String = "E_String"
+
+  override def mlType: String = "string"
 }

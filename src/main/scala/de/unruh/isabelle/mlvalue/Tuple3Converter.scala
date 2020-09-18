@@ -9,7 +9,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import MLValue.Implicits._
 
 // TODO: Document API
-@inline class Tuple3Converter[A, B, C](converterA: Converter[A], converterB: Converter[B], converterC: Converter[C]) extends Converter[(A, B, C)] {
+@inline final class Tuple3Converter[A, B, C](converterA: Converter[A], converterB: Converter[B], converterC: Converter[C]) extends Converter[(A, B, C)] {
   @inline override def retrieve(value: MLValue[(A, B, C)])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[(A, B, C)] = {
     for (DList(DObject(aID), DObject(bID), DObject(cID)) <- Ops.retrieveTuple3(value.id);
          a <- converterA.retrieve(MLValue.unsafeFromId[A](Future.successful(aID)));
@@ -29,4 +29,6 @@ import MLValue.Implicits._
 
   @inline override def exnToValue: String = s"fn E_Pair (a, E_Pair (b, c)) => ((${converterA.exnToValue}) a, (${converterB.exnToValue}) b, (${converterC.exnToValue}) c)"
   @inline override def valueToExn: String = s"fn (a,b,c) => E_Pair ((${converterA.valueToExn}) a, E_Pair ((${converterB.valueToExn}) b, (${converterC.valueToExn}) c))"
+
+  override def mlType: String = s"(${converterA.mlType}) * (${converterB.mlType}) * (${converterC.mlType})"
 }

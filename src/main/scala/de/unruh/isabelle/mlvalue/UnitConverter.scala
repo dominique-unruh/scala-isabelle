@@ -16,4 +16,6 @@ object UnitConverter extends Converter[Unit] {
 
   override val exnToValue: String = "K()"
   override val valueToExn: String = "K(E_Int 0)"
+
+  override def mlType: String = "unit"
 }
