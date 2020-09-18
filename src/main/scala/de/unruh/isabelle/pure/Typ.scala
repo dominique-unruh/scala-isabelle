@@ -12,9 +12,9 @@ import scala.concurrent.{Await, ExecutionContext, Future}
 
 // Implicits
 import de.unruh.isabelle.mlvalue.MLValue.Implicits._
-import de.unruh.isabelle.pure.Context.Implicits._
-import de.unruh.isabelle.pure.Typ.Implicits.typConverter
+import de.unruh.isabelle.pure.Implicits._
 
+// TODO document
 sealed abstract class Typ {
   val mlValue : MLValue[Typ]
   implicit val isabelle : Isabelle
@@ -197,10 +197,6 @@ object Typ extends OperationCollection {
       value.mlValue
     override lazy val exnToValue: String = "fn E_Typ typ => typ"
     override lazy val valueToExn: String = "E_Typ"
-  }
-
-  object Implicits {
-    implicit val typConverter: TypConverter.type = TypConverter
   }
 }
 

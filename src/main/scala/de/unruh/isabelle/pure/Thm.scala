@@ -9,10 +9,9 @@ import scala.concurrent.{ExecutionContext, Future}
 
 // Implicits
 import de.unruh.isabelle.mlvalue.MLValue.Implicits._
-import de.unruh.isabelle.pure.Context.Implicits._
-import de.unruh.isabelle.pure.Cterm.Implicits._
-import de.unruh.isabelle.pure.Thm.Implicits.thmConverter
+import de.unruh.isabelle.pure.Implicits._
 
+// TODO document
 final class Thm private [Thm](val mlValue : MLValue[Thm])(implicit ec: ExecutionContext, isabelle: Isabelle) {
   override def toString: String = s"thm${mlValue.stateString}"
   lazy val cterm : Cterm = Cterm(Ops.cpropOf(mlValue))
@@ -47,10 +46,6 @@ object Thm extends OperationCollection {
       value.mlValue
     override val exnToValue: String = "fn E_Thm thm => thm"
     override val valueToExn: String = "E_Thm"
-  }
-
-  object Implicits {
-    implicit val thmConverter: ThmConverter.type = ThmConverter
   }
 }
 

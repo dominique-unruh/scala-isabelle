@@ -162,6 +162,8 @@ trait OperationCollection {
     * This is useful when code needs to be sure that the global initialization inside the [[Ops]] class
     * has happened (e.g., declarations of ML types via [[Isabelle.executeMLCodeNow]]) even if it does not access
     * any of the fields in the [[Ops]] class.
+    *
+    * Can safely be called several times with the same `isabelle` and/or `executionContext`.
     */
   def init()(implicit isabelle: Isabelle, executionContext: ExecutionContext): Unit =
     Ops

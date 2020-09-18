@@ -4,17 +4,15 @@ import de.unruh.isabelle.control.{Isabelle, OperationCollection}
 import de.unruh.isabelle.mlvalue.MLValue.Converter
 import de.unruh.isabelle.mlvalue.MLValue.Implicits._
 import de.unruh.isabelle.mlvalue.{MLFunction, MLFunction2, MLFunction3, MLValue}
-import de.unruh.isabelle.pure.Context.Implicits._
-import de.unruh.isabelle.pure.Cterm.Implicits._
-import de.unruh.isabelle.pure.Term.Implicits.termConverter
+import de.unruh.isabelle.pure.Implicits._
 import de.unruh.isabelle.pure.Term.Ops
-import de.unruh.isabelle.pure.Typ.Implicits._
 import org.apache.commons.lang3.builder.HashCodeBuilder
 
 import scala.annotation.tailrec
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Awaitable, ExecutionContext, Future}
 
+// TODO document
 sealed abstract class Term {
   val mlValue : MLValue[Term]
   implicit val isabelle : Isabelle
@@ -81,16 +79,12 @@ object Cterm {
     override lazy val exnToValue: String = "fn (E_Cterm t) => t"
     override lazy val valueToExn: String = "E_Cterm"
   }
-
-  object Implicits {
-    implicit val ctermConverter: CtermConverter.type = CtermConverter
-  }
-
 }
 
 final class MLValueTerm(val mlValue: MLValue[Term])(implicit val isabelle: Isabelle, ec: ExecutionContext) extends Term {
   @inline private def await[A](awaitable: Awaitable[A]) : A = Await.result(awaitable, Duration.Inf)
 
+  //noinspection EmptyParenMethodAccessedAsParameterless
   override def hashCode(): Int = concrete.hashCode
 
   def concreteComputed: Boolean = concreteLoaded
@@ -320,9 +314,5 @@ object Term extends OperationCollection {
         yield new MLValueTerm(mlValue = value)
     override lazy val exnToValue: String = "fn (E_Term t) => t"
     override lazy val valueToExn: String = "E_Term"
-  }
-
-  object Implicits {
-    implicit val termConverter: TermConverter.type = TermConverter
   }
 }
