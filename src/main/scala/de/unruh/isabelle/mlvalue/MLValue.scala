@@ -255,6 +255,7 @@ object MLValue extends OperationCollection {
    * Using this function should rarely be necessary, except possibly when defining new [[Converter]]s.
    */
   def unsafeFromId[A](id: Future[Isabelle.ID]) = new MLValue[A](id)
+  def unsafeFromId[A](id: Isabelle.ID): MLValue[A] = unsafeFromId[A](Future.successful(id))
 
   /** Utility method for generating ML code.
    * It returns an ML fragment that can be used as the fallback case when pattern matching exceptions,

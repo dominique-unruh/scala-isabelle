@@ -1,9 +1,10 @@
 package de.unruh.isabelle.pure
 
+import de.unruh.isabelle.control.Isabelle.{DInt, DList, DObject, DString}
 import de.unruh.isabelle.control.{Isabelle, OperationCollection}
 import de.unruh.isabelle.mlvalue.MLValue.Converter
 import de.unruh.isabelle.mlvalue.Implicits._
-import de.unruh.isabelle.mlvalue.{MLFunction, MLFunction2, MLFunction3, MLValue}
+import de.unruh.isabelle.mlvalue.{MLFunction, MLFunction2, MLFunction3, MLRetrieveFunction, MLValue}
 import de.unruh.isabelle.pure.Implicits._
 import de.unruh.isabelle.pure.Term.Ops
 import org.apache.commons.lang3.builder.HashCodeBuilder
@@ -11,8 +12,6 @@ import org.apache.commons.lang3.builder.HashCodeBuilder
 import scala.annotation.tailrec
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Awaitable, ExecutionContext, Future}
-
-// TODO: for occurrences of "private[isabelle]", check what should be written instead
 
 /**
  * This class represents a term (ML type `term`) in Isabelle. It can be transferred to and from the Isabelle process
@@ -158,25 +157,24 @@ final class MLValueTerm(val mlValue: MLValue[Term])(implicit val isabelle: Isabe
   def concreteComputed: Boolean = concreteLoaded
   @volatile private var concreteLoaded = false
   lazy val concrete : ConcreteTerm = {
-    val term : ConcreteTerm = Ops.whatTerm(mlValue).retrieveNow match {
-      case 1 => // Const
-        val (name,typ) = Ops.destConst(mlValue).retrieveNow
-        new Const(name, typ, mlValue)
-      case 2 => // Free
-        val (name,typ) = Ops.destFree(mlValue).retrieveNow
-        new Free(name, typ, mlValue)
-      case 3 =>
-        val (name, index, typ) = Ops.destVar(mlValue).retrieveNow
-        new Var(name, index, typ, mlValue)
-      case 4 =>
-        val index = Ops.destBound(mlValue).retrieveNow
-        new Bound(index, mlValue)
-      case 5 =>
-        val (name,typ,body) = Ops.destAbs(mlValue).retrieveNow
-        new Abs(name,typ,body,mlValue)
-      case 6 =>
-        val (t1,t2) = Ops.destApp(this.mlValue).retrieveNow
-        new App(t1,t2,mlValue)
+    val DList(DInt(constructor), data @_*) = Await.result(Ops.destTerm(mlValue), Duration.Inf)
+    val term = (constructor,data) match {
+      case (1,List(DString(name), DObject(typ))) => // Const
+        new Const(name, MLValue.unsafeFromId[Typ](typ).retrieveNow, mlValue)
+      case (2,List(DString(name), DObject(typ))) => // Free
+        new Free(name, MLValue.unsafeFromId[Typ](typ).retrieveNow, mlValue)
+      case (3,List(DString(name), DInt(index), DObject(typ))) =>
+        new Var(name, index.toInt, MLValue.unsafeFromId[Typ](typ).retrieveNow, mlValue)
+      case (4,List(DInt(index))) =>
+        new Bound(index.toInt, mlValue)
+      case (5,List(DString(name),DObject(typ), DObject(body))) =>
+        new Abs(name, MLValue.unsafeFromId[Typ](typ).retrieveNow,
+          MLValue.unsafeFromId[Term](body).retrieveNow,
+          mlValue)
+      case (6,List(DObject(t1), DObject(t2))) =>
+        new App(MLValue.unsafeFromId[Term](t1).retrieveNow,
+          MLValue.unsafeFromId[Term](t2).retrieveNow,
+          mlValue)
     }
     concreteLoaded = true
     term
@@ -356,14 +354,16 @@ object Term extends OperationCollection {
       compileFunction("fn (ctxt, term) => Thm.cterm_of ctxt term")
     val equalsTerm: MLFunction2[Term, Term, Boolean] =
       compileFunction("op=")
-    val whatTerm : MLFunction[Term, Int] =
-      compileFunctionRaw("fn (E_Term term) => (case term of Const _ => 1 | Free _ => 2 | Var _ => 3 | Bound _ => 4 | Abs _ => 5 | _ $ _ => 6) |> E_Int")
-    val destConst : MLFunction[Term, (String,Typ)] = MLValue.compileFunction("fn Const x => x")
-    val destFree : MLFunction[Term, (String,Typ)] = MLValue.compileFunction("fn Free x => x")
-    val destVar : MLFunction[Term, (String,Int,Typ)] = MLValue.compileFunction("fn Var ((n,i),s) => (n,i,s)")
-    val destBound : MLFunction[Term, Int] = MLValue.compileFunction("fn Bound x => x")
-    val destAbs : MLFunction[Term, (String,Typ,Term)] = MLValue.compileFunction("fn Abs x => x")
-    val destApp: MLFunction[Term, (Term,Term)] = MLValue.compileFunction("Term.dest_comb")
+
+    val destTerm : MLRetrieveFunction[Term] =
+      MLRetrieveFunction(
+        """fn Const (name,typ) => D_List[D_Int 1, D_String name, D_Object (E_Typ typ)]
+            | Free (name,typ) => D_List[D_Int 2, D_String name, D_Object (E_Typ typ)]
+            | Var ((name,index),typ) => D_List[D_Int 3, D_String name, D_Int index, D_Object (E_Typ typ)]
+            | Bound i => D_List[D_Int 4, D_Int i]
+            | Abs (name, typ, body) => D_List[D_Int 5, D_String name, D_Object (E_Typ typ), D_Object (E_Term body)]
+            | t1 $ t2 => D_List[D_Int 6, D_Object (E_Term t1), D_Object (E_Term t2)]""")
+
     val makeConst : MLFunction2[String, Typ, Term] = MLValue.compileFunction("Const")
     val makeFree : MLFunction2[String, Typ, Term] = MLValue.compileFunction("Free")
     val makeVar : MLFunction3[String, Int, Typ, Term] = MLValue.compileFunction("fn (n,i,s) => Var ((n,i),s)")

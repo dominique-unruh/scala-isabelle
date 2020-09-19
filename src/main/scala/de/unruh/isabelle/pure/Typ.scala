@@ -1,8 +1,9 @@
 package de.unruh.isabelle.pure
 
+import de.unruh.isabelle.control.Isabelle.{DInt, DList, DObject, DString}
 import de.unruh.isabelle.control.{Isabelle, OperationCollection}
 import de.unruh.isabelle.mlvalue.MLValue.Converter
-import de.unruh.isabelle.mlvalue.{MLFunction, MLFunction2, MLFunction3, MLValue}
+import de.unruh.isabelle.mlvalue.{MLFunction, MLFunction2, MLFunction3, MLRetrieveFunction, MLValue}
 import de.unruh.isabelle.pure.Typ.Ops
 import org.apache.commons.lang3.builder.HashCodeBuilder
 
@@ -70,16 +71,17 @@ final class MLValueTyp(val mlValue: MLValue[Typ])(implicit val isabelle: Isabell
   @volatile private var concreteLoaded = false
 
   lazy val concrete : ConcreteTyp = {
-    val typ = Ops.whatTyp(mlValue).retrieveNow match {
-      case 1 =>
-        val (name,args) = Ops.destType(mlValue).retrieveNow
-        new Type(name, args, mlValue)
-      case 2 =>
-        val (name,sort) = Ops.destTFree(mlValue).retrieveNow
-        new TFree(name,sort,mlValue)
-      case 3 =>
-        val (name,index,sort) = Ops.destTVar(mlValue).retrieveNow
-        new TVar(name,index,sort,mlValue)
+    val DList(DInt(constructor), data @_*) = Await.result(Ops.destTyp(mlValue), Duration.Inf)
+    val typ = (constructor,data) match {
+      case (1,List(DString(name), args@_*)) =>
+        val args2 = args.map { case DObject(id) => MLValue.unsafeFromId[Typ](id).retrieveNow }.toList
+        new Type(name, args2, mlValue)
+      case (2,List(DString(name), sort@_*)) =>
+        val sort2 = sort.map { case DString(clazz) => clazz }.toList
+        new TFree(name,sort2,mlValue)
+      case (3,List(DString(name), DInt(index), sort@_*)) =>
+        val sort2 = sort.map { case DString(clazz) => clazz }.toList
+        new TVar(name,index.toInt,sort2,mlValue)
     }
     concreteLoaded = true
     typ
@@ -223,7 +225,7 @@ object Typ extends OperationCollection {
 
     val readType: MLFunction2[Context, String, Typ] =
       compileFunction("fn (ctxt, str) => Syntax.read_typ ctxt str")
-    val stringOfType: MLFunction2[Context, Typ, String] = 
+    val stringOfType: MLFunction2[Context, Typ, String] =
       compileFunction("fn (ctxt, typ) => Syntax.pretty_typ ctxt typ |> Pretty.unformatted_string_of |> YXML.content_of")
     val stringOfCtyp: MLFunction2[Context, Ctyp, String] =
       compileFunction("fn (ctxt, ctyp) => Thm.typ_of ctyp |> Syntax.pretty_typ ctxt |> Pretty.unformatted_string_of |> YXML.content_of")
@@ -232,15 +234,11 @@ object Typ extends OperationCollection {
     val ctypOfTyp : MLFunction2[Context, Typ, Ctyp] =
       compileFunction("fn (ctxt, typ) => Thm.ctyp_of ctxt typ")
 
-    // TODO: use updated Data mechanism instead
-    val whatTyp: MLFunction[Typ, Int] =
-      compileFunction("fn Type _ => 1 | TFree _ => 2 | TVar _ => 3")
-    val destType: MLFunction[Typ, (String, List[Typ])] =
-      compileFunction("Term.dest_Type")
-    val destTFree: MLFunction[Typ, (String, List[String])] =
-      compileFunction("Term.dest_TFree")
-    val destTVar: MLFunction[Typ, (String, Int, List[String])] =
-      compileFunction("fn TVar ((n,i),s) => (n,i,s)")
+    val destTyp : MLRetrieveFunction[Typ] =
+      MLRetrieveFunction(
+        """fn Type(name,args) => D_List (D_Int 1 :: D_String name :: map (D_Object o E_Typ) args)
+            | TFree(name,sort) => D_List (D_Int 2 :: D_String name :: map D_String sort)
+            | TVar((name,index),sort) => D_List (D_Int 3 :: D_String name :: D_Int index :: map D_String sort)""")
 
     var equalsTyp: MLFunction2[Typ, Typ, Boolean] =
       compileFunction("op=")
