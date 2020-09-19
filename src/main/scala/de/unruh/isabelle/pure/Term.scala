@@ -12,7 +12,60 @@ import scala.annotation.tailrec
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Awaitable, ExecutionContext, Future}
 
-// TODO document
+// TODO: for occurrences of "private[isabelle]", check what should be written instead
+
+/**
+ * This class represents a term (ML type `term`) in Isabelle. It can be transferred to and from the Isabelle process
+ * via the [[MLValue]] mechanism (see below). (TODO write)
+ *
+ * In most respects, [[Term]] behaves as if it was an algebraic datatype defined as follows:
+ * {{{
+ *   sealed abstract class Term
+ *   final case class Const(name: String, typ: Typ)                        // Corresponds to ML constructor 'Const'
+ *   final case class Free(name: String, typ: Typ)                         // Corresponds to ML constructor 'Free'
+ *   final case class Var(val name: String, val index: Int, val typ: Typ)  // Corresponds to ML constructor 'Var'
+ *   final case class Abs(val name: String, val typ: Typ, val body: Term)       // Corresponds to ML constructor 'Abs'
+ *   final case class Bound private (val index: Int)                            // Corresponds to ML constructor 'Bound'
+ *   final case class App private (val fun: Term, val arg: Term)                // Corresponds to ML constructor '$'
+ * }}}
+ *
+ * tl;dr for the explanation below: Terms can be treated as if they were the case classes above (even though
+ * there actually are more classes), both in object
+ * creation and in pattern matching, with the exception that
+ * one should not use type patterns (e.g., `case _ : Const =>`).
+ *
+ * Having [[Term]]s defined in terms of those case classes would mean that when retrieving a term from the Isabelle process, the whole term
+ * needs to be retrieved. Since terms can be very large and might be transferred back and forth a lot
+ * (with minor modifications), we choose an approach where terms may be partially stored in Scala, and partially in
+ * the Isabelle process. That is, an instance of [[Term]] can be any of the above classes, or a reference to a term
+ * in the object store in the Isabelle process, or both at the same time. And the same applies to subterms, too.
+ * So for example, if we retrieve terms `t`,`u` from Isabelle to Scala, and then in Scala construct `App(t,u)`,
+ * and then transfer `App(t,u)` back to Isabelle, the processes `t`,`u` will never be serialized, and only the
+ * constructor `App` will need to be transferred.
+ *
+ * In order to faciliate this, the classes [[Const]], [[Free]], [[Var]], [[Abs]], [[Bound]], [[App]] additionally
+ * store an reference [[Term.mlValue]] to the Isabelle object store (this reference is initialized lazily, thus
+ * accessing it can force the term to be transferred to the Isabelle process). And furthermore, there is an additional
+ * subclass [[MLValueTerm]] of [[Term]] that represents a term that is stored in Isabelle but not available in
+ * Scala at class creation time. Instances of [[MLValueTerm]] never need to be created manually, though. You
+ * just have to be aware that some terms might not be instances of the six "case classes" above.
+ *
+ * Pattern matching works as expected, that is, when an [[MLValueTerm]] `t`, e.g., refers to an Isabelle term of the form
+ * `Const (name,typ)`, then `t` will match the pattern `case Const(name,typ) =>`. (Necessary information will be
+ * transferred from the Isabelle process on demand.) Because of this, one can almost
+ * completely ignore the existence of [[MLValueTerm]]. The only caveat is that one should not do a pattern match on the
+ * type of the term. That is `case _ : Const =>` will not match a term `Const(name,typ)` represented by an [[MLValueTerm]].
+ *
+ * Two terms are equal (w.r.t.~the [[Object.equals equals]] function) iff they represent the same Isabelle terms. I.e.,
+ * an [[MLValueTerm]] and a [[Const]] can be equal. (Equality tests try to transfer as little data as possible when
+ * determining equality.)
+ *
+ * Furthermore, there is a subclass [[Cterm]] of [[Term]] that represents an ML value of type `cterm`. This is
+ * logically a term with additional that is certified to be well-typed with respect to some Isabelle context.
+ * In this implementation, a [[Cterm]] is also a [[Term]], so it is possible to do, e.g., equality tests between
+ * [[Cterm]]s and regular terms (such as [[Const]]) without explicit conversions. Similarly, patterns such as
+ * `case Const(name,typ) =>` also match [[Cterm]]s.
+ */
 sealed abstract class Term {
   val mlValue : MLValue[Term]
   implicit val isabelle : Isabelle
@@ -121,7 +174,7 @@ final class MLValueTerm(val mlValue: MLValue[Term])(implicit val isabelle: Isabe
     else s"‹term${mlValue.stateString}›"
 }
 
-final class Const private[isabelle](val name: String, val typ: Typ, val initialMlValue: MLValue[Term]=null)
+final class Const private[isabelle](val name: String, val typ: Typ, initialMlValue: MLValue[Term]=null)
                                    (implicit val isabelle: Isabelle, ec: ExecutionContext) extends Term {
   lazy val mlValue : MLValue[Term] =
     if (initialMlValue!=null) initialMlValue
@@ -144,7 +197,7 @@ object Const {
   }
 }
 
-final class Free private[isabelle](val name: String, val typ: Typ, val initialMlValue: MLValue[Term]=null)
+final class Free private[isabelle](val name: String, val typ: Typ, initialMlValue: MLValue[Term]=null)
                                   (implicit val isabelle: Isabelle, ec: ExecutionContext) extends Term {
   lazy val mlValue : MLValue[Term] =
     if (initialMlValue!=null) initialMlValue
@@ -167,7 +220,7 @@ object Free {
   }
 }
 
-final class Var private(val name: String, val index: Int, val typ: Typ, val initialMlValue: MLValue[Term]=null)
+final class Var private(val name: String, val index: Int, val typ: Typ, initialMlValue: MLValue[Term]=null)
                        (implicit val isabelle: Isabelle, ec: ExecutionContext) extends Term {
   lazy val mlValue : MLValue[Term] =
     if (initialMlValue!=null) initialMlValue
@@ -190,7 +243,7 @@ object Var {
   }
 }
 
-final class App private (val fun: Term, val arg: Term, val initialMlValue: MLValue[Term]=null)
+final class App private (val fun: Term, val arg: Term, initialMlValue: MLValue[Term]=null)
                         (implicit val isabelle: Isabelle, ec: ExecutionContext) extends Term {
   lazy val mlValue : MLValue[Term] =
     if (initialMlValue!=null) initialMlValue
@@ -214,7 +267,7 @@ object App {
   }
 }
 
-final class Abs private (val name: String, val typ: Typ, val body: Term, val initialMlValue: MLValue[Term]=null)
+final class Abs private (val name: String, val typ: Typ, val body: Term, initialMlValue: MLValue[Term]=null)
                         (implicit val isabelle: Isabelle, ec: ExecutionContext) extends Term {
   lazy val mlValue : MLValue[Term] =
     if (initialMlValue!=null) initialMlValue
@@ -238,7 +291,7 @@ object Abs {
 }
 
 
-final class Bound private (val index: Int, val initialMlValue: MLValue[Term]=null)
+final class Bound private (val index: Int, initialMlValue: MLValue[Term]=null)
                           (implicit val isabelle: Isabelle, ec: ExecutionContext) extends Term {
   lazy val mlValue : MLValue[Term] =
     if (initialMlValue!=null) initialMlValue
