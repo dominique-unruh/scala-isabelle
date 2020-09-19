@@ -76,10 +76,10 @@ final class MLValueTyp(val mlValue: MLValue[Typ])(implicit val isabelle: Isabell
         new Type(name, args, mlValue)
       case 2 =>
         val (name,sort) = Ops.destTFree(mlValue).retrieveNow
-        TFree(name,sort :_*)
+        new TFree(name,sort,mlValue)
       case 3 =>
         val (name,index,sort) = Ops.destTVar(mlValue).retrieveNow
-        TVar(name,index,sort :_*)
+        new TVar(name,index,sort,mlValue)
     }
     concreteLoaded = true
     typ
@@ -130,8 +130,8 @@ object Ctyp {
   }
 }
 
-final class Type private[isabelle](val name: String, val args: List[Typ], val initialMlValue: MLValue[Typ]=null)
-                                  (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTyp {
+final class Type private[pure](val name: String, val args: List[Typ], val initialMlValue: MLValue[Typ]=null)
+                              (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTyp {
   lazy val mlValue : MLValue[Typ] =
     if (initialMlValue!=null) initialMlValue
     else Ops.makeType(MLValue(name,args))
@@ -154,8 +154,8 @@ object Type {
   }
 }
 
-final class TFree private (val name: String, val sort: List[String], val initialMlValue: MLValue[Typ]=null)
-                          (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTyp {
+final class TFree private[pure] (val name: String, val sort: List[String], val initialMlValue: MLValue[Typ]=null)
+                                (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTyp {
   lazy val mlValue : MLValue[Typ] =
     if (initialMlValue!=null) initialMlValue
     else Ops.makeTFree(name, sort)
@@ -180,8 +180,8 @@ object TFree {
   }
 }
 
-final class TVar private (val name: String, val index: Int, val sort: List[String], val initialMlValue: MLValue[Typ]=null)
-                         (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTyp {
+final class TVar private[pure] (val name: String, val index: Int, val sort: List[String], val initialMlValue: MLValue[Typ]=null)
+                               (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTyp {
   lazy val mlValue : MLValue[Typ] =
     if (initialMlValue!=null) initialMlValue
     else Ops.makeTVar(name,index,sort)

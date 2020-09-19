@@ -161,22 +161,22 @@ final class MLValueTerm(val mlValue: MLValue[Term])(implicit val isabelle: Isabe
     val term : ConcreteTerm = Ops.whatTerm(mlValue).retrieveNow match {
       case 1 => // Const
         val (name,typ) = Ops.destConst(mlValue).retrieveNow
-        Const(name, typ)
+        new Const(name, typ, mlValue)
       case 2 => // Free
         val (name,typ) = Ops.destFree(mlValue).retrieveNow
-        Free(name, typ)
+        new Free(name, typ, mlValue)
       case 3 =>
         val (name, index, typ) = Ops.destVar(mlValue).retrieveNow
-        Var(name, index, typ)
+        new Var(name, index, typ, mlValue)
       case 4 =>
         val index = Ops.destBound(mlValue).retrieveNow
-        Bound(index)
+        new Bound(index, mlValue)
       case 5 =>
         val (name,typ,body) = Ops.destAbs(mlValue).retrieveNow
-        Abs(name,typ,body)
+        new Abs(name,typ,body,mlValue)
       case 6 =>
         val (t1,t2) = Ops.destApp(this.mlValue).retrieveNow
-        t1 $ t2
+        new App(t1,t2,mlValue)
     }
     concreteLoaded = true
     term
@@ -188,8 +188,8 @@ final class MLValueTerm(val mlValue: MLValue[Term])(implicit val isabelle: Isabe
 }
 
 // TODO document
-final class Const private[isabelle](val name: String, val typ: Typ, initialMlValue: MLValue[Term]=null)
-                                   (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTerm {
+final class Const private[pure](val name: String, val typ: Typ, initialMlValue: MLValue[Term]=null)
+                               (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTerm {
   lazy val mlValue : MLValue[Term] =
     if (initialMlValue!=null) initialMlValue
     else Ops.makeConst(MLValue((name,typ)))
@@ -212,8 +212,8 @@ object Const {
 }
 
 // TODO document
-final class Free private[isabelle](val name: String, val typ: Typ, initialMlValue: MLValue[Term]=null)
-                                  (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTerm {
+final class Free private[pure](val name: String, val typ: Typ, initialMlValue: MLValue[Term]=null)
+                              (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTerm {
   lazy val mlValue : MLValue[Term] =
     if (initialMlValue!=null) initialMlValue
     else Ops.makeFree(name, typ)
@@ -236,7 +236,7 @@ object Free {
 }
 
 // TODO document
-final class Var private(val name: String, val index: Int, val typ: Typ, initialMlValue: MLValue[Term]=null)
+final class Var private[pure](val name: String, val index: Int, val typ: Typ, initialMlValue: MLValue[Term]=null)
                        (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTerm {
   lazy val mlValue : MLValue[Term] =
     if (initialMlValue!=null) initialMlValue
@@ -260,8 +260,8 @@ object Var {
 }
 
 // TODO document
-final class App private (val fun: Term, val arg: Term, initialMlValue: MLValue[Term]=null)
-                        (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTerm {
+final class App private[pure] (val fun: Term, val arg: Term, initialMlValue: MLValue[Term]=null)
+                              (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTerm {
   lazy val mlValue : MLValue[Term] =
     if (initialMlValue!=null) initialMlValue
     else Ops.makeApp(fun,arg)
@@ -285,8 +285,8 @@ object App {
 }
 
 // TODO document
-final class Abs private (val name: String, val typ: Typ, val body: Term, initialMlValue: MLValue[Term]=null)
-                        (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTerm {
+final class Abs private[pure] (val name: String, val typ: Typ, val body: Term, initialMlValue: MLValue[Term]=null)
+                              (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTerm {
   lazy val mlValue : MLValue[Term] =
     if (initialMlValue!=null) initialMlValue
     else Ops.makeAbs(name,typ,body)
@@ -309,8 +309,8 @@ object Abs {
 }
 
 // TODO document
-final class Bound private (val index: Int, initialMlValue: MLValue[Term]=null)
-                          (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTerm {
+final class Bound private[pure] (val index: Int, initialMlValue: MLValue[Term]=null)
+                                (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTerm {
   lazy val mlValue : MLValue[Term] =
     if (initialMlValue!=null) initialMlValue
     else Ops.makeBound(index)
