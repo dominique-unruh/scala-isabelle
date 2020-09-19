@@ -386,7 +386,7 @@ object MLValue extends OperationCollection {
     *   isabelle.executeMLCodeNow("exception E_Int of int")
     * }}}
     * This should be done globally (once per Isabelle instance). Declaring two (even identical) exceptions with the
-    * same name `E_Int` must be avoided! See [[OperationCollection]] for utilities how to manage this. (`E_Int`
+    * same name `E_Int` must be avoided! See [[control.OperationCollection OperationCollection]] for utilities how to manage this. (`E_Int`
     * specifically is declared in [[MLValue]] when calling [[MLValue.init]].)
     *
     * TODO: Currently E_Int is declared in control_isabelle.ML. But we should move E_Int, E_String, E_Pair to MLValue
@@ -419,7 +419,7 @@ object MLValue extends OperationCollection {
     *  - Several Scala types can correspond to the same ML type (e.g., [[scala.Int]] and
     *    [[scala.Long]] both correspond to `int`).
     *  - If the converters for two Scala types `A`,`B` additionally have the same encoding as exceptions (defined via [[valueToExn]],
-    *    [[exnToValue]] in their [[Converter]]s), then [[MLValue[A]]] and [[MLValue[B]]] can be safely typecast into
+    *    [[exnToValue]] in their [[Converter]]s), then [[MLValue]][A]] and [[MLValue]][B] can be safely typecast into
     *    each other.
     *  - TODO how about two ML types with the same Scala type?
     *

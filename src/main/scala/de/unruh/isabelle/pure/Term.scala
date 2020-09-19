@@ -16,7 +16,7 @@ import scala.concurrent.{Await, Awaitable, ExecutionContext, Future}
 
 /**
  * This class represents a term (ML type `term`) in Isabelle. It can be transferred to and from the Isabelle process
- * via the [[MLValue]] mechanism (see below). (TODO write)
+ * via the [[mlvalue.MLValue MLValue]] mechanism (see below). (TODO write)
  *
  * In most respects, [[Term]] behaves as if it was an algebraic datatype defined as follows:
  * {{{
@@ -24,9 +24,9 @@ import scala.concurrent.{Await, Awaitable, ExecutionContext, Future}
  *   final case class Const(name: String, typ: Typ)                        // Corresponds to ML constructor 'Const'
  *   final case class Free(name: String, typ: Typ)                         // Corresponds to ML constructor 'Free'
  *   final case class Var(val name: String, val index: Int, val typ: Typ)  // Corresponds to ML constructor 'Var'
- *   final case class Abs(val name: String, val typ: Typ, val body: Term)       // Corresponds to ML constructor 'Abs'
- *   final case class Bound private (val index: Int)                            // Corresponds to ML constructor 'Bound'
- *   final case class App private (val fun: Term, val arg: Term)                // Corresponds to ML constructor '$'
+ *   final case class Abs(val name: String, val typ: Typ, val body: Term)  // Corresponds to ML constructor 'Abs'
+ *   final case class Bound private (val index: Int)                       // Corresponds to ML constructor 'Bound'
+ *   final case class App private (val fun: Term, val arg: Term)           // Corresponds to ML constructor '$'
  * }}}
  *
  * tl;dr for the explanation below: Terms can be treated as if they were the case classes above (even though
@@ -43,12 +43,14 @@ import scala.concurrent.{Await, Awaitable, ExecutionContext, Future}
  * and then transfer `App(t,u)` back to Isabelle, the processes `t`,`u` will never be serialized, and only the
  * constructor `App` will need to be transferred.
  *
- * In order to faciliate this, the classes [[Const]], [[Free]], [[Var]], [[Abs]], [[Bound]], [[App]] additionally
+ * In order to faciliate this, the classes [[Const]], [[Free]], [[Var]], [[Abs]], [[Bound]], [[App]]
+ * (collectively referred to as a [[ConcreteTerm]]) additionally
  * store an reference [[Term.mlValue]] to the Isabelle object store (this reference is initialized lazily, thus
  * accessing it can force the term to be transferred to the Isabelle process). And furthermore, there is an additional
  * subclass [[MLValueTerm]] of [[Term]] that represents a term that is stored in Isabelle but not available in
  * Scala at class creation time. Instances of [[MLValueTerm]] never need to be created manually, though. You
- * just have to be aware that some terms might not be instances of the six "case classes" above.
+ * just have to be aware that some terms might not be instances of the six [[ConcreteTerm]] "case classes".
+ * (But if a [[ConcreteTerm]] is required, any term can be converted using `term.`[[Term.concrete concrete]].)
  *
  * Pattern matching works as expected, that is, when an [[MLValueTerm]] `t`, e.g., refers to an Isabelle term of the form
  * `Const (name,typ)`, then `t` will match the pattern `case Const(name,typ) =>`. (Necessary information will be
@@ -56,7 +58,7 @@ import scala.concurrent.{Await, Awaitable, ExecutionContext, Future}
  * completely ignore the existence of [[MLValueTerm]]. The only caveat is that one should not do a pattern match on the
  * type of the term. That is `case _ : Const =>` will not match a term `Const(name,typ)` represented by an [[MLValueTerm]].
  *
- * Two terms are equal (w.r.t.~the [[Object.equals equals]] function) iff they represent the same Isabelle terms. I.e.,
+ * Two terms are equal (w.r.t.~the [[AnyRef.equals equals]] method) iff they represent the same Isabelle terms. I.e.,
  * an [[MLValueTerm]] and a [[Const]] can be equal. (Equality tests try to transfer as little data as possible when
  * determining equality.)
  *
@@ -71,8 +73,8 @@ sealed abstract class Term {
   implicit val isabelle : Isabelle
   def pretty(ctxt: Context)(implicit ec: ExecutionContext): String =
     Ops.stringOfTerm(MLValue((ctxt, this))).retrieveNow
-  val concrete : Term
-  def $(that: Term)(implicit ec: ExecutionContext): Term = App(this, that)
+  val concrete : ConcreteTerm
+  def $(that: Term)(implicit ec: ExecutionContext): App = App(this, that)
 
   override def hashCode(): Int = throw new NotImplementedError("Should be overridden")
 
@@ -105,16 +107,21 @@ sealed abstract class Term {
     case _ => false
   }
 }
+sealed abstract class ConcreteTerm extends Term {
+  @inline override val concrete: this.type = this
+}
 
+// TODO document
 final class Cterm private(val ctermMlValue: MLValue[Cterm])(implicit val isabelle: Isabelle, ec: ExecutionContext) extends Term {
   override lazy val mlValue: MLValue[Term] = Ops.termOfCterm(ctermMlValue)
   def mlValueTerm = new MLValueTerm(mlValue)
   override def pretty(ctxt: Context)(implicit ec: ExecutionContext): String =
     Ops.stringOfCterm(MLValue((ctxt, this))).retrieveNow
-  lazy val concrete: Term = new MLValueTerm(mlValue).concrete
+  lazy val concrete: ConcreteTerm = new MLValueTerm(mlValue).concrete
   override def hashCode(): Int = concrete.hashCode
 }
 
+// TODO document
 object Cterm {
   def apply(mlValue: MLValue[Cterm])
            (implicit isabelle: Isabelle, executionContext: ExecutionContext) =
@@ -136,6 +143,7 @@ object Cterm {
   }
 }
 
+// TODO document
 final class MLValueTerm(val mlValue: MLValue[Term])(implicit val isabelle: Isabelle, ec: ExecutionContext) extends Term {
   @inline private def await[A](awaitable: Awaitable[A]) : A = Await.result(awaitable, Duration.Inf)
 
@@ -144,8 +152,8 @@ final class MLValueTerm(val mlValue: MLValue[Term])(implicit val isabelle: Isabe
 
   def concreteComputed: Boolean = concreteLoaded
   @volatile private var concreteLoaded = false
-  lazy val concrete : Term = {
-    val term = Ops.whatTerm(mlValue).retrieveNow match {
+  lazy val concrete : ConcreteTerm = {
+    val term : ConcreteTerm = Ops.whatTerm(mlValue).retrieveNow match {
       case 1 => // Const
         val (name,typ) = Ops.destConst(mlValue).retrieveNow
         Const(name, typ)
@@ -174,18 +182,19 @@ final class MLValueTerm(val mlValue: MLValue[Term])(implicit val isabelle: Isabe
     else s"‹term${mlValue.stateString}›"
 }
 
+// TODO document
 final class Const private[isabelle](val name: String, val typ: Typ, initialMlValue: MLValue[Term]=null)
-                                   (implicit val isabelle: Isabelle, ec: ExecutionContext) extends Term {
+                                   (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTerm {
   lazy val mlValue : MLValue[Term] =
     if (initialMlValue!=null) initialMlValue
     else Ops.makeConst(MLValue((name,typ)))
-  @inline override val concrete: Const = this
   override def toString: String = name
 
   override def hashCode(): Int = new HashCodeBuilder(162389433,568734237)
     .append(name).toHashCode
 }
 
+// TODO document
 object Const {
   def apply(name: String, typ: Typ)(implicit isabelle: Isabelle, ec: ExecutionContext) = new Const(name, typ)
 
@@ -197,18 +206,19 @@ object Const {
   }
 }
 
+// TODO document
 final class Free private[isabelle](val name: String, val typ: Typ, initialMlValue: MLValue[Term]=null)
-                                  (implicit val isabelle: Isabelle, ec: ExecutionContext) extends Term {
+                                  (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTerm {
   lazy val mlValue : MLValue[Term] =
     if (initialMlValue!=null) initialMlValue
     else Ops.makeFree(name, typ)
-  @inline override val concrete: Free = this
   override def toString: String = name
 
   override def hashCode(): Int = new HashCodeBuilder(384673423,678423475)
     .append(name).toHashCode
 }
 
+// TODO document
 object Free {
   def apply(name: String, typ: Typ)(implicit isabelle: Isabelle, ec: ExecutionContext) = new Free(name, typ)
 
@@ -220,18 +230,19 @@ object Free {
   }
 }
 
+// TODO document
 final class Var private(val name: String, val index: Int, val typ: Typ, initialMlValue: MLValue[Term]=null)
-                       (implicit val isabelle: Isabelle, ec: ExecutionContext) extends Term {
+                       (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTerm {
   lazy val mlValue : MLValue[Term] =
     if (initialMlValue!=null) initialMlValue
     else Ops.makeVar(name, index, typ)
-  @inline override val concrete: Var = this
   override def toString: String = s"?$name$index"
 
   override def hashCode(): Int = new HashCodeBuilder(3474285, 342683425)
     .append(name).append(index).toHashCode
 }
 
+// TODO document
 object Var {
   def apply(name: String, index: Int, typ: Typ)(implicit isabelle: Isabelle, ec: ExecutionContext) = new Var(name, index, typ)
 
@@ -243,19 +254,20 @@ object Var {
   }
 }
 
+// TODO document
 final class App private (val fun: Term, val arg: Term, initialMlValue: MLValue[Term]=null)
-                        (implicit val isabelle: Isabelle, ec: ExecutionContext) extends Term {
+                        (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTerm {
   lazy val mlValue : MLValue[Term] =
     if (initialMlValue!=null) initialMlValue
     else Ops.makeApp(fun,arg)
 
-  @inline override val concrete: App = this
   override def toString: String = s"($fun $$ $arg)"
 
   override def hashCode(): Int = new HashCodeBuilder(334234237,465634533)
     .append(arg).toHashCode
 }
 
+// TODO document
 object App {
   def apply(fun: Term, arg: Term)(implicit isabelle: Isabelle, ec: ExecutionContext) = new App(fun, arg)
 
@@ -267,18 +279,19 @@ object App {
   }
 }
 
+// TODO document
 final class Abs private (val name: String, val typ: Typ, val body: Term, initialMlValue: MLValue[Term]=null)
-                        (implicit val isabelle: Isabelle, ec: ExecutionContext) extends Term {
+                        (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTerm {
   lazy val mlValue : MLValue[Term] =
     if (initialMlValue!=null) initialMlValue
     else Ops.makeAbs(name,typ,body)
-  @inline override val concrete: Abs = this
   override def toString: String = s"(λ$name. $body)"
 
   override def hashCode(): Int = new HashCodeBuilder(342345635,564562379)
     .append(name).append(body).toHashCode
 }
 
+// TODO document
 object Abs {
   def apply(name: String, typ: Typ, body: Term)(implicit isabelle: Isabelle, ec: ExecutionContext) = new Abs(name,typ,body)
 
@@ -290,19 +303,19 @@ object Abs {
   }
 }
 
-
+// TODO document
 final class Bound private (val index: Int, initialMlValue: MLValue[Term]=null)
-                          (implicit val isabelle: Isabelle, ec: ExecutionContext) extends Term {
+                          (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTerm {
   lazy val mlValue : MLValue[Term] =
     if (initialMlValue!=null) initialMlValue
     else Ops.makeBound(index)
-  @inline override val concrete: Bound = this
   override def toString: String = s"Bound $index"
 
   override def hashCode(): Int = new HashCodeBuilder(442344345,423645769)
     .append(index).toHashCode
 }
 
+// TODO document
 object Bound {
   def apply(index: Int)(implicit isabelle: Isabelle, ec: ExecutionContext) = new Bound(index)
 
@@ -316,6 +329,7 @@ object Bound {
 
 
 
+// TODO document
 object Term extends OperationCollection {
   override protected def newOps(implicit isabelle: Isabelle, ec: ExecutionContext): Ops = new Ops()
   protected[isabelle] class Ops(implicit val isabelle: Isabelle, ec: ExecutionContext) {

@@ -14,6 +14,9 @@ import scala.concurrent.{Await, ExecutionContext, Future}
 import de.unruh.isabelle.mlvalue.Implicits._
 import de.unruh.isabelle.pure.Implicits._
 
+// TODO Add ConcreteTyp
+// TODO Add Ctyp
+
 // TODO document
 sealed abstract class Typ {
   val mlValue : MLValue[Typ]

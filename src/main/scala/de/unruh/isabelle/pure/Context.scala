@@ -26,7 +26,7 @@ import scala.concurrent.{ExecutionContext, Future}
  * {{{
  * val num : Int = countTheorems(context).retrieveNow  // where context : Context
  * }}}
- * Make sure to import [[de.unruh.isabelle.pure.Implicits]]`._` for the [[MLValue]]-related functions to work.
+ * Make sure to import [[de.unruh.isabelle.pure.Implicits]]`._` for the [[mlvalue.MLValue MLValue]]-related functions to work.
  *
  * Not that contexts (being [[mlvalue.MLValue MLValue]]s), are internally futures and may still fail.
  * To make sure a [[Context]] actually contains a value, use, e.g., [[Context.force]].
