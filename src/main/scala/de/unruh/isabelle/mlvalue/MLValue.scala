@@ -89,6 +89,7 @@ import scala.util.{Failure, Success}
   * @param id the ID of the referenced object in the Isabelle process
   * @tparam A the Scala type corresponding to the ML type of the value referenced by [[id]]
   */
+// TODO Make into AnyVal if possible
 class MLValue[A] protected (/** the ID of the referenced object in the Isabelle process */ val id: Future[Isabelle.ID]) {
   def logError(message: => String)(implicit executionContext: ExecutionContext): this.type = {
     id.onComplete {

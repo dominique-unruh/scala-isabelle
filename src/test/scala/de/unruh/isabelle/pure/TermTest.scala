@@ -1,5 +1,6 @@
 package de.unruh.isabelle.pure
 
+import de.unruh.isabelle.control.IsabelleException
 import de.unruh.isabelle.control.IsabelleTest.{isabelle => isa}
 import org.scalatest.funsuite.AnyFunSuite
 
@@ -33,6 +34,28 @@ class TermTest extends AnyFunSuite {
 
     term match {
       case Const("HOL.True", Type("HOL.bool", Nil)) =>
+    }
+  }
+
+  test("term/cterm compare") {
+    val term = Const("HOL.True", Type("HOL.bool"))
+    val cterm = Cterm(ctxt, term)
+    //noinspection ComparingUnrelatedTypes
+    assert(term == cterm)
+
+    println(Const.unapply(term))
+    println(Const.unapply(cterm))
+
+    cterm match {
+      case Const("HOL.True", Type("HOL.bool", List())) =>
+      case _ => fail()
+    }
+  }
+
+  test("bad cterm") {
+    val term = Const("HOL.True", Type("Nat.nat"))
+    assertThrows[IsabelleException] {
+      Cterm(ctxt, term).force
     }
   }
 }

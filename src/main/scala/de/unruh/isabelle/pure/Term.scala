@@ -58,7 +58,7 @@ import scala.concurrent.{Await, Awaitable, ExecutionContext, Future}
  * completely ignore the existence of [[MLValueTerm]]. The only caveat is that one should not do a pattern match on the
  * type of the term. That is `case _ : Const =>` will not match a term `Const(name,typ)` represented by an [[MLValueTerm]].
  *
- * Two terms are equal (w.r.t.~the [[AnyRef.equals equals]] method) iff they represent the same Isabelle terms. I.e.,
+ * Two terms are equal (w.r.t.~the `equals` method) iff they represent the same Isabelle terms. I.e.,
  * an [[MLValueTerm]] and a [[Const]] can be equal. (Equality tests try to transfer as little data as possible when
  * determining equality.)
  *
@@ -75,6 +75,7 @@ sealed abstract class Term {
     Ops.stringOfTerm(MLValue((ctxt, this))).retrieveNow
   val concrete : ConcreteTerm
   def $(that: Term)(implicit ec: ExecutionContext): App = App(this, that)
+  def force : this.type
 
   override def hashCode(): Int = throw new NotImplementedError("Should be overridden")
 
@@ -109,6 +110,7 @@ sealed abstract class Term {
 }
 sealed abstract class ConcreteTerm extends Term {
   @inline override val concrete: this.type = this
+  override def force: ConcreteTerm.this.type = this
 }
 
 // TODO document
@@ -119,6 +121,7 @@ final class Cterm private(val ctermMlValue: MLValue[Cterm])(implicit val isabell
     Ops.stringOfCterm(MLValue((ctxt, this))).retrieveNow
   lazy val concrete: ConcreteTerm = new MLValueTerm(mlValue).concrete
   override def hashCode(): Int = concrete.hashCode
+  override def force : this.type = { ctermMlValue.force; this }
 }
 
 // TODO document
@@ -146,6 +149,8 @@ object Cterm {
 // TODO document
 final class MLValueTerm(val mlValue: MLValue[Term])(implicit val isabelle: Isabelle, ec: ExecutionContext) extends Term {
   @inline private def await[A](awaitable: Awaitable[A]) : A = Await.result(awaitable, Duration.Inf)
+
+  override def force: this.type = { mlValue.force; this }
 
   //noinspection EmptyParenMethodAccessedAsParameterless
   override def hashCode(): Int = concrete.hashCode
@@ -201,7 +206,7 @@ object Const {
   @tailrec
   def unapply(term: Term): Option[(String, Typ)] = term match {
     case const : Const => Some((const.name,const.typ))
-    case term : MLValueTerm => unapply(term.concrete)
+    case _ : MLValueTerm | _ : Cterm => unapply(term.concrete)
     case _ => None
   }
 }
@@ -225,7 +230,7 @@ object Free {
   @tailrec
   def unapply(term: Term): Option[(String, Typ)] = term match {
     case free : Free => Some((free.name,free.typ))
-    case term : MLValueTerm => unapply(term.concrete)
+    case _ : MLValueTerm | _ : Cterm => unapply(term.concrete)
     case _ => None
   }
 }
@@ -249,7 +254,7 @@ object Var {
   @tailrec
   def unapply(term: Term): Option[(String, Int, Typ)] = term match {
     case v : Var => Some((v.name,v.index,v.typ))
-    case term : MLValueTerm => unapply(term.concrete)
+    case _ : MLValueTerm | _ : Cterm => unapply(term.concrete)
     case _ => None
   }
 }
@@ -274,7 +279,7 @@ object App {
   @tailrec
   def unapply(term: Term): Option[(Term, Term)] = term match {
     case app : App => Some((app.fun,app.arg))
-    case term : MLValueTerm => unapply(term.concrete)
+    case _ : MLValueTerm | _ : Cterm => unapply(term.concrete)
     case _ => None
   }
 }
@@ -298,7 +303,7 @@ object Abs {
   @tailrec
   def unapply(term: Term): Option[(String, Typ, Term)] = term match {
     case abs : Abs => Some((abs.name,abs.typ,abs.body))
-    case term : MLValueTerm => unapply(term.concrete)
+    case _ : MLValueTerm | _ : Cterm => unapply(term.concrete)
     case _ => None
   }
 }
@@ -322,7 +327,7 @@ object Bound {
   @tailrec
   def unapply(term: Term): Option[Int] = term match {
     case bound : Bound => Some(bound.index)
-    case term : MLValueTerm => unapply(term.concrete)
+    case _ : MLValueTerm | _ : Cterm => unapply(term.concrete)
     case _ => None
   }
 }
@@ -332,7 +337,7 @@ object Bound {
 // TODO document
 object Term extends OperationCollection {
   override protected def newOps(implicit isabelle: Isabelle, ec: ExecutionContext): Ops = new Ops()
-  protected[isabelle] class Ops(implicit val isabelle: Isabelle, ec: ExecutionContext) {
+  protected[pure] class Ops(implicit val isabelle: Isabelle, ec: ExecutionContext) {
     import MLValue.{compileFunction, compileFunctionRaw}
     Typ.init()
     isabelle.executeMLCodeNow("exception E_Term of term;; exception E_Cterm of cterm")

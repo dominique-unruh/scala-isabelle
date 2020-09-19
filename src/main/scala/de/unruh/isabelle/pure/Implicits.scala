@@ -2,6 +2,7 @@ package de.unruh.isabelle.pure
 
 import de.unruh.isabelle.pure.Context.ContextConverter
 import de.unruh.isabelle.pure.Cterm.CtermConverter
+import de.unruh.isabelle.pure.Ctyp.CtypConverter
 import de.unruh.isabelle.pure.Term.TermConverter
 import de.unruh.isabelle.pure.Theory.TheoryConverter
 import de.unruh.isabelle.pure.Thm.ThmConverter
@@ -15,4 +16,5 @@ object Implicits {
   implicit val theoryConverter: TheoryConverter.type = TheoryConverter
   implicit val thmConverter: ThmConverter.type = ThmConverter
   implicit val typConverter: TypConverter.type = TypConverter
+  implicit val ctypConverter: CtypConverter.type = CtypConverter
 }
