@@ -4,7 +4,7 @@ import de.unruh.isabelle.control.Isabelle.{DInt, DList, DObject, DString}
 import de.unruh.isabelle.control.{Isabelle, OperationCollection}
 import de.unruh.isabelle.mlvalue.MLValue.Converter
 import de.unruh.isabelle.mlvalue.Implicits._
-import de.unruh.isabelle.mlvalue.{MLFunction, MLFunction2, MLFunction3, MLRetrieveFunction, MLValue}
+import de.unruh.isabelle.mlvalue.{FutureValue, MLFunction, MLFunction2, MLFunction3, MLRetrieveFunction, MLValue}
 import de.unruh.isabelle.pure.Implicits._
 import de.unruh.isabelle.pure.Term.Ops
 import org.apache.commons.lang3.builder.HashCodeBuilder
@@ -15,7 +15,7 @@ import scala.concurrent.{Await, Awaitable, ExecutionContext, Future}
 
 /**
  * This class represents a term (ML type `term`) in Isabelle. It can be transferred to and from the Isabelle process
- * via the [[mlvalue.MLValue MLValue]] mechanism (see below). (TODO write)
+ * transparently by internally using [[MLValue]]s (see below).
  *
  * In most respects, [[Term]] behaves as if it was an algebraic datatype defined as follows:
  * {{{
@@ -67,14 +67,13 @@ import scala.concurrent.{Await, Awaitable, ExecutionContext, Future}
  * [[Cterm]]s and regular terms (such as [[Const]]) without explicit conversions. Similarly, patterns such as
  * `case Const(name,typ) =>` also match [[Cterm]]s.
  */
-sealed abstract class Term {
+sealed abstract class Term extends FutureValue {
   val mlValue : MLValue[Term]
   implicit val isabelle : Isabelle
   def pretty(ctxt: Context)(implicit ec: ExecutionContext): String =
     Ops.stringOfTerm(MLValue((ctxt, this))).retrieveNow
   val concrete : ConcreteTerm
   def $(that: Term)(implicit ec: ExecutionContext): App = App(this, that)
-  def force : this.type
 
   override def hashCode(): Int = throw new NotImplementedError("Should be overridden")
 
@@ -109,7 +108,9 @@ sealed abstract class Term {
 }
 sealed abstract class ConcreteTerm extends Term {
   @inline override val concrete: this.type = this
-  override def force: ConcreteTerm.this.type = this
+  override def someFuture(implicit ec: ExecutionContext): Future[Any] = Future.successful(())
+  override def forceFuture(implicit ec: ExecutionContext): Future[this.type] = Future.successful(this)
+  override def await: Unit = {}
 }
 
 // TODO document
@@ -121,6 +122,8 @@ final class Cterm private(val ctermMlValue: MLValue[Cterm])(implicit val isabell
   lazy val concrete: ConcreteTerm = new MLValueTerm(mlValue).concrete
   override def hashCode(): Int = concrete.hashCode
   override def force : this.type = { ctermMlValue.force; this }
+  override def someFuture(implicit ec: ExecutionContext): Future[Any] = ctermMlValue.someFuture
+  override def await: Unit = ctermMlValue.await
 }
 
 // TODO document
@@ -147,9 +150,8 @@ object Cterm {
 
 // TODO document
 final class MLValueTerm(val mlValue: MLValue[Term])(implicit val isabelle: Isabelle, ec: ExecutionContext) extends Term {
-  @inline private def await[A](awaitable: Awaitable[A]) : A = Await.result(awaitable, Duration.Inf)
-
-  override def force: this.type = { mlValue.force; this }
+  override def someFuture(implicit ec: ExecutionContext): Future[Any] = mlValue.someFuture
+  override def await: Unit = mlValue.await
 
   //noinspection EmptyParenMethodAccessedAsParameterless
   override def hashCode(): Int = concrete.hashCode
@@ -183,6 +185,7 @@ final class MLValueTerm(val mlValue: MLValue[Term])(implicit val isabelle: Isabe
   override def toString: String =
     if (concreteLoaded) concrete.toString
     else s"‹term${mlValue.stateString}›"
+
 }
 
 // TODO document

@@ -2,7 +2,7 @@ package de.unruh.isabelle.pure
 
 import de.unruh.isabelle.control.{Isabelle, OperationCollection}
 import de.unruh.isabelle.mlvalue.MLValue.Converter
-import de.unruh.isabelle.mlvalue.{MLFunction, MLValue}
+import de.unruh.isabelle.mlvalue.{FutureValue, MLFunction, MLValue}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -32,7 +32,7 @@ import scala.concurrent.{ExecutionContext, Future}
  * To make sure a [[Context]] actually contains a value, use, e.g., [[Context.force]].
  *
  * */
-final class Context private [Context](val mlValue : MLValue[Context]) {
+final class Context private [Context](val mlValue : MLValue[Context]) extends FutureValue {
   /**
    * Returns "context", "context (computing)", or "context (failed)" depending on
    * whether this context is ready, still being computed, or computation has thrown an exception.
@@ -40,21 +40,8 @@ final class Context private [Context](val mlValue : MLValue[Context]) {
    */
 
   override def toString: String = "context" + mlValue.stateString
-  /** Waits till the computation of this [[Context]] (in the Isabelle process) has finished.
-   * @throws control.IsabelleException if the computation fails in the Isabelle process
-   * @return this [[Context]], but it is guaranteed to have completed the computation
-   * */
-  def force: Context = { mlValue.force; this }
-
-  /** A future containing this [[Context]] with the computation completed.
-   * In particular, if this [[Context]] throws an exception upon computation,
-   * the future holds that exception.
-   *
-   * Roughly the same as `[[scala.concurrent.Future.apply Future]] { this.[[force]] }`.
-   *
-   * @throws control.IsabelleException if the computation fails in the Isabelle process
-   */
-  def forceFuture(implicit executionContext: ExecutionContext): Future[Context] = for (_ <- mlValue.forceFuture) yield this
+  override def await: Unit = mlValue.await
+  override def someFuture(implicit ec: ExecutionContext): Future[Any] = mlValue.someFuture
 }
 
 object Context extends OperationCollection {

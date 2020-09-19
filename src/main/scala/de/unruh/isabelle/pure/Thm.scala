@@ -2,7 +2,7 @@ package de.unruh.isabelle.pure
 
 import de.unruh.isabelle.control.{Isabelle, OperationCollection}
 import de.unruh.isabelle.mlvalue.MLValue.Converter
-import de.unruh.isabelle.mlvalue.{MLFunction, MLFunction2, MLValue}
+import de.unruh.isabelle.mlvalue.{FutureValue, MLFunction, MLFunction2, MLValue}
 import de.unruh.isabelle.pure.Thm.Ops
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -12,11 +12,14 @@ import de.unruh.isabelle.mlvalue.Implicits._
 import de.unruh.isabelle.pure.Implicits._
 
 // TODO document
-final class Thm private [Thm](val mlValue : MLValue[Thm])(implicit ec: ExecutionContext, isabelle: Isabelle) {
+final class Thm private [Thm](val mlValue : MLValue[Thm])(implicit ec: ExecutionContext, isabelle: Isabelle) extends FutureValue {
   override def toString: String = s"thm${mlValue.stateString}"
   lazy val cterm : Cterm = Cterm(Ops.cpropOf(mlValue))
   def pretty(ctxt: Context)(implicit ec: ExecutionContext): String =
     Ops.stringOfThm(MLValue(ctxt, this)).retrieveNow
+
+  override def await: Unit = mlValue.await
+  override def someFuture(implicit ec: ExecutionContext): Future[Any] = mlValue.someFuture
 }
 
 object Thm extends OperationCollection {

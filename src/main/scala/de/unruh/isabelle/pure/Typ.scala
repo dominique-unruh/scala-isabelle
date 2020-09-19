@@ -3,7 +3,7 @@ package de.unruh.isabelle.pure
 import de.unruh.isabelle.control.Isabelle.{DInt, DList, DObject, DString}
 import de.unruh.isabelle.control.{Isabelle, OperationCollection}
 import de.unruh.isabelle.mlvalue.MLValue.Converter
-import de.unruh.isabelle.mlvalue.{MLFunction, MLFunction2, MLFunction3, MLRetrieveFunction, MLValue}
+import de.unruh.isabelle.mlvalue.{FutureValue, MLFunction, MLFunction2, MLFunction3, MLRetrieveFunction, MLValue}
 import de.unruh.isabelle.pure.Typ.Ops
 import org.apache.commons.lang3.builder.HashCodeBuilder
 
@@ -15,19 +15,13 @@ import scala.concurrent.{Await, ExecutionContext, Future}
 import de.unruh.isabelle.mlvalue.Implicits._
 import de.unruh.isabelle.pure.Implicits._
 
-// TODO Add ConcreteTyp
-// TODO Add Ctyp
-
 // TODO document
-sealed abstract class Typ {
+sealed abstract class Typ extends FutureValue {
   val mlValue : MLValue[Typ]
   implicit val isabelle : Isabelle
   def pretty(ctxt: Context)(implicit ec: ExecutionContext): String =
     Ops.stringOfType(MLValue((ctxt, this))).retrieveNow
   val concrete : Typ
-
-  // Make a trait for force, forceFuture (something like LazyValue). Use it here and for Term, and MLValue
-  def force : this.type
 
   def -->:(that: Typ)(implicit ec: ExecutionContext): Type = Type("fun", that, this)
 //  def --->:(thats: List[Typ])(implicit ec: ExecutionContext): Typ = thats.foldRight(this)(_ -->: _)
@@ -63,7 +57,9 @@ sealed abstract class Typ {
 }
 sealed abstract class ConcreteTyp extends Typ {
   override val concrete: this.type = this
-  override def force: ConcreteTyp.this.type = this
+  override def await: Unit = {}
+  override def forceFuture(implicit ec: ExecutionContext): Future[ConcreteTyp.this.type] = Future.successful(this)
+  override def someFuture(implicit ec: ExecutionContext): Future[Any] = Future.successful(())
 }
 
 final class MLValueTyp(val mlValue: MLValue[Typ])(implicit val isabelle: Isabelle, ec: ExecutionContext) extends Typ {
@@ -93,7 +89,8 @@ final class MLValueTyp(val mlValue: MLValue[Typ])(implicit val isabelle: Isabell
     if (concreteLoaded) concrete.toString
     else s"‹term${mlValue.stateString}›"
 
-  override def force: this.type = { mlValue.force; this }
+  override def someFuture(implicit ec: ExecutionContext): Future[Any] = mlValue.someFuture
+  override def await: Unit = mlValue.await
 }
 
 // TODO document
@@ -105,7 +102,8 @@ final class Ctyp private(val ctypMlValue: MLValue[Ctyp])(implicit val isabelle: 
   lazy val concrete: ConcreteTyp = new MLValueTyp(mlValue).concrete
   override def hashCode(): Int = concrete.hashCode()
 
-  override def force: this.type = { ctypMlValue.force; this }
+  override def await: Unit = ctypMlValue.await
+  override def someFuture(implicit ec: ExecutionContext): Future[Any] = ctypMlValue.someFuture
 }
 
 // TODO document
