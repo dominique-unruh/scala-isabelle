@@ -22,14 +22,12 @@ licenses += "Isabelle" -> url("https://raw.githubusercontent.com/dominique-unruh
 
 pomIncludeRepository := { _ => false }
 
-publishTo := {
-  val nexus = "https://oss.sonatype.org/"
-  if (isSnapshot.value) Some("snapshots" at nexus + "content/repositories/snapshots")
-  else Some("releases" at nexus + "service/local/staging/deploy/maven2")
-}
+publishTo := sonatypePublishToBundle.value
 
 publishMavenStyle := true
 
 credentials += Credentials(Path.userHome / ".sbt" / "sonatype_credentials")
+
+credentials += Credentials("GnuPG Key ID", "gpg", "B12742E4CC2172D894730C1AE1F9C7FA4BA66FE2", "ignored")
 
 publish := publish.dependsOn(test in Test).value

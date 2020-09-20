@@ -1,3 +1,5 @@
+import java.io.PrintWriter
+
 import scala.sys.process._
 
 name := "scala-isabelle"
@@ -32,3 +34,17 @@ travisRandomize := {
     print(Process("scripts/travis-randomize.py", cwd=baseDirectory.value).!!)
 }
 compile in Compile := (compile in Compile).dependsOn(travisRandomize).value
+doc in Compile := (doc in Compile).dependsOn(travisRandomize).value
+
+lazy val makeGitrevision = taskKey[Unit]("Create gitrevision.txt")
+makeGitrevision := {
+    val file = baseDirectory.value / "src" / "main" / "resources" / "de" / "unruh" / "isabelle" / "gitrevision.txt"
+    if ((baseDirectory.value / ".git").exists())
+        Process(List("bash","-c",s"( date && git describe --tags --long --always --dirty --broken && git describe --always --all ) > ${file}")).!!
+    else {
+        val pr = new PrintWriter(file)
+        pr.println("Not built from a GIT worktree.")
+        pr.close()
+    }
+}
+managedResources in Compile := (managedResources in Compile).dependsOn(makeGitrevision).value
