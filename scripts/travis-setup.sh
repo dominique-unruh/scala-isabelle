@@ -2,6 +2,8 @@
 
 set -ex
 
+test -n "$ISA"
+
 mkdir -p ~/bin
 if ! [ -e ~/install/sbt ]; then
   curl -Ls https://git.io/sbt > ~/install/sbt
@@ -9,17 +11,17 @@ fi
 chmod +x ~/install/sbt
 
 mkdir -p ~/install
-if ! [ -e /opt/Isabelle2020 ]; then
+if ! [ -e /opt/Isabelle$ISA ]; then
   case "$TRAVIS_OS_NAME" in
-    linux) curl https://isabelle.in.tum.de/dist/Isabelle2020_linux.tar.gz | tar -x -z -C ~/install;;
-    osx) curl https://isabelle.in.tum.de/dist/Isabelle2020_macos.tar.gz | tar -x -z -C ~/install;;
+    linux) curl https://isabelle.in.tum.de/website-Isabelle$ISA/dist/Isabelle${ISA}_linux.tar.gz | tar -x -z -C ~/install;;
+    osx) curl https://isabelle.in.tum.de/website-Isabelle$ISA/dist/Isabelle${ISA}_macos.tar.gz | tar -x -z -C ~/install;;
     *) echo "Unsupported OS: $TRAVIS_OS_NAME"; exit 1;;
   esac
 fi
 
 case "$TRAVIS_OS_NAME" in
-  linux) ISABELLE_HOME=~/install/Isabelle2020;;
-  osx) ISABELLE_HOME=~/install/Isabelle2020.app/Isabelle;;
+  linux) ISABELLE_HOME=~/install/Isabelle$ISA;;
+  osx) ISABELLE_HOME=~/install/Isabelle$ISA.app/Isabelle;;
   *) echo "Unsupported OS: $TRAVIS_OS_NAME"; exit 1;;
 esac
 

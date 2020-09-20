@@ -64,10 +64,7 @@ class IsabelleTest extends AnyFunSuite {
   }
 
   test("too long string") {
-    val builder = new StringBuilder
-    for (i <- 1 to 10000000)
-      builder ++= i.toString += '.'
-    val str = builder.toString()
+    val str = "x".repeat(70*1000*1000)
     assertThrows[IsabelleException] {
       roundTrip(DString(str))
     }
@@ -75,10 +72,7 @@ class IsabelleTest extends AnyFunSuite {
 
   // Checks that the protocol doesn't get desynced by too long strings.
   test("too long string & continue") {
-    val builder = new StringBuilder
-    for (i <- 1 to 10000000)
-      builder ++= i.toString += '.'
-    val str = builder.toString()
+    val str = "x".repeat(70*1000*1000)
     assertThrows[IsabelleException] {
       roundTrip(DString(str))
     }
@@ -97,7 +91,7 @@ object IsabelleTest {
     val path = if (Files.exists(config))
       new BufferedReader(new FileReader(config.toFile)).readLine()
     else
-      "/opt/Isabelle2020"
+      "/opt/Isabelle2019"
     Paths.get(path)
   }
 
