@@ -7,7 +7,7 @@ import org.apache.commons.text.StringEscapeUtils
 import org.apache.commons.text.translate.{CharSequenceTranslator, CodePointTranslator}
 
 // Escape rules are in Section 2.2, https://smlfamily.github.io/sml97-defn.pdf
-object EscapeSML {
+object SMLCodeUtils {
   /** A [[org.apache.commons.text.translate.CharSequenceTranslator CharSequenceTranslator]] for escaping ML strings (for use as ML
    * string literals).
    * @see escapeSml
@@ -29,13 +29,11 @@ object EscapeSML {
       case _ if codepoint > 126 && codepoint <= 255 =>
         out.write(f"\\$codepoint%03d")
         true
-//      case _ if codepoint > 255 =>
-//        out.write(f"\\u$codepoint%04x")
-//        true
       case _ if codepoint > 255 =>
-        // https://smlfamily.github.io/sml97-defn.pdf defines \u, but experiments
+        // https://smlfamily.github.io/sml97-defn.pdf defines backslash-u, but experiments
         // in Isabelle show this to be unsupported
         throw new RuntimeException("Codepoints > 255 not supported in Isabelle's ML dialect")
+        // out.write(f"\\u$codepoint%04x")
       case _ =>
         false
     }
@@ -44,7 +42,7 @@ object EscapeSML {
   /**
    * Escapes a string for use in an ML string literal.
    *
-   * Follows Section 2.2, [[https://smlfamily.github.io/sml97-defn.pdf]], but without the \u escape sequence
+   * Follows Section 2.2, [[https://smlfamily.github.io/sml97-defn.pdf]], but without the backslash-u escape sequence
    * (which is not supported in Isabelle).
    *
    * Example:

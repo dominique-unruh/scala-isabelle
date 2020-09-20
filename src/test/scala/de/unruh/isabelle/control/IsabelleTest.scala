@@ -87,7 +87,7 @@ class IsabelleTest extends AnyFunSuite {
 
 object IsabelleTest {
   val isabelleHome: Path = {
-    val config = Paths.get(".isabelle-home") // For setting the home in Travis CI etc.
+    val config = Paths.get(".isabelle-home") // For setting the Isabelle home in Travis CI etc.
     val path = if (Files.exists(config))
       new BufferedReader(new FileReader(config.toFile)).readLine()
     else
