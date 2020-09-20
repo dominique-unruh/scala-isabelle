@@ -21,6 +21,8 @@ libraryDependencies += "commons-io" % "commons-io" % "2.8.0"
 libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.3.2"
 // https://mvnrepository.com/artifact/org.apache.commons/commons-lang3
 libraryDependencies += "org.apache.commons" % "commons-lang3" % "3.11"
+// https://mvnrepository.com/artifact/org.apache.commons/commons-text
+libraryDependencies += "org.apache.commons" % "commons-text" % "1.9"
 // https://mvnrepository.com/artifact/com.google.guava/guava
 libraryDependencies += "com.google.guava" % "guava" % "29.0-jre"
 

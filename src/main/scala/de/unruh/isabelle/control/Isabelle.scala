@@ -277,8 +277,8 @@ class Isabelle(val setup: Setup, build: Boolean = true) {
     cmd += str(isabelleBinary) += "process"
     cmd += "-l" += setup.logic
 
-    // TODO: escape pipe name for ML
-    cmd += "-e" += s"""val (inputPipeName,outputPipeName) = ("$inputPipe","$outputPipe")"""
+    import de.unruh.isabelle.misc.EscapeSML.escapeSml
+    cmd += "-e" += s"""val (inputPipeName,outputPipeName) = ("${escapeSml(inputPipe.toString)}","${escapeSml(outputPipe.toString)}")"""
 
     cmd += "-f" += mlFile.toAbsolutePath.toString
 

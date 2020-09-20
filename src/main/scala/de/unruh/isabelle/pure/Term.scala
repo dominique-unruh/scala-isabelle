@@ -15,7 +15,7 @@ import scala.concurrent.{Await, Awaitable, ExecutionContext, Future}
 
 /**
  * This class represents a term (ML type `term`) in Isabelle. It can be transferred to and from the Isabelle process
- * transparently by internally using [[MLValue]]s (see below).
+ * transparently by internally using [[mlvalue.MLValue MLValue]]s (see below).
  *
  * In most respects, [[Term]] behaves as if it was an algebraic datatype defined as follows:
  * {{{
@@ -182,6 +182,14 @@ final class MLValueTerm(val mlValue: MLValue[Term])(implicit val isabelle: Isabe
     term
   }
 
+  /** Produces a string representation of this term.
+   *
+   * This is not a "pretty" representation, it does
+   * not use Isabelle syntax, and subterms that are stored only in the Isabelle process are replaced with
+   * a placeholder (thus this method does not invoke any potentially communication with the Isabelle process).
+   *
+   * @see Term.pretty for pretty printed terms
+   * */
   override def toString: String =
     if (concreteLoaded) concrete.toString
     else s"‹term${mlValue.stateString}›"
