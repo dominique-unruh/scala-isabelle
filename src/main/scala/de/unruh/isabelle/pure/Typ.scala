@@ -28,7 +28,6 @@ sealed abstract class Typ extends FutureValue {
 
   override def hashCode(): Int = throw new NotImplementedError("Should be overridden")
 
-  // TODO: add Ctyp to the mix
   override def equals(that: Any): Boolean = (this, that) match {
     case (t1, t2: AnyRef) if t1 eq t2 => true
     case (t1: Type, t2: Type) => t1.name == t2.name && t1.args == t2.args

@@ -1,4 +1,4 @@
-package de.unruh.isabelle
+package de.unruh.isabelle.misc
 
 import org.scalatest.funsuite.AnyFunSuite
 

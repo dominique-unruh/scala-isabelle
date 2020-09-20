@@ -1,4 +1,4 @@
-package de.unruh.isabelle
+package de.unruh.isabelle.misc
 
 import java.io.{BufferedReader, IOException, InputStreamReader}
 import java.net.URL
@@ -7,14 +7,14 @@ import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 import scala.util.matching.Regex
 
 // TODO: Document API
-// TODO: Move to some sub-package
 class Symbols(symbolsFile: URL = classOf[Symbols].getResource("symbols"),
-              extraSymbols: Traversable[(String,Int)] = Nil) {
+              extraSymbols: Iterable[(String,Int)] = Nil) {
   import Symbols._
 
   assert(symbolsFile != null)
 
   private val (symbols, symbolsInv) = {
+    // Can't use the replacement scala.jdk.CollectionConverters because we support Scala 2.12
     import scala.collection.JavaConverters._
 
     val lineRegex = """^\\<([a-zA-Z0-9^_]+)>\s+code:\s+0x([0-9a-fA-F]+)\b.*""".r
