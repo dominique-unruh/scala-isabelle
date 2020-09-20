@@ -8,7 +8,14 @@ import de.unruh.isabelle.pure.Theory.TheoryConverter
 import de.unruh.isabelle.pure.Thm.ThmConverter
 import de.unruh.isabelle.pure.Typ.TypConverter
 
-// TODO document
+/** Contains all the implicit [[mlvalue.MLValue.Converter MLValue.Converter]] instances provided by the package [[pure]].
+ * Use
+ * {{{
+ *   import de.unruh.isabelle.pure.Implicits._
+ * }}}
+ * if you use [[mlvalue.MLValue MLValue]]`[A]` instances where `A` is any of [[Context]], [[Theory]], [[Term]], [[Typ]],
+ * [[Cterm]], [[Ctyp]].
+ */
 object Implicits {
   implicit val contextConverter: ContextConverter.type = ContextConverter
   implicit val termConverter: TermConverter.type = TermConverter
