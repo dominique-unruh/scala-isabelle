@@ -16,8 +16,9 @@ object Example {
   def main(args: Array[String]): Unit = {
 
     // Initialize the Isabelle process with session HOL.
-    // We assume an Isabelle installation in /opt/Isabelle2020
-    val setup = Isabelle.Setup(isabelleHome = Path.of("/opt/Isabelle2020"), logic = "HOL")
+    // The first command line argument must be the Isabelle installation directory
+    val isabelleHome = args(0)
+    val setup = Isabelle.Setup(isabelleHome = Path.of(isabelleHome), logic = "HOL")
     implicit val isabelle: Isabelle = new Isabelle(setup)
 
     // Load the Isabelle/HOL theory "Main" and create a context object

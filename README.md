@@ -2,10 +2,10 @@
 
 [![Build Status](https://travis-ci.com/dominique-unruh/scala-isabelle.svg?branch=master)](https://travis-ci.com/dominique-unruh/scala-isabelle)
 
-TODO: Add documentation
+TODO: Add more explanations
 
 Example:
-```
+```Scala
 // Initialize the Isabelle process with session HOL.
 // We assume an Isabelle installation in /opt/Isabelle2020
 val setup = Isabelle.Setup(isabelleHome = Path.of("/opt/Isabelle2020"), logic = "HOL")
