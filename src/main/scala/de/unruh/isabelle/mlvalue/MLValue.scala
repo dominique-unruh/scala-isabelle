@@ -27,7 +27,7 @@ import scala.util.{Failure, Success}
   * [[scala.Boolean Boolean]], [[scala.Unit Unit]], [[java.lang.String String]], and lists and tuples (max. 7 elements)
   * of supported types. (It is also possible for `A` to be the type `MLValue[...]`, see [[MLValueConverter]] for
   * explanations (TODO add these explanations).) It is possible to
-  * add support for other types, see [[MLValue.Converter]] for instructions (TODO add these instructions). Using this
+  * add support for other types, see [[MLValue.Converter]] for instructions. Using this
   * mechanism, support for the terms, types, theories, contexts, and theorems has been added in package
   * [[de.unruh.isabelle.pure]].
   *
@@ -240,12 +240,12 @@ object MLValue extends OperationCollection {
    * @param name A short description of the purpose of the match/ML function that is being written.
    *             Will be included in the error message.
    */
-  def matchFailExn(name: String) =
+  @inline def matchFailExn(name: String) =
     s""" exn => error ("Match failed in ML code generated for $name: " ^ string_of_exn exn)"""
 
   /** Utlity method for generating ML code. Analogous to [[matchFailExn]], but for cases when we
    * pattern match a value of type `data`. */
-  def matchFailData(name: String) =
+  @inline def matchFailData(name: String) =
     s""" data => error ("Match failed in ML code generated for $name: " ^ string_of_data data)"""
 
   private val logger = log4s.getLogger
@@ -394,21 +394,25 @@ object MLValue extends OperationCollection {
     * TODO: Declare implicits
     *
     * Notes
-    *  - Several Scala types can correspond to the same ML type (e.g., [[scala.Int]] and
-    *    [[scala.Long]] both correspond to `int`).
+    *  - Several Scala types can correspond to the same ML type (e.g., [[scala.Int Int]] and
+    *    [[scala.Long Long]] both correspond to `int`).
     *  - If the converters for two Scala types `A`,`B` additionally have the same encoding as exceptions (defined via [[valueToExn]],
-    *    [[exnToValue]] in their [[Converter]]s), then [[MLValue]][A]] and [[MLValue]][B] can be safely typecast into
+    *    [[exnToValue]] in their [[Converter]]s), then [[MLValue]][A] and [[MLValue]][B] can be safely typecast into
     *    each other.
     *  - TODO how about two ML types with the same Scala type?
     *
     * @tparam A the Scala type for which a corresponding ML type is declared
     */
   abstract class Converter[A] {
-    /** This function should always return the same value. (It is declared as a `def` only to make sure
+    /** Returns the ML type corresponding to [[A]].
+     *
+     * If it is not possible to determine this type (this can happen in rare situations, e.g.,
+     * in [[MLValueConverter]]), a typ involving placeholders `_` can be used. In that case,
+     * the most specific type possible should be used.
+     *
+     * This function should always return the same value. (It is declared as a `def` only to make sure
       * Scala does not include an extra field or perform an unnecessary computation in the class when this function
       * is not used. */
-    // TODO: Document
-    // TODO: Mention: If not possible, use "_"
     def mlType : String
     // TODO: Document
     def retrieve(value: MLValue[A])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[A]

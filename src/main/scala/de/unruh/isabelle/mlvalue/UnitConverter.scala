@@ -5,7 +5,14 @@ import de.unruh.isabelle.mlvalue.MLValue.{Converter, Ops}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-// TODO: Document API
+/**
+ * [[MLValue.Converter]] for [[scala.Unit Unit]]s.
+ *
+ *  - ML type: `unit`
+ *  - Encoding of the unit value as an exception: `E_Int 0`
+ *
+ * @see MLValue.Converter for explanations what [[MLValue.Converter Converter]]s are for.
+ */
 object UnitConverter extends Converter[Unit] {
   override def retrieve(value: MLValue[Unit])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Unit] =
     for (_ <- value.id) yield ()

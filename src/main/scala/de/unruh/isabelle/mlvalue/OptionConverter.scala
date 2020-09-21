@@ -8,7 +8,16 @@ import scala.concurrent.{ExecutionContext, Future}
 
 import Implicits._
 
-// TODO: Document API
+/**
+ * [[MLValue.Converter]] for type [[Option]][A].
+ *
+ *  - ML type: `a option` (if `a` is the ML type corresponding to `A`).
+ *  - Encoding of `Some(x)` and `None` as an exception:
+ *    `E_Option (SOME e)` and `E_Option NONE` `e`
+ *    is the encoding of `x` as an exception (according to the converter for `A`).
+ *
+ * @see MLValue.Converter for explanations what [[MLValue.Converter Converter]]s are for.
+ */
 @inline final class OptionConverter[A](implicit converter: Converter[A]) extends Converter[Option[A]] {
   @inline override def store(value: Option[A])(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[Option[A]] = value match {
     case None => Ops.optionNone

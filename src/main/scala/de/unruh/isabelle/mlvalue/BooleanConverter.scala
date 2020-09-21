@@ -6,7 +6,14 @@ import de.unruh.isabelle.mlvalue.MLValue.{Converter, Ops, matchFailExn}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-// TODO: Document API
+/**
+ * [[MLValue.Converter]] for [[scala.Boolean Boolean]]s.
+ *
+ *  - ML type: `bool`
+ *  - Encoding of a bool `b` as an exception: `E_Bool b`
+ *
+ * @see MLValue.Converter for explanations what [[MLValue.Converter Converter]]s are for.
+ */
 object BooleanConverter extends Converter[Boolean] {
   override def retrieve(value: MLValue[Boolean])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Boolean] =
     for (DInt(i) <- Ops.retrieveBool(value))
