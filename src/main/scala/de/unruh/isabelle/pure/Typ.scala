@@ -233,9 +233,9 @@ object Typ extends OperationCollection {
 
     val destTyp : MLRetrieveFunction[Typ] =
       MLRetrieveFunction(
-        """fn Type(name,args) => D_List (D_Int 1 :: D_String name :: map (D_Object o E_Typ) args)
-            | TFree(name,sort) => D_List (D_Int 2 :: D_String name :: map D_String sort)
-            | TVar((name,index),sort) => D_List (D_Int 3 :: D_String name :: D_Int index :: map D_String sort)""")
+        """fn Type(name,args) => DList (DInt 1 :: DString name :: map (DObject o E_Typ) args)
+            | TFree(name,sort) => DList (DInt 2 :: DString name :: map DString sort)
+            | TVar((name,index),sort) => DList (DInt 3 :: DString name :: DInt index :: map DString sort)""")
 
     var equalsTyp: MLFunction2[Typ, Typ, Boolean] =
       compileFunction("op=")

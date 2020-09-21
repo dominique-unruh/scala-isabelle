@@ -368,12 +368,12 @@ object Term extends OperationCollection {
 
     val destTerm : MLRetrieveFunction[Term] =
       MLRetrieveFunction(
-        """fn Const (name,typ) => D_List[D_Int 1, D_String name, D_Object (E_Typ typ)]
-            | Free (name,typ) => D_List[D_Int 2, D_String name, D_Object (E_Typ typ)]
-            | Var ((name,index),typ) => D_List[D_Int 3, D_String name, D_Int index, D_Object (E_Typ typ)]
-            | Bound i => D_List[D_Int 4, D_Int i]
-            | Abs (name, typ, body) => D_List[D_Int 5, D_String name, D_Object (E_Typ typ), D_Object (E_Term body)]
-            | t1 $ t2 => D_List[D_Int 6, D_Object (E_Term t1), D_Object (E_Term t2)]""")
+        """fn Const (name,typ) => DList[DInt 1, DString name, DObject (E_Typ typ)]
+            | Free (name,typ) => DList[DInt 2, DString name, DObject (E_Typ typ)]
+            | Var ((name,index),typ) => DList[DInt 3, DString name, DInt index, DObject (E_Typ typ)]
+            | Bound i => DList[DInt 4, DInt i]
+            | Abs (name, typ, body) => DList[DInt 5, DString name, DObject (E_Typ typ), DObject (E_Term body)]
+            | t1 $ t2 => DList[DInt 6, DObject (E_Term t1), DObject (E_Term t2)]""")
 
     val makeConst : MLFunction2[String, Typ, Term] = MLValue.compileFunction("Const")
     val makeFree : MLFunction2[String, Typ, Term] = MLValue.compileFunction("Free")

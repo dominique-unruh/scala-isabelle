@@ -358,11 +358,6 @@ class Isabelle(val setup: Setup, build: Boolean = true) {
     sendQueue.put((str,callback))
   }
 
-  private def intStringToID(data: Data) : ID = data match {
-    case DInt(int) => new ID(int, this)
-  }
-
-
   /** Executes the ML code `ml` in the Isabelle process.
     * Definitions made in `ml` affect the global Isabelle name space.
     * This is intended mostly for defining new types.
@@ -403,7 +398,7 @@ class Isabelle(val setup: Setup, build: Boolean = true) {
     val promise : Promise[ID] = Promise()
 //    logger.debug(s"Compiling ML value: $ml")
     send({ stream => stream.writeByte(4); writeString(stream, ml) },
-      { result => promise.complete(result.map(intStringToID)) })
+      { result => promise.complete(result.map { case DInt(id) => new ID(id, this) }) })
     promise.future
   }
 
@@ -421,11 +416,11 @@ class Isabelle(val setup: Setup, build: Boolean = true) {
    *
    * Retrieving values: Say `tree` is some algebraic data type on the ML side, `Tree` is a corresponding Scala class,
    * `encode : tree -> data` is a function that
-   * encodes a tree as `data` (using the D_List, D_Int, and D_String constructors only), and `E_Tree of tree`
+   * encodes a tree as `data` (using the DList, DInt, and DString constructors only), and `E_Tree of tree`
    * is an exception type to store trees in the object store. Then we can define a function for retrieving a tree from
    * the object store to Scala as follows:
    * {{{
-   * val encodeID : Future[ID] = isabelle.storeValue("fn D_Object (E_Tree tree) => encode tree")
+   * val encodeID : Future[ID] = isabelle.storeValue("fn DObject (E_Tree tree) => encode tree")
    * def decode(data: Data) : Tree = ??? // The opposite of the ML function encode
    * def retrieve(id: ID) : Tree = {
    *   // Apply encode to the element referenced by id, result is an encoding of the tree as Data
@@ -440,7 +435,7 @@ class Isabelle(val setup: Setup, build: Boolean = true) {
    * (inverse of `encode` above). Then we can store trees in the object store from Scala using the following function
    * `store`:
    * {{{
-   * val decodeID : Future[ID] = isabelle.storeValue("fn data => D_Object (E_Tree (decode data))")
+   * val decodeID : Future[ID] = isabelle.storeValue("fn data => DObject (E_Tree (decode data))")
    * def encode(tree: Tree) : Data = ??? // The opposite of the ML function decode
    * def store(tree: Tree) : ID = {
    *   // Apply ML-decode to the Scala-encoded tree, store it in the object store, and return the ID (inside a Data)
@@ -632,7 +627,7 @@ object Isabelle {
     *
     * A corresponding datatype is defined in the `Control_Isabelle` ML structure in the Isabelle process:
     * {{{
-    * datatype data = D_String of string | D_Int of int | D_List of data list | D_Object of exn
+    * datatype data = DString of string | DInt of int | DList of data list | DObject of exn
     * }}}
     * Note that while [[DObject]] on the Scala side contains an ID of an object, on the ML side we instead
     * directly have the object that is references (of type `exn`). Serialization and deserialization creates and
