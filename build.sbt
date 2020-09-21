@@ -4,8 +4,6 @@ import scala.sys.process._
 
 name := "scala-isabelle"
 
-version := "0.1.0-SNAPSHOT"
-
 crossScalaVersions := List("2.13.3", "2.12.12")
 
 scalaVersion := "2.13.3"

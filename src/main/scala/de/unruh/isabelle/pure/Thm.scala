@@ -19,7 +19,7 @@ final class Thm private [Thm](val mlValue : MLValue[Thm])(implicit ec: Execution
     Ops.stringOfThm(MLValue(ctxt, this)).retrieveNow
 
   override def await: Unit = mlValue.await
-  override def someFuture(implicit ec: ExecutionContext): Future[Any] = mlValue.someFuture
+  override def someFuture: Future[Any] = mlValue.someFuture
 }
 
 object Thm extends OperationCollection {

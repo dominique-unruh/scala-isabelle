@@ -108,7 +108,7 @@ sealed abstract class Term extends FutureValue {
 }
 sealed abstract class ConcreteTerm extends Term {
   @inline override val concrete: this.type = this
-  override def someFuture(implicit ec: ExecutionContext): Future[Any] = Future.successful(())
+  override def someFuture: Future[Any] = Future.successful(())
   override def forceFuture(implicit ec: ExecutionContext): Future[this.type] = Future.successful(this)
   override def await: Unit = {}
 }
@@ -122,7 +122,7 @@ final class Cterm private(val ctermMlValue: MLValue[Cterm])(implicit val isabell
   lazy val concrete: ConcreteTerm = new MLValueTerm(mlValue).concrete
   override def hashCode(): Int = concrete.hashCode
   override def force : this.type = { ctermMlValue.force; this }
-  override def someFuture(implicit ec: ExecutionContext): Future[Any] = ctermMlValue.someFuture
+  override def someFuture: Future[Any] = ctermMlValue.someFuture
   override def await: Unit = ctermMlValue.await
 }
 
@@ -150,7 +150,7 @@ object Cterm {
 
 // TODO document
 final class MLValueTerm(val mlValue: MLValue[Term])(implicit val isabelle: Isabelle, ec: ExecutionContext) extends Term {
-  override def someFuture(implicit ec: ExecutionContext): Future[Any] = mlValue.someFuture
+  override def someFuture: Future[Any] = mlValue.someFuture
   override def await: Unit = mlValue.await
 
   //noinspection EmptyParenMethodAccessedAsParameterless

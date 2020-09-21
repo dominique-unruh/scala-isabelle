@@ -41,7 +41,7 @@ final class Context private [Context](val mlValue : MLValue[Context]) extends Fu
 
   override def toString: String = "context" + mlValue.stateString
   override def await: Unit = mlValue.await
-  override def someFuture(implicit ec: ExecutionContext): Future[Any] = mlValue.someFuture
+  override def someFuture: Future[Any] = mlValue.someFuture
 }
 
 object Context extends OperationCollection {

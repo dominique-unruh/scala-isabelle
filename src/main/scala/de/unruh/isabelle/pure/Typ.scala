@@ -58,7 +58,7 @@ sealed abstract class ConcreteTyp extends Typ {
   override val concrete: this.type = this
   override def await: Unit = {}
   override def forceFuture(implicit ec: ExecutionContext): Future[ConcreteTyp.this.type] = Future.successful(this)
-  override def someFuture(implicit ec: ExecutionContext): Future[Any] = Future.successful(())
+  override def someFuture: Future[Any] = Future.successful(())
 }
 
 final class MLValueTyp(val mlValue: MLValue[Typ])(implicit val isabelle: Isabelle, ec: ExecutionContext) extends Typ {
@@ -88,7 +88,7 @@ final class MLValueTyp(val mlValue: MLValue[Typ])(implicit val isabelle: Isabell
     if (concreteLoaded) concrete.toString
     else s"‹term${mlValue.stateString}›"
 
-  override def someFuture(implicit ec: ExecutionContext): Future[Any] = mlValue.someFuture
+  override def someFuture: Future[Any] = mlValue.someFuture
   override def await: Unit = mlValue.await
 }
 
@@ -102,7 +102,7 @@ final class Ctyp private(val ctypMlValue: MLValue[Ctyp])(implicit val isabelle: 
   override def hashCode(): Int = concrete.hashCode()
 
   override def await: Unit = ctypMlValue.await
-  override def someFuture(implicit ec: ExecutionContext): Future[Any] = ctypMlValue.someFuture
+  override def someFuture: Future[Any] = ctypMlValue.someFuture
 }
 
 // TODO document

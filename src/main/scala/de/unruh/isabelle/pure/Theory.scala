@@ -27,7 +27,7 @@ final class Theory private [Theory](val name: String, val mlValue : MLValue[Theo
     Ops.importMLStructure(this, name, newName).retrieveNow
 
   override def await: Unit = mlValue.await
-  override def someFuture(implicit ec: ExecutionContext): Future[Any] = mlValue.someFuture
+  override def someFuture: Future[Any] = mlValue.someFuture
 }
 
 object Theory extends OperationCollection {
