@@ -1,4 +1,4 @@
-# scala-isabelle [![Build Status](https://travis-ci.com/dominique-unruh/scala-isabelle.svg?branch=master)](https://travis-ci.com/dominique-unruh/scala-isabelle)
+# scala-isabelle [![Build Status](https://travis-ci.com/dominique-unruh/scala-isabelle.svg?branch=master)](https://travis-ci.com/dominique-unruh/scala-isabelle) [![Scaladoc](https://javadoc.io/badge2/de.unruh/scala-isabelle_2.13/scaladoc.svg)](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/index.html) [![Scaladoc snapshot](https://img.shields.io/badge/scaladoc-snapshot-brightgreen.svg)](https://oss.sonatype.org/service/local/repositories/snapshots/archive/de/unruh/scala-isabelle_2.13/0.1.1-SNAPSHOT/scala-isabelle_2.13-0.1.1-SNAPSHOT-javadoc.jar/!/de/unruh/isabelle/index.html)
 
 ## What is this library for?
 
@@ -10,11 +10,16 @@ as the discontinued [libisabelle](https://github.com/larsrh/libisabelle).
 
 ## Prerequisites
 
-* Linux or Windows
+#### Runtime requirements
+
+* Linux or OS/X
 * Java 11 or newer (both for compilation and running)
-* Scala 2.12 or newer
 * [Isabelle 2019 or newer](https://isabelle.in.tum.de/) (needed at runtime)
-* sbt
+
+#### Compile time requirements
+
+* Scala 2.12 or newer
+* [sbt](https://www.scala-sbt.org/) (optional)
 
 ## Installation
 
@@ -75,11 +80,12 @@ The source code for this example can be found in [Example.scala](https://raw.git
 
 ## Further reading
 
-* [Scaladoc for v0.1.0](https://oss.sonatype.org/service/local/repositories/releases/archive/de/unruh/scala-isabelle_2.13/0.1.0/scala-isabelle_2.13-0.1.0-javadoc.jar/!/de/unruh/isabelle/index.html)
-* [Scaladoc for the development snapshot](https://oss.sonatype.org/service/local/repositories/snapshots/archive/de/unruh/scala-isabelle_2.13/0.1.1-SNAPSHOT/scala-isabelle_2.13-0.1.1-SNAPSHOT-javadoc.jar/!/de/unruh/isabelle/index.html)
-
-For an introduction to the most important concepts, start with the API doc for classes `de.unruh.isabelle.control.Isabelle`
-and `de.unruh.isabelle.mlvalue.MLValue` and `de.unruh.isabelle.mlvalue.Term`.
+Most information is in the
+[API documentation](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/index.html).
+For an introduction to the most important concepts, start with the API doc for the classes
+[Isabelle](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/Isabelle.html),
+[MLValue](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/mlvalue/MLValue.html),
+and [Term](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/pure/Term.html).
 
 ## Projects using scala-isabelle
 
