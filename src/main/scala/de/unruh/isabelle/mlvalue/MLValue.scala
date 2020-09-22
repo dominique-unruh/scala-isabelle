@@ -418,15 +418,25 @@ object MLValue extends OperationCollection {
     def retrieve(value: MLValue[A])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[A]
     // TODO: Document
     def store(value: A)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[A]
-    /** This function should always return the same value. (It is declared as a `def` only to make sure
+    /** Returns ML code for an (anonymous) function of type `exn -> a` that converts a value
+     * encoded as an exception back into the original value.
+     *
+     * It is recommended that this function produces informative match failures in case of invalid inputs.
+     * [[MLValue.matchFailExn]] is a helper function that facilitates this.
+     *
+     * This function should always return the same value. (It is declared as a `def` only to make sure
      * Scala does not include an extra field or perform an unnecessary computation in the class when this function
      * is not used. */
-    // TODO: Document
     def exnToValue : String
-    /** This function should always return the same value. (It is declared as a `def` only to make sure
+    /** Returns ML code for an (anonymous) function of type `a -> exn` that converts a value
+     * into its encoding as an exception.
+     *
+     * It is recommended that this function produces informative match failures in case of invalid inputs.
+     * [[MLValue.matchFailExn]] is a helper function that facilitates this.
+     *
+     * This function should always return the same value. (It is declared as a `def` only to make sure
      * Scala does not include an extra field or perform an unnecessary computation in the class when this function
      * is not used. */
-    // TODO: Document
     def valueToExn : String
   }
 
