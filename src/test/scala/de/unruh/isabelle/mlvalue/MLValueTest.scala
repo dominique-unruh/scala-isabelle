@@ -12,6 +12,8 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Awaitable}
 
 class MLValueTest extends AnyFunSuite {
+  import MLValueTest._
+
   test ("two instances of Isabelle") {
     val isabelle1 = IsabelleTest.isabelle
     val isabelle2 = new Isabelle(IsabelleTest.setup)
@@ -23,19 +25,6 @@ class MLValueTest extends AnyFunSuite {
     val str2 = thm2.pretty(ctxt2)
     assert(str1 == "?x \\<equiv> ?x")
     assert(str2 == "?t = ?t")
-  }
-
-  private def roundTrip[A](value: A)(implicit converter: Converter[A]) = {
-    println(s"Creating MLValue($value)")
-    val mlValue = MLValue(value)
-    println("Getting ID")
-    val id = await(mlValue.id)
-    println("Retrieving")
-    val future = mlValue.retrieve
-    println("Waiting for future")
-    val value2 = await(future)
-    println("Checking")
-    assert(value2==value)
   }
 
   test ("store/retrieve int") {
@@ -103,6 +92,21 @@ class MLValueTest extends AnyFunSuite {
     assert(resultHere == "15129")
 
 
+  }
+}
+
+object MLValueTest {
+  def roundTrip[A](value: A)(implicit converter: Converter[A]) = {
+    println(s"Creating MLValue($value)")
+    val mlValue = MLValue(value)
+    println("Getting ID")
+    val id = await(mlValue.id)
+    println("Retrieving")
+    val future = mlValue.retrieve
+    println("Waiting for future")
+    val value2 = await(future)
+    println("Checking")
+    assert(value2==value)
   }
 
   def await[A](x: Awaitable[A]): A = Await.result(x, Duration.Inf)

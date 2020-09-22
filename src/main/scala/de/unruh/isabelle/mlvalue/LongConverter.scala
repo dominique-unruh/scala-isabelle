@@ -17,10 +17,10 @@ import Implicits._
  * Note that there is an incompatibility between ML `int` and Scala [[scala.Long Long]].
  * The former is unbounded while the latter is a 64-bit integer. ML `int`s that
  * do not fit are truncated upon retrieval (that is, no overflow exception is thrown!)
+ * Use [[BigIntConverter]] if arbitrary length integers should be handled.
  *
- * Note that [[IntConverter]] is a different [[MLValue.Converter Converter]] for the same ML type `int`.
- * They have compatible representations as exceptions, thus [[MLValue]][Int] and [[MLValue]][Long]
- * can safely be typecast into each other.
+ * Note that [[IntConverter]], [[LongConverter]], [[BigIntConverter]] are different [[MLValue.Converter Converter]]s for the same ML type `int`.
+ * They have compatible representations as exceptions, they can safely be typecast into each other.
  *
  * @see MLValue.Converter for explanations what [[MLValue.Converter Converter]]s are for.
  */
@@ -32,8 +32,8 @@ object LongConverter extends Converter[Long] {
                                (implicit isabelle: Isabelle, ec: ExecutionContext): Future[Long] =
     for (DInt(i) <- Ops.retrieveLong(value.id)) yield i
 
-  @inline override def exnToValue: String = s"fn E_Int i => i | ${matchFailExn("LongConverter.exnToValue")}"
-  @inline override def valueToExn: String = "E_Int"
+  @inline override def exnToValue: String = IntConverter.exnToValue
+  @inline override def valueToExn: String = IntConverter.valueToExn
 
-  override def mlType: String = "int"
+  override def mlType: String = IntConverter.mlType
 }

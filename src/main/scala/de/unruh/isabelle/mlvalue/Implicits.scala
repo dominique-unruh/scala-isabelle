@@ -5,6 +5,7 @@ import de.unruh.isabelle.mlvalue.MLValue.Converter
 object Implicits {
   @inline implicit val booleanConverter: BooleanConverter.type = BooleanConverter
   @inline implicit val intConverter: IntConverter.type = IntConverter
+  @inline implicit val bigIntConverter: BigIntConverter.type = BigIntConverter
   @inline implicit val longConverter: LongConverter.type = LongConverter
   @inline implicit val unitConverter: UnitConverter.type = UnitConverter
   @inline implicit val stringConverter: StringConverter.type = StringConverter

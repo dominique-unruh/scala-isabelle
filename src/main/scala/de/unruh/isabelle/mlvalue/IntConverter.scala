@@ -17,10 +17,10 @@ import Implicits._
  * Note that there is an incompatibility between ML `int` and Scala [[scala.Int Int]].
  * The former is unbounded while the latter is a 32-bit integer. ML `int`s that
  * do not fit are truncated upon retrieval (that is, no overflow exception is thrown!)
+ * Use [[BigIntConverter]] if arbitrary length integers should be handled.
  *
- * Note that [[LongConverter]] is a different [[MLValue.Converter Converter]] for the same ML type `int`.
- * They have compatible representations as exceptions, thus [[MLValue]][Int] and [[MLValue]][Long]
- * can safely be typecast into each other.
+ * Note that [[IntConverter]], [[LongConverter]], [[BigIntConverter]] are different [[MLValue.Converter Converter]]s for the same ML type `int`.
+ * They have compatible representations as exceptions, they can safely be typecast into each other.
  *
  * @see MLValue.Converter for explanations what [[MLValue.Converter Converter]]s are for.
  */

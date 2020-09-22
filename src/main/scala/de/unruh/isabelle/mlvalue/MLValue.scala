@@ -186,7 +186,7 @@ class MLValue[A] protected (/** the ID of the referenced object in the Isabelle 
 
 // TODO: Document API
 class MLStoreFunction[A] private (val id: Future[ID]) {
-  def apply(data: Data)(implicit isabelle: Isabelle, ec: ExecutionContext, converter: Converter[A]): MLValue[A] = {
+  def apply(data: Data)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[A] = {
     // Maybe inherit from MLFunction instead?
     MLValue.unsafeFromId(isabelle.applyFunction(this.id, data).map {
       case DObject(id) => id
@@ -194,7 +194,7 @@ class MLStoreFunction[A] private (val id: Future[ID]) {
     })
   }
 
-  def apply(data: Future[Data])(implicit isabelle: Isabelle, ec: ExecutionContext, converter: Converter[A]): MLValue[A] =
+  def apply(data: Future[Data])(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[A] =
     MLValue.unsafeFromId(for (data <- data; DObject(id) <- isabelle.applyFunction(this.id, data)) yield id)
 }
 
@@ -315,11 +315,13 @@ object MLValue extends OperationCollection {
     val storeInt = MLStoreFunction[Int]("fn DInt i => i")
     val retrieveLong = MLRetrieveFunction[Long]("DInt")
     val storeLong = MLStoreFunction[Long]("fn DInt i => i")
+    // TODO: more efficient than decimal representation?
+    val retrieveBigInt = MLRetrieveFunction[BigInt]("fn i => DString (string_of_int i)")
+    val storeBigInt = MLStoreFunction[BigInt]("fn DString s => Int.fromString s |> Option.valOf")
 
     val retrieveString: MLRetrieveFunction[String] = MLRetrieveFunction[String]("DString")
     val storeString: MLStoreFunction[String] = MLStoreFunction[String]("fn DString str => str")
 
-//    val boolToInt : MLFunction[Boolean, Int] = MLValue.compileFunction[Boolean, Int]("fn true => 1 | false => 0")
     val boolTrue : MLValue[Boolean] = MLValue.compileValue("true")
     val boolFalse : MLValue[Boolean] = MLValue.compileValue("false")
     val retrieveBool : MLRetrieveFunction[Boolean] =
