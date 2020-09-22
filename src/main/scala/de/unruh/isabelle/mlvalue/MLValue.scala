@@ -26,7 +26,7 @@ import scala.util.{Failure, Success}
   * translate an `MLValue[A]` back to a Scala value of type `A`. Supported types are [[scala.Int Int]], [[scala.Long Long]],
   * [[scala.Boolean Boolean]], [[scala.Unit Unit]], [[java.lang.String String]], and lists and tuples (max. 7 elements)
   * of supported types. (It is also possible for `A` to be the type `MLValue[...]`, see [[MLValueConverter]] for
-  * explanations (TODO add these explanations).) It is possible to
+  * explanations.) It is possible to
   * add support for other types, see [[MLValue.Converter]] for instructions. Using this
   * mechanism, support for the terms, types, theories, contexts, and theorems has been added in package
   * [[de.unruh.isabelle.pure]].
@@ -169,14 +169,14 @@ class MLValue[A] protected (/** the ID of the referenced object in the Isabelle 
   /** Specialized type cast that inserts `MLValue[]` in arbitrary positions in the type parameter of this MLValue.
    * E.g., we can type cast `this : MLValue[List[X]]` to `MLValue[List[MLValue[X]]]` by invoking `this.insertMLValue[List,X]`
    * Such type casts are safe because the the way `MLValue[...]` is interpreted in the type parameter to `MLValue` (see
-   * [[MLValueConverter]] (TODO: document that one)). The same type cast could be achieved using `.asInstanceOf`, but
+   * [[MLValueConverter]]). The same type cast could be achieved using `.asInstanceOf`, but
    * `insertMLValue` guarantees that no unsafe cast is accidentally performed.
    */
   @inline def insertMLValue[C[_],B](implicit ev: A =:= C[B]): MLValue[C[MLValue[B]]] = this.asInstanceOf[MLValue[C[MLValue[B]]]]
   /** Specialized type cast that removes `MLValue[]` in arbitrary positions in the type parameter of this MLValue.
    * E.g., we can type cast `this : MLValue[List[MLValue[X]]]` to `MLValue[List[X]]` by invoking `this.removeMLValue[List,X]`
    * Such type casts are safe because the the way `MLValue[...]` is interpreted in the type parameter to `MLValue` (see
-   * [[MLValueConverter]] (TODO: document that one)). The same type cast could be achieved using `.asInstanceOf`, but
+   * [[MLValueConverter]]). The same type cast could be achieved using `.asInstanceOf`, but
    * `insertMLValue` guarantees that no unsafe cast is accidentally performed.
    */
   @inline def removeMLValue[C[_],B](implicit ev: A =:= C[MLValue[B]]): MLValue[C[B]] = this.asInstanceOf[MLValue[C[B]]]
