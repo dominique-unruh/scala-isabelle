@@ -8,7 +8,15 @@ import scala.concurrent.{ExecutionContext, Future}
 
 import Implicits._
 
-// TODO: Document API
+/**
+ * [[MLValue.Converter]] for type `(A,B)`.
+ *
+ *  - ML type: `a * b` (if `a,b` are the ML types corresponding to `A`,`B`).
+ *  - Encoding of a pair (x_A,x_B) as an exception: `E_Pair e_A e_B` where `e_T`
+ *    is the encoding of `x_T` as an exception (according to the converter for type `T`).
+ *
+ * @see MLValue.Converter for explanations what [[MLValue.Converter Converter]]s are for.
+ */
 @inline final class Tuple2Converter[A, B](converterA: Converter[A], converterB: Converter[B]) extends Converter[(A, B)] {
   @inline override def retrieve(value: MLValue[(A, B)])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[(A, B)] = {
     for (DList(DObject(aID), DObject(bID)) <- Ops.retrieveTuple2(value.id);
