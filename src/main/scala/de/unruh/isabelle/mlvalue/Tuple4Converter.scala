@@ -8,7 +8,15 @@ import scala.concurrent.{ExecutionContext, Future}
 
 import Implicits._
 
-// TODO: Document API
+/**
+ * [[MLValue.Converter]] for type `(A,B,C,D)`.
+ *
+ *  - ML type: `a * b * c * d` (if `a,b,c,d` are the ML types corresponding to `A`,`B`,`C`,`D`).
+ *  - Encoding of a pair (x_A,x_B,x_C,x_D) as an exception: `E_Pair e_A (E_Pair e_B (E_Pair e_C e_D))` where `e_T`
+ *    is the encoding of `x_T` as an exception (according to the converter for type `T`).
+ *
+ * @see MLValue.Converter for explanations what [[MLValue.Converter Converter]]s are for.
+ */
 @inline final class Tuple4Converter[A, B, C, D](converterA: Converter[A], converterB: Converter[B], converterC: Converter[C], converterD: Converter[D]) extends Converter[(A, B, C, D)] {
   override def retrieve(value: MLValue[(A, B, C, D)])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[(A, B, C, D)] = {
     for (DList(DObject(aID), DObject(bID), DObject(cID), DObject(dID)) <- Ops.retrieveTuple4(value.id);

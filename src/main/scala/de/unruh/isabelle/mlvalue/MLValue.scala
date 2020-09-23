@@ -368,7 +368,8 @@ object MLValue extends OperationCollection {
     *   isabelle.executeMLCodeNow("exception E_Int of int")
     * }}}
     * This should be done globally (once per Isabelle instance). Declaring two (even identical) exceptions with the
-    * same name `E_Int` must be avoided! See [[control.OperationCollection OperationCollection]] for utilities how to manage this. (`E_Int`
+    * same name `E_Int` must be avoided! See [[control.OperationCollection OperationCollection]]
+    * for utilities how to manage this. (`E_Int`
     * specifically is declared in [[MLValue]] when calling [[MLValue.init]].)
     *
     * We define the method [[valueToExn]] that returns the ML source code to convert an ML value of type `int` to an exception:
@@ -382,7 +383,7 @@ object MLValue extends OperationCollection {
     *
     * We also need to convert in the opposite direction:
     * {{{
-    * final object IntConverter extends MLValue.Converter[A] {
+    *   final object IntConverter extends MLValue.Converter[A] {
     *     ...
     *     override def exnToValue: String = "fn (E_Int x) => x"
     *     ...
@@ -391,9 +392,67 @@ object MLValue extends OperationCollection {
     * (Best add some meaningful exception in case of match failure, e.g., using boilerplate from [[MLValue.matchFailExn]].
     * Omitted for clarity in this example.)
     *
-    * TODO: Document [[retrieve]], [[store]]
+    * Next, we need to write a function for retrieving integer values from the object store (method [[retrieve]]).
+    * It gets a `value : MLValue[Int]` as input and has to return a `Future[Int]` containing the stored integer. In principle,
+    * there are not restrictions how this is done but the simplest way is the following approach:
+    *  - Decide on an encoding of the integer `i` as a tree in the [[Data]] data structure. (In this case, simply
+    *    [[DInt]]`(i)` will do the trick.)
+    *  - Define an [[MLRetrieveFunction]] `retrieveInt` that performs this encoding on the ML side, i.e.,
+    *    we need to write ML code for a function of type `int -> data`. (`data` is the ML analogue of [[Data]], see the
+    *    documentation of [[Data]].)
+    *  - Retrieve the value by invoking `retrieveInt` (gives a `Future[Data]`)
+    *  - Convert the resulting [[Data]] to an [[Int]].
+    * That is:
+    * {{{
+    *   final object IntConverter extends MLValue.Converter[A] {
+    *     ...
+    *     override def retrieve(value: MLValue[Int])
+    *                          (implicit isabelle: Isabelle, ec: ExecutionContext): Future[Int] = {
+    *        val retrieveInt = MLRetrieveFunction[Int]("fn i => DInt i")   // compile retrieveInt
+    *        for (data <- retrieveInt(value.id); // invoke retrieveInt to transfer from Isabelle
+    *             DInt(long) = data)             // decode the data (simple pattern match)
+    *          yield long.toInt   // return the integer
+    *     }
+    *     ...
+    *   }
+    * }}}
+    * Note that `val retrieveInt = ...` was written inside the function `retrieve` for simplicity here. However,
+    * since it invokes the ML compiler, it should be invoked only once (per [[Isabelle]] instance, like the
+    * [[Isabelle.executeMLCodeNow executeMLCodeNow]] above). See [[OperationCollection]] for an auxiliary class
+    * helping to manage this.
     *
-    * TODO: Declare implicits
+    * Finally, we also need a function [[store]] that transfers an integer into the Isabelle object store.
+    * Again, the easiest way is to use the following steps:
+    *  - Define an encoding of integers as [[Data]] trees (we use the same encoding as before)
+    *  - Define an [[MLStoreFunction]] `storeInt` that decodes the data back to an int on the ML side, i.e.,
+    *    we need to write ML code for a function of type `data -> int`.
+    *  - Encode the integer to be stored as [[Data]]
+    *  - Invoke storeInt to transfer the [[Data]] to ML and store the integer in the object store.
+    * That is:
+    *   final object IntConverter extends MLValue.Converter[A] {
+    *     ...
+    *     override def store(value: Int)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[Int] = {
+    *       val storeInt = MLStoreFunction[Int]("fn DInt i => i")   // compile storeInt
+    *       val data = DInt(value)       // encode the integer as Data
+    *       Ops.storeInt(data)           // invoke storeInt to get the MLValue
+    *     }
+    *   }
+    * }}}
+    * Note that `val retrieveInt = ...` was written inside the function `retrieve` for simplicity here.
+    * Like above for `storeInt`, this should be done only once (per [[Isabelle]] instance).
+    *
+    * This concludes the definition of the [[Converter]]. Finally, the converter should be made available
+    * as an implicit value. That is, we define in a suitable place
+    * {{{
+    *   implicit val intConverter = IntConverter
+    * }}}
+    * so that `intConverter` can be imported as an implicit where needed. (And if the converter
+    * we constructed is not an object but a class taking other converters as arguments,
+    * we instead write something like
+    * {{{
+    *   implicit def listConverter[A](implicit converter: Converter[A]): ListConverter[A] = new ListConverter()(converter)
+    * }}
+    * or similar.)
     *
     * Notes
     *  - Several Scala types can correspond to the same ML type (e.g., [[scala.Int Int]] and
@@ -402,6 +461,11 @@ object MLValue extends OperationCollection {
     *    [[exnToValue]] in their [[Converter]]s), then [[MLValue]][A] and [[MLValue]][B] can be safely typecast into
     *    each other.
     *  - TODO how about two ML types with the same Scala type?
+    *  - The attentive reader will notice that we use [[MLRetrieveFunction.apply]] and [[MLStoreFunction.apply]]
+    *    when defining the converter, but that these functions take the converter we are currently defining as an
+    *    implicit argument! However, this cyclic dependency is not a problem because [[MLRetrieveFunction.apply]]
+    *    and [[MLStoreFunction.apply]] never invoke [[store]] and [[retrieve]] from the converter, so we can call
+    *    those `apply` functions from [[store]] and [[retrieve]].
     *
     * @tparam A the Scala type for which a corresponding ML type is declared
     */
