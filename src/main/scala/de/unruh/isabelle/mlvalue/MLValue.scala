@@ -541,12 +541,26 @@ object MLValue extends OperationCollection {
      *
      * This function should always return the same value. (It is declared as a `def` only to make sure
       * Scala does not include an extra field or perform an unnecessary computation in the class when this function
-      * is not used. */
+      * is not used.) */
     def mlType : String
-    // TODO: Document
+    /** Given an [[MLValue]] `value`, retrieves and returns the value referenced by `value` in the Isabelle
+     * object store.
+     *
+     * Must not invoke `value.`[[MLValue.retrieve retrieve]] or `value.`[[MLValue.retrieveNow retrieveNow]] because those functions
+     * invoke `this.`[[retrieve]]. (But calling [[MLValue.retrieve retrieve]] or [[MLValue.retrieveNow retrieveNow]]
+     * on other [[MLValue]]s is allowed as long as no cyclic dependencies are created.)
+     **/
     def retrieve(value: MLValue[A])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[A]
-    // TODO: Document
+
+    /** Given a `value : A`, transfers and stores `value` in the Isabelle object store and returns
+     * an [[MLValue]] referencing the value in the object store.
+     *
+     * Must not invoke [[MLValue.apply MLValue]]`(value)` because that functions
+     * invokes `this.`[[store]]. (But calling [[MLValue.apply MLValue]]`(...)`
+     * on other values is allowed as long as no cyclic dependencies are created.)
+     **/
     def store(value: A)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[A]
+
     /** Returns ML code for an (anonymous) function of type `exn -> a` that converts a value
      * encoded as an exception back into the original value.
      *
@@ -555,8 +569,9 @@ object MLValue extends OperationCollection {
      *
      * This function should always return the same value. (It is declared as a `def` only to make sure
      * Scala does not include an extra field or perform an unnecessary computation in the class when this function
-     * is not used. */
+     * is not used.) */
     def exnToValue : String
+
     /** Returns ML code for an (anonymous) function of type `a -> exn` that converts a value
      * into its encoding as an exception.
      *
@@ -565,7 +580,7 @@ object MLValue extends OperationCollection {
      *
      * This function should always return the same value. (It is declared as a `def` only to make sure
      * Scala does not include an extra field or perform an unnecessary computation in the class when this function
-     * is not used. */
+     * is not used.) */
     def valueToExn : String
   }
 
