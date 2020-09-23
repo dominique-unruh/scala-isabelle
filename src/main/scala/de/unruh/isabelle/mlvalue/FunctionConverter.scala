@@ -18,7 +18,8 @@ import scala.concurrent.{ExecutionContext, Future}
  * fail (since a Scala function cannot be transferred to the Isabelle process). However, [[retrieve]] works,
  * thus `mlF.retrieveNow` for `mlF : MLValue[D=>R]` will return a function (that calls back to the Isabelle process whenever executed).
  * But the preferred way to invoke `mlF` is to convert it into an [[MLFunction]] by `mlF.function` and invoke the
- * resulting [[MLFunction]]. Another way to generate an `MLValue[D=>R]` is using [[MLValue.compileFunction]] to
+ * resulting [[MLFunction]]. Another way to generate an `MLValue[D=>R]` is using
+ * [[MLValue.compileFunction[D,R]* MLValue.compileFunction]] to
  * compile the function from ML source code.
  *
  * @see MLValue.Converter for explanations what [[MLValue.Converter Converter]]s are for.
@@ -34,6 +35,7 @@ import scala.concurrent.{ExecutionContext, Future}
   override def store(value: D => R)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[D => R] =
     throw new UnsupportedOperationException("Cannot store a Scala function in the ML process")
 
+  // TODO: Is this correct? Does it match what MLValue.compile(Raw) does?
   @inline override def exnToValue: String = s"fn E_Function f => ((${converterR.exnToValue}) o f o (${converterD.valueToExn})) | ${MLValue.matchFailExn("FunctionConverter.exnToValue")}"
   @inline override def valueToExn: String = s"fn f => E_Function ((${converterR.valueToExn}) o f o (${converterD.exnToValue}))"
 

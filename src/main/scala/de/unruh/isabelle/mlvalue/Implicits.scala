@@ -18,4 +18,6 @@ object Implicits {
   @inline implicit def tuple6Converter[A,B,C,D,E,F](implicit a: Converter[A], b: Converter[B], c: Converter[C], d: Converter[D], e: Converter[E], f: Converter[F]): Tuple6Converter[A, B, C, D, E, F] = new Tuple6Converter(a,b,c,d,e,f)
   @inline implicit def tuple7Converter[A,B,C,D,E,F,G](implicit a: Converter[A], b: Converter[B], c: Converter[C], d: Converter[D], e: Converter[E], f: Converter[F], g: Converter[G]): Tuple7Converter[A,B,C,D,E,F,G] = new Tuple7Converter(a,b,c,d,e,f,g)
   @inline implicit def mlValueConverter[A]: MLValueConverter[A] = new MLValueConverter[A]
+  @inline implicit def functionConverter[D,R](implicit converterD: Converter[D], converterR: Converter[R]): FunctionConverter[D,R] =
+    new FunctionConverter()(converterD, converterR)
 }
