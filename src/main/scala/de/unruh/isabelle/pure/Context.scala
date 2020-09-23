@@ -72,7 +72,9 @@ object Context extends OperationCollection {
    *
    * (`E_Context` is automatically declared when needed by the ML code in this package.
    * If you need to ensure that it is defined for compiling own ML code, invoke [[Context.init]].)
-   * */
+   *
+   * Available as an implicit value by importing [[de.unruh.isabelle.pure.Implicits]]`._`
+   **/
   object ContextConverter extends Converter[Context] {
     override def retrieve(value: MLValue[Context])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Context] = {
       for (_ <- value.id)

@@ -68,7 +68,9 @@ object Theory extends OperationCollection {
    *
    * (`E_Theory` is automatically declared when needed by the ML code in this package.
    * If you need to ensure that it is defined for compiling own ML code, invoke [[Theory.init]].)
-   * */
+   *
+   * Available as an implicit value by importing [[de.unruh.isabelle.pure.Implicits]]`._`
+   **/
   object TheoryConverter extends Converter[Theory] {
     override def retrieve(value: MLValue[Theory])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Theory] =
       for (_ <- value.id)

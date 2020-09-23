@@ -6,7 +6,7 @@ import de.unruh.isabelle.mlvalue.MLValue.{Converter, Ops}
 import scala.concurrent.{ExecutionContext, Future}
 
 /**
- * [[MLValue.Converter]] for [[Isabelle.Data]]s.
+ * [[MLValue.Converter]] for [[control.Isabelle.Data Isabelle.Data]]s.
  *
  *  - ML type: `data`
  *  - Encoding of an `d : data` as an exception: `E_Data d`

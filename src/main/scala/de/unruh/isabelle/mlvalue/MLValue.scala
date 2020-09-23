@@ -422,16 +422,16 @@ object MLValue extends OperationCollection {
     * }}}
     * Note that `val retrieveInt = ...` was written inside the function `retrieve` for simplicity here. However,
     * since it invokes the ML compiler, it should be invoked only once (per [[control.Isabelle Isabelle]] instance, like the
-    * [[Isabelle.executeMLCodeNow executeMLCodeNow]] above). See [[OperationCollection]] for an auxiliary class
+    * [[control.Isabelle.executeMLCodeNow executeMLCodeNow]] above). See [[control.OperationCollection OperationCollection]] for an auxiliary class
     * helping to manage this.
     *
     * Finally, we also need a function [[store]] that transfers an integer into the Isabelle object store.
     * Again, the easiest way is to use the following steps:
-    *  - Define an encoding of integers as [[Data]] trees (we use the same encoding as before)
+    *  - Define an encoding of integers as [[control.Isabelle.Data Data]] trees (we use the same encoding as before)
     *  - Define an [[MLStoreFunction]] `storeInt` that decodes the data back to an int on the ML side, i.e.,
     *    we need to write ML code for a function of type `data -> int`.
-    *  - Encode the integer to be stored as [[Data]]
-    *  - Invoke storeInt to transfer the [[Data]] to ML and store the integer in the object store.
+    *  - Encode the integer to be stored as [[control.Isabelle.Data Data]]
+    *  - Invoke storeInt to transfer the [[control.Isabelle.Data Data]] to ML and store the integer in the object store.
     * That is:
     * {{{
     *   final object IntConverter extends MLValue.Converter[A] {

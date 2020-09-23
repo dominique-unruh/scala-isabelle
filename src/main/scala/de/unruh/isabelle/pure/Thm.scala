@@ -67,6 +67,7 @@ object Thm extends OperationCollection {
    *
    * (`E_Thm` is automatically declared when needed by the ML code in this package.
    * If you need to ensure that it is defined for compiling own ML code, invoke [[Thm.init]].)
+   * Available as an implicit value by importing [[de.unruh.isabelle.pure.Implicits]]`._`
    * */
   object ThmConverter extends Converter[Thm] {
     override def retrieve(value: MLValue[Thm])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Thm] =
