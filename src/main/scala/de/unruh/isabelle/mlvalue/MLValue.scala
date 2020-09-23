@@ -183,11 +183,27 @@ class MLValue[A] protected (/** the ID of the referenced object in the Isabelle 
 }
 
 
-
-// TODO: Document API
-// Mention: more efficient than MLFunction[Data, MLValue[A]] because data is not first transferred and then used
-class MLStoreFunction[A] private (id: Future[ID]) extends MLFunction[Data, MLValue[A]](id) {
-  // TODO: make sure we overwrite any functions that should be specialized
+/** A compiled ML function specifically transmitting values from Scala to Isabelle.
+ *
+ * The function is created by `val f = MLStoreFunction(ml)` where `ml` is ML code of type
+ * `data -> a`, and `a` is the ML type corresponding to `A`.
+ *
+ * When `f(data)` is invoked in Scala (with `data` of type [[control.Isabelle.Data Data]]), the compiled ML function `ml`
+ * is applied to `data` (in the Isabelle process), and the resulting value is stored in the object store,
+ * and an [[MLValue]] containing the ID is returned.
+ *
+ * An [[MLStoreFunction]] is particularly useful for writing [[MLValue.Converter.store store]] methods
+ * when writing an [[MLValue.Converter]].
+ *
+ * The behavior of an [[MLStoreFunction]]`[A]` is very similar to an [[MLFunction]]`[Data,A]`
+ * but more efficient. And the [[MLStoreFunction]] additionally does not access the
+ * [[MLValue.Converter.store store]] and [[MLValue.Converter.retrieve retrieve]] functions of the converter
+ * that is passed as an implicit argument. This is important because we use the [[MLStoreFunction]] for writing
+ * those functions in the first place.
+ **/
+class MLStoreFunction[A] private (val id: Future[ID]) {
+  /** Calls the compile ML function on `data` in the Isabelle process and returns
+   * an [[MLValue]] containing the result of that function. */
   def apply(data: Data)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[A] = {
     MLValue.unsafeFromId(isabelle.applyFunction(this.id, data).map {
       case DObject(id) => id
@@ -195,28 +211,66 @@ class MLStoreFunction[A] private (id: Future[ID]) extends MLFunction[Data, MLVal
     })
   }
 
+  /** Like [[apply apply(Data)]] but `data` can be a future.
+   * The returned [[MLValue]] `mlVal` will then internally contain that future (i.e.,
+   * for example `mlVal.`[[MLValue.retrieveNow retrieveNow]] will wait for `data` to complete first).
+   **/
   def apply(data: Future[Data])(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[A] =
     MLValue.unsafeFromId(for (data <- data; DObject(id) <- isabelle.applyFunction(this.id, data)) yield id)
 }
 
-// TODO: Document API
 object MLStoreFunction {
+  /** Creates an [[MLStoreFunction]] from ML code `ml`.
+   *
+   * The ML code `ml` should have type `data -> a` where `a` is the ML type associated with `A` by the
+   * implicit [[Isabelle.Converter Converter]].
+   *
+   * This method will not invoke `converter.`[[MLValue.Converter.store store]] or
+   * `converter.`[[MLValue.Converter.retrieve retrieve]].
+   **/
   def apply[A](ml: String)(implicit isabelle: Isabelle, converter: Converter[A]) : MLStoreFunction[A] =
     new MLStoreFunction(isabelle.storeValue(s"E_Function (DObject o (${converter.valueToExn}) o ($ml))"))
 }
 
-// TODO: Document API
-class MLRetrieveFunction[A] private (id: Future[ID]) extends MLFunction[MLValue[A], Data](id) {
-  // TODO: make sure we overwrite any functions that should be specialized
+/** A compiled ML function specifically transmitting values from Isabelle to Scala.
+ *
+ * The function is created by `val f = MLRetrieveFunction(ml)` where `ml` is ML code of type
+ * `a -> data`, and `a` is the ML type corresponding to `A`.
+ *
+ * When `f(mlVal : MLValue[A])` is invoked in Scala, the compiled ML function `ml`
+ * is applied to the ML value of type `a` referenced by `mlVal` in the object store in the Isabelle process.
+ * The result (of ML type `data`) is then transferred back to Scala and returned (in a [[scala.concurrent.Future Future]]).
+ *
+ * An [[MLRetrieveFunction]] is particularly useful for writing [[MLValue.Converter.retrieve retrieve]] methods
+ * when writing an [[MLValue.Converter]].
+ *
+ * The behavior of an [[MLRetrieveFunction]]`[A]` is very similar to an [[MLFunction]]`[A,Data]`
+ * but more efficient. And the [[MLRetrieveFunction]] additionally does not access the
+ * [[MLValue.Converter.store store]] and [[MLValue.Converter.retrieve retrieve]] functions of the converter
+ * that is passed as an implicit argument. This is important because we use the [[MLRetrieveFunction]] for writing
+ * those functions in the first place.
+ **/
+class MLRetrieveFunction[A] private (id: Future[ID]) {
+  // TODO remove/private
   def apply(id: ID)(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Isabelle.Data] =
     isabelle.applyFunction(this.id, DObject(id))
+  // TODO remove/private
   def apply(id: Future[ID])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Isabelle.Data] =
     for (id <- id; data <- apply(id)) yield data
+  /** Calls the compiled function on the value of ML type `a` referenced by `value`
+   * and returns the result to the Isabelle process (in a [[scala.concurrent.Future Future]]). */
   def apply(value: MLValue[A])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Data] =
     apply(value.id)
 }
 
-// TODO: Document API
+/** Creates an [[MLRetrieveFunction]] from ML code `ml`.
+ *
+ * The ML code `ml` should have type `a -> data` where `a` is the ML type associated with `A` by the
+ * implicit [[Isabelle.Converter Converter]].
+ *
+ * This method will not invoke `converter.`[[MLValue.Converter.store store]] or
+ * `converter.`[[MLValue.Converter.retrieve retrieve]].
+ **/
 object MLRetrieveFunction {
   def apply[A](ml: String)(implicit isabelle: Isabelle, converter: Converter[A]) : MLRetrieveFunction[A] =
     new MLRetrieveFunction(isabelle.storeValue(s"E_Function (fn DObject x => ($ml) ((${converter.exnToValue}) x))"))
@@ -224,10 +278,11 @@ object MLRetrieveFunction {
 
 object MLValue extends OperationCollection {
   /** Unsafe operation for creating an [[MLValue]].
-   * It is the callers responsibility to ensure that `id` refers to an value of the right type in the object store.
+   * It is the callers responsibility to ensure that `id` refers to an ML value of the right type in the object store.
    * Using this function should rarely be necessary, except possibly when defining new [[Converter]]s.
    */
   def unsafeFromId[A](id: Future[Isabelle.ID]) = new MLValue[A](id)
+  // TODO document
   def unsafeFromId[A](id: Isabelle.ID): MLValue[A] = unsafeFromId[A](Future.successful(id))
 
   /** Utility method for generating ML code.
@@ -422,16 +477,16 @@ object MLValue extends OperationCollection {
     * }}}
     * Note that `val retrieveInt = ...` was written inside the function `retrieve` for simplicity here. However,
     * since it invokes the ML compiler, it should be invoked only once (per [[control.Isabelle Isabelle]] instance, like the
-    * [[Isabelle.executeMLCodeNow executeMLCodeNow]] above). See [[OperationCollection]] for an auxiliary class
+    * [[control.Isabelle.executeMLCodeNow executeMLCodeNow]] above). See [[OperationCollection]] for an auxiliary class
     * helping to manage this.
     *
     * Finally, we also need a function [[store]] that transfers an integer into the Isabelle object store.
     * Again, the easiest way is to use the following steps:
-    *  - Define an encoding of integers as [[Data]] trees (we use the same encoding as before)
+    *  - Define an encoding of integers as [[control.Isabelle.Data Data]] trees (we use the same encoding as before)
     *  - Define an [[MLStoreFunction]] `storeInt` that decodes the data back to an int on the ML side, i.e.,
     *    we need to write ML code for a function of type `data -> int`.
-    *  - Encode the integer to be stored as [[Data]]
-    *  - Invoke storeInt to transfer the [[Data]] to ML and store the integer in the object store.
+    *  - Encode the integer to be stored as [[control.Isabelle.Data Data]]
+    *  - Invoke storeInt to transfer the [[control.Isabelle.Data Data]] to ML and store the integer in the object store.
     * That is:
     * {{{
     *   final object IntConverter extends MLValue.Converter[A] {

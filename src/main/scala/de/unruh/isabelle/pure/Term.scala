@@ -68,12 +68,11 @@ import scala.concurrent.{Await, Awaitable, ExecutionContext, Future}
  * `case Const(name,typ) =>` also match [[Cterm]]s.
  */
 sealed abstract class Term extends FutureValue {
-  // TODO document members
-  /** Transforms this term into an [[MLValue]] containing this term. This causes transfer of
+  /** Transforms this term into an [[mlValue.MLValue MLValue]] containing this term. This causes transfer of
    * the term to Isabelle only the first time it is accessed (and not at all if the term
    * came from the Isabelle process). */
   val mlValue : MLValue[Term]
-  /** [[Isabelle]] instance relative to which this term was constructed. */
+  /** [[control.Isabelle Isabelle]] instance relative to which this term was constructed. */
   implicit val isabelle : Isabelle
   /** Produces a string representation of this term. Uses the Isabelle pretty printer.
    * @param ctxt The Isabelle proof context to use (this contains syntax declarations etc.) */
@@ -91,7 +90,7 @@ sealed abstract class Term extends FutureValue {
 
   /** Equality of terms. Returns true iff the two [[Term]] instances represent the same term in
    * the Isabelle process. (E.g., a [[Cterm]] and a [[Const]] can be equal.) May throw an exception
-   * if the computation of the terms fails. (But will not fail if [[await]] or a related [[FutureValue]] method has
+   * if the computation of the terms fails. (But will not fail if [[await]] or a related [[mlvalue.FutureValue FutureValue]] method has
    * returned successfully on both terms.)
    */
   override def equals(that: Any): Boolean = (this, that) match {
