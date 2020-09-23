@@ -66,7 +66,7 @@ object Context extends OperationCollection {
   def apply(name: String)(implicit isabelle: Isabelle, ec: ExecutionContext) : Context =
     Context(Theory(name))
 
-  /** Representation of Contexts in ML. (See the general [[Context]] discussion.)
+  /** Representation of contexts in the Isabelle process. (See the general [[Context]] discussion.)
    * The ML type is `Proof.context`. A context `context : Proof.context` is represented as an exception
    * `E_Context context`.
    *

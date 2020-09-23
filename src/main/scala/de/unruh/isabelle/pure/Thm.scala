@@ -51,13 +51,23 @@ object Thm extends OperationCollection {
       compileFunction("fn (ctxt, thm) => Thm.pretty_thm ctxt thm |> Pretty.unformatted_string_of |> YXML.content_of")
   }
 
-  // TODO document (both TrueI and HOL.TrueI work)
+  /** Retrieves a theorem from the Isabelle process by name. The theorem needs to be available in the given context.
+   * Both short and fully qualified names work. (I.e., `Thm(context, "TrueI")` and `Thm(context, "HOL.TrueI)`
+   * return the same theorem.)
+   **/
   def apply(context: Context, name: String)(implicit isabelle: Isabelle, ec: ExecutionContext): Thm = {
     val mlThm : MLValue[Thm] = Ops.getThm(MLValue((context, name)))
     new Thm(mlThm)
   }
 
-  // TODO document
+  /** Representation of theorems in ML. (See the general discussion of [[Context]], the same things apply to [[Thm]].)
+   *
+   *  - ML type: `thm`
+   *  - Representation of theorem `th` as an exception: `E_Thm th`
+   *
+   * (`E_Thm` is automatically declared when needed by the ML code in this package.
+   * If you need to ensure that it is defined for compiling own ML code, invoke [[Thm.init]].)
+   * */
   object ThmConverter extends Converter[Thm] {
     override def retrieve(value: MLValue[Thm])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Thm] =
       for (_ <- value.id)

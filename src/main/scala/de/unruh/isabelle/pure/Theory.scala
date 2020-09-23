@@ -17,7 +17,8 @@ import de.unruh.isabelle.pure.Implicits._
  * An instance of this class is merely a thin wrapper around an [[mlvalue.MLValue MLValue]],
  * all explanations and examples given for [[Context]] also apply here.
  *
- * The name of the theory can be retrieved via the member [[name]].
+ * The name of the theory can be retrieved via the member [[name]] if the theory was created
+ * by [[Theory.apply]]`(ctxt, name)`. Otherwise, [[name]] returns a placeholder.
  */
 final class Theory private [Theory](val name: String, val mlValue : MLValue[Theory]) extends FutureValue {
   override def toString: String = s"theory $name${mlValue.stateString}"
@@ -49,14 +50,25 @@ object Theory extends OperationCollection {
                   in () end""")
   }
 
-  // TODO document
+  /** Retrieves a theory by its name. E.g., `Theory("HOL-Analysis.Inner_Product")`.
+   **/
+  // TODO: Find out whether short names are possible.
+  // TODO: Find out whether theories that aren't in the heap can be loaded
+  // TODO: Make test case to find that out
   def apply(name: String)(implicit isabelle: Isabelle, ec: ExecutionContext): Theory = {
     val mlName = MLValue(name)
     val mlThy : MLValue[Theory] = Ops.loadTheory(mlName)
     new Theory(name, mlThy)
   }
 
-  // TODO document
+  /** Representation of theories in ML. (See the general discussion of [[Context]], the same things apply to [[Theory]].)
+   *
+   *  - ML type: `theory`
+   *  - Representation of theory `thy` as an exception: `E_Theory thy`
+   *
+   * (`E_Theory` is automatically declared when needed by the ML code in this package.
+   * If you need to ensure that it is defined for compiling own ML code, invoke [[Theory.init]].)
+   * */
   object TheoryConverter extends Converter[Theory] {
     override def retrieve(value: MLValue[Theory])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Theory] =
       for (_ <- value.id)
