@@ -477,7 +477,7 @@ object MLValue extends OperationCollection {
     * }}}
     * Note that `val retrieveInt = ...` was written inside the function `retrieve` for simplicity here. However,
     * since it invokes the ML compiler, it should be invoked only once (per [[control.Isabelle Isabelle]] instance, like the
-    * [[control.Isabelle.executeMLCodeNow executeMLCodeNow]] above). See [[OperationCollection]] for an auxiliary class
+    * [[control.Isabelle.executeMLCodeNow executeMLCodeNow]] above). See [[control.OperationCollection OperationCollection]] for an auxiliary class
     * helping to manage this.
     *
     * Finally, we also need a function [[store]] that transfers an integer into the Isabelle object store.

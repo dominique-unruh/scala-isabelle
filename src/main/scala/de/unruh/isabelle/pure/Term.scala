@@ -68,7 +68,7 @@ import scala.concurrent.{Await, Awaitable, ExecutionContext, Future}
  * `case Const(name,typ) =>` also match [[Cterm]]s.
  */
 sealed abstract class Term extends FutureValue {
-  /** Transforms this term into an [[mlValue.MLValue MLValue]] containing this term. This causes transfer of
+  /** Transforms this term into an [[mlvalue.MLValue MLValue]] containing this term. This causes transfer of
    * the term to Isabelle only the first time it is accessed (and not at all if the term
    * came from the Isabelle process). */
   val mlValue : MLValue[Term]
@@ -139,29 +139,51 @@ sealed abstract class ConcreteTerm extends Term {
 
 /** Represents a `cterm` in Isabelle. In Isabelle, a `cterm` must be explicitly converted into a `term`,
  * this class inherits from [[Term]], so no explicit conversions are needed. (They happen automatically on
- * demand.) */
+ * demand.)
+ * A [[Cterm]] is always well-typed relative to the context for which it was
+ * created (this is ensured by the Isabelle trusted core).
+ **/
 final class Cterm private(val ctermMlValue: MLValue[Cterm])(implicit val isabelle: Isabelle, ec: ExecutionContext) extends Term {
-  // TODO document members
+  /** Returns this term as an `MLValue[Term]` (not `MLValue[Cterm]`). The difference is crucial
+   * because `MLValue[_]` is not covariant. So for invoking ML functions that expect an argument of type `term`, you
+   * need to get an `MLValue[Term]`. In contrast, [[ctermMlValue]] returns this term as an `MLValue[Cterm]`. */
   override lazy val mlValue: MLValue[Term] = Ops.termOfCterm(ctermMlValue)
+  /** Transforms this [[Cterm]] into an [[MLValueTerm]]. */
+  // TODO: Make package private. There is probably no public use case for this.
   def mlValueTerm = new MLValueTerm(mlValue)
   override def pretty(ctxt: Context)(implicit ec: ExecutionContext): String =
     Ops.stringOfCterm(MLValue((ctxt, this))).retrieveNow
-  lazy val concrete: ConcreteTerm = new MLValueTerm(mlValue).concrete
+  lazy val concrete: ConcreteTerm = mlValueTerm.concrete
   override def hashCode(): Int = concrete.hashCode()
   override def force : this.type = { ctermMlValue.force; this }
   override def someFuture: Future[Any] = ctermMlValue.someFuture
   override def await: Unit = ctermMlValue.await
-  // TODO: toString
+  // TODO: write toString function
 }
 
 object Cterm {
+  /** Creates a [[Cterm]] from an [[mlvalue.MLValue MLValue]][[[Cterm]]]. Since a [[Cterm]]
+   * is just a wrapper around an [[mlvalue.MLValue MLValue]][[[Cterm]]], this operation does not
+   * require any communication with the Isabelle process. */
   def apply(mlValue: MLValue[Cterm])
            (implicit isabelle: Isabelle, executionContext: ExecutionContext) =
     new Cterm(mlValue)
 
+  /** Converts a [[Term]] into a [[Cterm]]. This involves type-checking (relative to the
+   * context `ctxt`). The resulting [[Cterm]] is then certified to be correctly typed. */
   def apply(ctxt: Context, term: Term)(implicit isabelle: Isabelle, ec: ExecutionContext) : Cterm =
     new Cterm(Ops.ctermOfTerm(MLValue((ctxt, term))))
 
+  /** Representation of cterms in ML.
+   *
+   *  - ML type: `cterm`
+   *  - Representation of term `t` as an exception: `E_Cterm t`
+   *
+   * (`E_Cterm` is automatically declared when needed by the ML code in this package.
+   * If you need to ensure that it is defined for compiling own ML code, invoke [[Term.init]].)
+   *
+   * Available as an implicit value by importing [[de.unruh.isabelle.pure.Implicits]]`._`
+   * */
   object CtermConverter extends Converter[Cterm] {
     override def store(value: Cterm)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[Cterm] =
       value.ctermMlValue
@@ -370,7 +392,6 @@ object Bound {
 
 
 
-// TODO document
 object Term extends OperationCollection {
   override protected def newOps(implicit isabelle: Isabelle, ec: ExecutionContext): Ops = new Ops()
   protected[pure] class Ops(implicit val isabelle: Isabelle, ec: ExecutionContext) {
@@ -410,14 +431,26 @@ object Term extends OperationCollection {
     val makeAbs : MLFunction3[String, Typ, Term, Term] = MLValue.compileFunction("Abs")
   }
 
+  // TODO document
   def apply(context: Context, string: String)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValueTerm = {
     new MLValueTerm(Ops.readTerm(MLValue((context, string))))
   }
 
+  // TODO document
   def apply(context: Context, string: String, typ: Typ)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValueTerm = {
     new MLValueTerm(Ops.readTermConstrained(MLValue((context, string, typ))))
   }
 
+  /** Representation of terms in ML.
+   *
+   *  - ML type: `term`
+   *  - Representation of term `t` as an exception: `E_Term t`
+   *
+   * (`E_Term` is automatically declared when needed by the ML code in this package.
+   * If you need to ensure that it is defined for compiling own ML code, invoke [[Term.init]].)
+   *
+   * Available as an implicit value by importing [[de.unruh.isabelle.pure.Implicits]]`._`
+   **/
   object TermConverter extends Converter[Term] {
     override def store(value: Term)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[Term] =
       value.mlValue
