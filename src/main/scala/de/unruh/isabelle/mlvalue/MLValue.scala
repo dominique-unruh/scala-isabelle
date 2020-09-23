@@ -185,9 +185,10 @@ class MLValue[A] protected (/** the ID of the referenced object in the Isabelle 
 
 
 // TODO: Document API
-class MLStoreFunction[A] private (val id: Future[ID]) {
+// Mention: more efficient than MLFunction[Data, MLValue[A]] because data is not first transferred and then used
+// TODO: Write Converter[Data]
+class MLStoreFunction[A] private (id: Future[ID]) extends MLFunction[Data, MLValue[A]](id) {
   def apply(data: Data)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[A] = {
-    // Maybe inherit from MLFunction instead?
     MLValue.unsafeFromId(isabelle.applyFunction(this.id, data).map {
       case DObject(id) => id
       case _ => throw IsabelleException("MLStoreFunction")
@@ -205,8 +206,7 @@ object MLStoreFunction {
 }
 
 // TODO: Document API
-// Maybe inherit from MLFunction?
-class MLRetrieveFunction[A] private (val id: Future[ID]) {
+class MLRetrieveFunction[A] private (id: Future[ID]) extends MLFunction[MLValue[A], Data](id) {
   def apply(id: ID)(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Isabelle.Data] =
     isabelle.applyFunction(this.id, DObject(id))
   def apply(id: Future[ID])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Isabelle.Data] =
@@ -461,7 +461,10 @@ object MLValue extends OperationCollection {
     *  - If the converters for two Scala types `A`,`B` additionally have the same encoding as exceptions (defined via [[valueToExn]],
     *    [[exnToValue]] in their [[Converter]]s), then [[MLValue]][A] and [[MLValue]][B] can be safely typecast into
     *    each other.
-    *  - TODO how about two ML types with the same Scala type?
+    *  - It is not recommended to have the same Scala type `A` for two different ML types `a1` and `a2` (or for the same
+    *    ML type but with different encoding). First, this would mean that there have to be two different instances
+    *    of [[Converter]]`[A]` available (which means Scala cannot automatically choose the right one). Second, it
+    *    means that one has to be manually keep track which [[Converter]] was used for which value (no type safety).
     *  - The attentive reader will notice that we use [[MLRetrieveFunction.apply]] and [[MLStoreFunction.apply]]
     *    when defining the converter, but that these functions take the converter we are currently defining as an
     *    implicit argument! However, this cyclic dependency is not a problem because [[MLRetrieveFunction.apply]]
