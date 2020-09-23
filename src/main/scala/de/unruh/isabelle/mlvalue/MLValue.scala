@@ -395,13 +395,13 @@ object MLValue extends OperationCollection {
     * Next, we need to write a function for retrieving integer values from the object store (method [[retrieve]]).
     * It gets a `value : MLValue[Int]` as input and has to return a `Future[Int]` containing the stored integer. In principle,
     * there are not restrictions how this is done but the simplest way is the following approach:
-    *  - Decide on an encoding of the integer `i` as a tree in the [[Data]] data structure. (In this case, simply
-    *    [[DInt]]`(i)` will do the trick.)
+    *  - Decide on an encoding of the integer `i` as a tree in the [[control.Isabelle.Data Data]] data structure. (In this case, simply
+    *    [[control.Isabelle.DInt DInt]]`(i)` will do the trick.)
     *  - Define an [[MLRetrieveFunction]] `retrieveInt` that performs this encoding on the ML side, i.e.,
-    *    we need to write ML code for a function of type `int -> data`. (`data` is the ML analogue of [[Data]], see the
-    *    documentation of [[Data]].)
+    *    we need to write ML code for a function of type `int -> data`. (`data` is the ML analogue of [[control.Isabelle.Data Data]], see the
+    *    documentation of [[control.Isabelle.Data Data]].)
     *  - Retrieve the value by invoking `retrieveInt` (gives a `Future[Data]`)
-    *  - Convert the resulting [[Data]] to an [[Int]].
+    *  - Convert the resulting [[control.Isabelle.Data Data]] to an [[scala.Int Int]].
     * That is:
     * {{{
     *   final object IntConverter extends MLValue.Converter[A] {
@@ -417,7 +417,7 @@ object MLValue extends OperationCollection {
     *   }
     * }}}
     * Note that `val retrieveInt = ...` was written inside the function `retrieve` for simplicity here. However,
-    * since it invokes the ML compiler, it should be invoked only once (per [[Isabelle]] instance, like the
+    * since it invokes the ML compiler, it should be invoked only once (per [[control.Isabelle Isabelle]] instance, like the
     * [[Isabelle.executeMLCodeNow executeMLCodeNow]] above). See [[OperationCollection]] for an auxiliary class
     * helping to manage this.
     *
@@ -429,6 +429,7 @@ object MLValue extends OperationCollection {
     *  - Encode the integer to be stored as [[Data]]
     *  - Invoke storeInt to transfer the [[Data]] to ML and store the integer in the object store.
     * That is:
+    * {{{
     *   final object IntConverter extends MLValue.Converter[A] {
     *     ...
     *     override def store(value: Int)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[Int] = {
@@ -439,7 +440,7 @@ object MLValue extends OperationCollection {
     *   }
     * }}}
     * Note that `val retrieveInt = ...` was written inside the function `retrieve` for simplicity here.
-    * Like above for `storeInt`, this should be done only once (per [[Isabelle]] instance).
+    * Like above for `storeInt`, this should be done only once (per [[control.Isabelle Isabelle]] instance).
     *
     * This concludes the definition of the [[Converter]]. Finally, the converter should be made available
     * as an implicit value. That is, we define in a suitable place
@@ -451,7 +452,7 @@ object MLValue extends OperationCollection {
     * we instead write something like
     * {{{
     *   implicit def listConverter[A](implicit converter: Converter[A]): ListConverter[A] = new ListConverter()(converter)
-    * }}
+    * }}}
     * or similar.)
     *
     * Notes
@@ -470,10 +471,10 @@ object MLValue extends OperationCollection {
     * @tparam A the Scala type for which a corresponding ML type is declared
     */
   abstract class Converter[A] {
-    /** Returns the ML type corresponding to [[A]].
+    /** Returns the ML type corresponding to `A`.
      *
      * If it is not possible to determine this type (this can happen in rare situations, e.g.,
-     * in [[MLValueConverter]]), a typ involving placeholders `_` can be used. In that case,
+     * in [[de.unruh.isabelle.mlvalue.MLValueConverter MLValueConverter]]), a typ involving placeholders `_` can be used. In that case,
      * the most specific type possible should be used.
      *
      * This function should always return the same value. (It is declared as a `def` only to make sure
@@ -488,7 +489,7 @@ object MLValue extends OperationCollection {
      * encoded as an exception back into the original value.
      *
      * It is recommended that this function produces informative match failures in case of invalid inputs.
-     * [[MLValue.matchFailExn]] is a helper function that facilitates this.
+     * [[de.unruh.isabelle.mlvalue.MLValue.matchFailExn MLValue.matchFailExn]] is a helper function that facilitates this.
      *
      * This function should always return the same value. (It is declared as a `def` only to make sure
      * Scala does not include an extra field or perform an unnecessary computation in the class when this function
@@ -498,7 +499,7 @@ object MLValue extends OperationCollection {
      * into its encoding as an exception.
      *
      * It is recommended that this function produces informative match failures in case of invalid inputs.
-     * [[MLValue.matchFailExn]] is a helper function that facilitates this.
+     * [[de.unruh.isabelle.mlvalue.MLValue.matchFailExn MLValue.matchFailExn]] is a helper function that facilitates this.
      *
      * This function should always return the same value. (It is declared as a `def` only to make sure
      * Scala does not include an extra field or perform an unnecessary computation in the class when this function

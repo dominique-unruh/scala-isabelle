@@ -5,7 +5,8 @@ import scala.util.{Failure, Success}
 
 /** Common trait for all classes that exhibit a future-like behavior.
  * That is, they contain a value that may not yet have been computed, and that may still throw exceptions.
- * But unlike for [[Future]], no methods are provided for extracting that value, only to wait for it.
+ * But unlike for [[scala.concurrent.Future Future]], no methods are provided for extracting that value,
+ * only to wait for it.
  */
 trait FutureValue {
   /** Waits till the computation of this value (in the Isabelle process) has finished.

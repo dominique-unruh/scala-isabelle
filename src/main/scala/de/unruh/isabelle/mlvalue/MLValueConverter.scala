@@ -30,7 +30,7 @@ import scala.concurrent.{ExecutionContext, Future}
  * with additional calls [[MLValue.retrieveNow .retrieveNow]] (or just use the values without ever retrieving them
  * as arguments to other functions that reside in the ML process).
  *
- * An instance of [[MLValueConverter]] can be constructed without using a [[Converter]] for `A`. This
+ * An instance of [[MLValueConverter]] can be constructed without using a [[MLValue.Converter Converter]] for `A`. This
  * means the above approach (except for retrieving values of type `huge`) can even be used if no converter for `A`
  * has not actually been implemented. (As long as we consistently imagine a specific ML type and encoding for `A`.)
  * As a consequence, [[mlType]] returns "_" instead of the ML type `a` corresponding to `A`.

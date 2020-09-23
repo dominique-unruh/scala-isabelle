@@ -9,7 +9,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import Implicits._
 
 /**
- * [[MLValue.Converter]] for type [[Option]][A].
+ * [[MLValue.Converter]] for type [[scala.Option Option]][A].
  *
  *  - ML type: `a option` (if `a` is the ML type corresponding to `A`).
  *  - Encoding of `Some(x)` and `None` as an exception:

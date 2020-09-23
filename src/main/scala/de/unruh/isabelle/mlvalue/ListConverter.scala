@@ -8,7 +8,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import Implicits._
 
 /**
- * [[MLValue.Converter]] for type [[List]][A].
+ * [[MLValue.Converter]] for type [[scala.List List]][A].
  *
  *  - ML type: `a list` (if `a` is the ML type corresponding to `A`).
  *  - Encoding of a list `[x_1,...,x_n]` as an exception: `E_List [e_1,...,e_n]` where `e_i`
