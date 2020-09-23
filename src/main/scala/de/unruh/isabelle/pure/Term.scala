@@ -197,7 +197,6 @@ object Cterm {
   }
 }
 
-// TODO document
 final class MLValueTerm(val mlValue: MLValue[Term])(implicit val isabelle: Isabelle, ec: ExecutionContext) extends Term {
   override def someFuture: Future[Any] = mlValue.someFuture
   override def await: Unit = mlValue.await
@@ -205,9 +204,13 @@ final class MLValueTerm(val mlValue: MLValue[Term])(implicit val isabelle: Isabe
   //noinspection EmptyParenMethodAccessedAsParameterless
   override def hashCode(): Int = concrete.hashCode
 
+  // TODO document
+  // TODO make a member of Term? (Can it easily be implemented for cterm?)
   def concreteComputed: Boolean = concreteLoaded
+
   @volatile private var concreteLoaded = false
-  lazy val concrete : ConcreteTerm = {
+
+  override lazy val concrete : ConcreteTerm = {
     val DList(DInt(constructor), data @_*) = Await.result(Ops.destTerm(mlValue), Duration.Inf)
     val term = (constructor,data) match {
       case (1,List(DString(name), DObject(typ))) => // Const
@@ -239,6 +242,7 @@ final class MLValueTerm(val mlValue: MLValue[Term])(implicit val isabelle: Isabe
    *
    * @see Term.pretty for pretty printed terms
    * */
+    // TODO move this docstring to Term.toString
   override def toString: String =
     if (concreteLoaded) concrete.toString
     else s"‹term${mlValue.stateString}›"
@@ -248,7 +252,7 @@ final class MLValueTerm(val mlValue: MLValue[Term])(implicit val isabelle: Isabe
 // TODO document
 final class Const private[pure](val name: String, val typ: Typ, initialMlValue: MLValue[Term]=null)
                                (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTerm {
-  lazy val mlValue : MLValue[Term] =
+  override lazy val mlValue : MLValue[Term] =
     if (initialMlValue!=null) initialMlValue
     else Ops.makeConst(MLValue((name,typ)))
   override def toString: String = name
@@ -272,7 +276,7 @@ object Const {
 // TODO document
 final class Free private[pure](val name: String, val typ: Typ, initialMlValue: MLValue[Term]=null)
                               (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTerm {
-  lazy val mlValue : MLValue[Term] =
+  override lazy val mlValue : MLValue[Term] =
     if (initialMlValue!=null) initialMlValue
     else Ops.makeFree(name, typ)
   override def toString: String = name
@@ -296,7 +300,7 @@ object Free {
 // TODO document
 final class Var private[pure](val name: String, val index: Int, val typ: Typ, initialMlValue: MLValue[Term]=null)
                        (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTerm {
-  lazy val mlValue : MLValue[Term] =
+  override lazy val mlValue : MLValue[Term] =
     if (initialMlValue!=null) initialMlValue
     else Ops.makeVar(name, index, typ)
   override def toString: String = s"?$name$index"
@@ -320,7 +324,7 @@ object Var {
 // TODO document
 final class App private[pure] (val fun: Term, val arg: Term, initialMlValue: MLValue[Term]=null)
                               (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTerm {
-  lazy val mlValue : MLValue[Term] =
+  override lazy val mlValue : MLValue[Term] =
     if (initialMlValue!=null) initialMlValue
     else Ops.makeApp(fun,arg)
 
@@ -345,7 +349,7 @@ object App {
 // TODO document
 final class Abs private[pure] (val name: String, val typ: Typ, val body: Term, initialMlValue: MLValue[Term]=null)
                               (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTerm {
-  lazy val mlValue : MLValue[Term] =
+  override lazy val mlValue : MLValue[Term] =
     if (initialMlValue!=null) initialMlValue
     else Ops.makeAbs(name,typ,body)
   override def toString: String = s"(λ$name. $body)"
@@ -369,7 +373,7 @@ object Abs {
 // TODO document
 final class Bound private[pure] (val index: Int, initialMlValue: MLValue[Term]=null)
                                 (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTerm {
-  lazy val mlValue : MLValue[Term] =
+  override lazy val mlValue : MLValue[Term] =
     if (initialMlValue!=null) initialMlValue
     else Ops.makeBound(index)
   override def toString: String = s"Bound $index"
