@@ -68,15 +68,32 @@ import scala.concurrent.{Await, Awaitable, ExecutionContext, Future}
  * `case Const(name,typ) =>` also match [[Cterm]]s.
  */
 sealed abstract class Term extends FutureValue {
+  // TODO document members
+  /** Transforms this term into an [[MLValue]] containing this term. This causes transfer of
+   * the term to Isabelle only the first time it is accessed (and not at all if the term
+   * came from the Isabelle process). */
   val mlValue : MLValue[Term]
+  /** [[Isabelle]] instance relative to which this term was constructed. */
   implicit val isabelle : Isabelle
+  /** Produces a string representation of this term. Uses the Isabelle pretty printer.
+   * @param ctxt The Isabelle proof context to use (this contains syntax declarations etc.) */
   def pretty(ctxt: Context)(implicit ec: ExecutionContext): String =
     Ops.stringOfTerm(MLValue((ctxt, this))).retrieveNow
+  /** Transforms this term into a [[ConcreteTerm]]. A [[ConcreteTerm]] guarantees
+   * that the type of the term ([[App]],[[Const]],[[Abs]]...) corresponds to the top-level
+   * constructor on Isabelle side (`$`, `Const`, `Abs`, ...). */
   val concrete : ConcreteTerm
+  /** `t $ u` is shorthand for [[App]]`(t,u)` */
   def $(that: Term)(implicit ec: ExecutionContext): App = App(this, that)
 
+  /** Hash code compatible with [[equals]]. May fail with an exception, see [[equals]]. */
   override def hashCode(): Int = throw new NotImplementedError("Should be overridden")
 
+  /** Equality of terms. Returns true iff the two [[Term]] instances represent the same term in
+   * the Isabelle process. (E.g., a [[Cterm]] and a [[Const]] can be equal.) May throw an exception
+   * if the computation of the terms fails. (But will not fail if [[await]] or a related [[FutureValue]] method has
+   * returned successfully on both terms.)
+   */
   override def equals(that: Any): Boolean = (this, that) match {
     case (t1, t2: AnyRef) if t1 eq t2 => true
     case (t1: App, t2: App) => t1.fun == t2.fun && t1.arg == t2.arg
@@ -106,27 +123,38 @@ sealed abstract class Term extends FutureValue {
     case _ => false
   }
 }
+
+/** Base class for all concrete terms.
+ * A [[ConcreteTerm]] guarantees
+ * that the type of the term ([[App]],[[Const]],[[Abs]]...) corresponds to the top-level
+ * constructor on Isabelle side (`$`, `Const`, `Abs`, ...).
+ */
 sealed abstract class ConcreteTerm extends Term {
+  /** @return this */
   @inline override val concrete: this.type = this
+  // TODO: Incorrect behavior: Should wait for subterms
   override def someFuture: Future[Any] = Future.successful(())
-  override def forceFuture(implicit ec: ExecutionContext): Future[this.type] = Future.successful(this)
+  // TODO: Incorrect behavior: Should wait for subterms
   override def await: Unit = {}
 }
 
-// TODO document
+/** Represents a `cterm` in Isabelle. In Isabelle, a `cterm` must be explicitly converted into a `term`,
+ * this class inherits from [[Term]], so no explicit conversions are needed. (They happen automatically on
+ * demand.) */
 final class Cterm private(val ctermMlValue: MLValue[Cterm])(implicit val isabelle: Isabelle, ec: ExecutionContext) extends Term {
+  // TODO document members
   override lazy val mlValue: MLValue[Term] = Ops.termOfCterm(ctermMlValue)
   def mlValueTerm = new MLValueTerm(mlValue)
   override def pretty(ctxt: Context)(implicit ec: ExecutionContext): String =
     Ops.stringOfCterm(MLValue((ctxt, this))).retrieveNow
   lazy val concrete: ConcreteTerm = new MLValueTerm(mlValue).concrete
-  override def hashCode(): Int = concrete.hashCode
+  override def hashCode(): Int = concrete.hashCode()
   override def force : this.type = { ctermMlValue.force; this }
   override def someFuture: Future[Any] = ctermMlValue.someFuture
   override def await: Unit = ctermMlValue.await
+  // TODO: toString
 }
 
-// TODO document
 object Cterm {
   def apply(mlValue: MLValue[Cterm])
            (implicit isabelle: Isabelle, executionContext: ExecutionContext) =

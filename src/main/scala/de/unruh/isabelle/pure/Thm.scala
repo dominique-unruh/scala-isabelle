@@ -11,10 +11,25 @@ import scala.concurrent.{ExecutionContext, Future}
 import de.unruh.isabelle.mlvalue.Implicits._
 import de.unruh.isabelle.pure.Implicits._
 
-// TODO document
-final class Thm private [Thm](val mlValue : MLValue[Thm])(implicit ec: ExecutionContext, isabelle: Isabelle) extends FutureValue {
+
+/** Represents a theorem (ML type `thm`) in the Isabelle process.
+ *
+ * An instance of this class is merely a thin wrapper around an [[mlvalue.MLValue MLValue]],
+ * all explanations and examples given for [[Context]] also apply here.
+ */
+final class Thm private [Thm](val mlValue : MLValue[Thm])
+                             (implicit ec: ExecutionContext, isabelle: Isabelle) extends FutureValue {
+  /** A string representation. Does not contain the actual proposition of the theorem, use [[pretty]]
+   * for that. */
   override def toString: String = s"thm${mlValue.stateString}"
+
+  /** Returns the proposition of this theorem (a term of Isabelle type `prop`). */
+  // TODO rename to `proposition`
   lazy val cterm : Cterm = Cterm(Ops.cpropOf(mlValue))
+
+  /** Produces a string representation of this theorem.
+   * Uses the Isabelle pretty printer.
+   * @param ctxt The Isabelle proof context to use (this contains syntax declarations etc.) */
   def pretty(ctxt: Context)(implicit ec: ExecutionContext): String =
     Ops.stringOfThm(MLValue(ctxt, this)).retrieveNow
 
@@ -36,11 +51,13 @@ object Thm extends OperationCollection {
       compileFunction("fn (ctxt, thm) => Thm.pretty_thm ctxt thm |> Pretty.unformatted_string_of |> YXML.content_of")
   }
 
+  // TODO document (both TrueI and HOL.TrueI work)
   def apply(context: Context, name: String)(implicit isabelle: Isabelle, ec: ExecutionContext): Thm = {
     val mlThm : MLValue[Thm] = Ops.getThm(MLValue((context, name)))
     new Thm(mlThm)
   }
 
+  // TODO document
   object ThmConverter extends Converter[Thm] {
     override def retrieve(value: MLValue[Thm])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Thm] =
       for (_ <- value.id)
@@ -53,4 +70,3 @@ object Thm extends OperationCollection {
     override def mlType: String = "thm"
   }
 }
-

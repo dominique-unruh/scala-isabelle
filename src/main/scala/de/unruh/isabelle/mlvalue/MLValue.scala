@@ -186,7 +186,6 @@ class MLValue[A] protected (/** the ID of the referenced object in the Isabelle 
 
 // TODO: Document API
 // Mention: more efficient than MLFunction[Data, MLValue[A]] because data is not first transferred and then used
-// TODO: Write Converter[Data]
 class MLStoreFunction[A] private (id: Future[ID]) extends MLFunction[Data, MLValue[A]](id) {
   // TODO: make sure we overwrite any functions that should be specialized
   def apply(data: Data)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[A] = {

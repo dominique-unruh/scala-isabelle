@@ -6,7 +6,7 @@ import de.unruh.isabelle.mlvalue.{FutureValue, MLFunction, MLValue}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-/** Represents a proof context (ML type `Proof.context`) in the ML context.
+/** Represents a proof context (ML type `Proof.context`) in the Isabelle process.
  *
  * An instance of this class is merely a thin wrapper around an [[mlvalue.MLValue MLValue]],
  * that is, the context is never transferred to the Scala process (which would

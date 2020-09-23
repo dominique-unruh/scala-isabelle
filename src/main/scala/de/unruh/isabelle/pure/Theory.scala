@@ -12,7 +12,7 @@ import de.unruh.isabelle.mlvalue.Implicits._
 import de.unruh.isabelle.pure.Implicits._
 
 
-/** Represents a proof context (ML type `Proof.context`) in the ML context.
+/** Represents a theory (ML type `theory`) in the Isabelle process.
  *
  * An instance of this class is merely a thin wrapper around an [[mlvalue.MLValue MLValue]],
  * all explanations and examples given for [[Context]] also apply here.
