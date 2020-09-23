@@ -30,4 +30,11 @@ class FunctionConverterTest extends AnyFunSuite {
     val result = evalAt5(stringOfInt).retrieveNow
     assert(result == "5")
   }
+
+  test("typecheck functions") {
+    isabelle.executeMLCode(functionConverter(intConverter,stringConverter).exnToValue)
+    isabelle.executeMLCode(functionConverter(intConverter,stringConverter).valueToExn)
+    val typ = functionConverter(intConverter,stringConverter).mlType
+    isabelle.executeMLCode(s"K () : ($typ) -> unit")
+  }
 }
