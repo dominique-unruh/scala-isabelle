@@ -188,6 +188,7 @@ class MLValue[A] protected (/** the ID of the referenced object in the Isabelle 
 // Mention: more efficient than MLFunction[Data, MLValue[A]] because data is not first transferred and then used
 // TODO: Write Converter[Data]
 class MLStoreFunction[A] private (id: Future[ID]) extends MLFunction[Data, MLValue[A]](id) {
+  // TODO: make sure we overwrite any functions that should be specialized
   def apply(data: Data)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[A] = {
     MLValue.unsafeFromId(isabelle.applyFunction(this.id, data).map {
       case DObject(id) => id
@@ -207,6 +208,7 @@ object MLStoreFunction {
 
 // TODO: Document API
 class MLRetrieveFunction[A] private (id: Future[ID]) extends MLFunction[MLValue[A], Data](id) {
+  // TODO: make sure we overwrite any functions that should be specialized
   def apply(id: ID)(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Isabelle.Data] =
     isabelle.applyFunction(this.id, DObject(id))
   def apply(id: Future[ID])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Isabelle.Data] =
@@ -261,6 +263,9 @@ object MLValue extends OperationCollection {
          exception E_Int of int
          exception E_String of string
          exception E_Pair of exn * exn""")
+
+    val retrieveData = MLRetrieveFunction[Data]("I")
+    val storeData = MLStoreFunction[Data]("I")
 
     val unitValue = MLValue.compileValueRaw[Unit]("E_Int 0")
 

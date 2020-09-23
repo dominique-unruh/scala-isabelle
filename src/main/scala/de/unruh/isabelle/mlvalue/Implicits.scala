@@ -9,6 +9,7 @@ object Implicits {
   @inline implicit val longConverter: LongConverter.type = LongConverter
   @inline implicit val unitConverter: UnitConverter.type = UnitConverter
   @inline implicit val stringConverter: StringConverter.type = StringConverter
+  @inline implicit val dataConverter: DataConverter.type = DataConverter
   @inline implicit def listConverter[A](implicit converter: Converter[A]): ListConverter[A] = new ListConverter()(converter)
   @inline implicit def optionConverter[A](implicit converter: Converter[A]): OptionConverter[A] = new OptionConverter()(converter)
   @inline implicit def tuple2Converter[A,B](implicit a: Converter[A], b: Converter[B]): Tuple2Converter[A, B] = new Tuple2Converter(a,b)
