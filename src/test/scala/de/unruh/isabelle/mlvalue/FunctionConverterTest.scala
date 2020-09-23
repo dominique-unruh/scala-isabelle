@@ -19,7 +19,7 @@ class FunctionConverterTest extends AnyFunSuite {
 
   test("compileValue / retrieve") {
     val function = MLValue.compileValue[Int => String]("string_of_int")
-    assert(function.function.apply(12).retrieveNow == "12")
+    assert(function.function[Int,String].apply(12).retrieveNow == "12")
     val local = function.retrieveNow
     assert(local(12) == "12")
   }
