@@ -282,7 +282,8 @@ object MLValue extends OperationCollection {
    * Using this function should rarely be necessary, except possibly when defining new [[Converter]]s.
    */
   def unsafeFromId[A](id: Future[Isabelle.ID]) = new MLValue[A](id)
-  // TODO document
+  /** Same as [[unsafeFromId(id:scala.conc* unsafeFromId(Future[ID])]], except
+   * that `id` is given directly and not as a [[scala.concurrent.Future Future]]. */
   def unsafeFromId[A](id: Isabelle.ID): MLValue[A] = unsafeFromId[A](Future.successful(id))
 
   /** Utility method for generating ML code.

@@ -204,7 +204,9 @@ final class MLValueTerm(val mlValue: MLValue[Term])(implicit val isabelle: Isabe
   //noinspection EmptyParenMethodAccessedAsParameterless
   override def hashCode(): Int = concrete.hashCode
 
-  // TODO document
+  /** Indicates whether [[concrete]] has already been initialized. (I.e.,
+   * whether it can be accessed without delay and without incurring communication with
+   * the Isabelle process. */
   // TODO make a member of Term? (Can it easily be implemented for cterm?)
   def concreteComputed: Boolean = concreteLoaded
 
@@ -249,7 +251,8 @@ final class MLValueTerm(val mlValue: MLValue[Term])(implicit val isabelle: Isabe
 
 }
 
-// TODO document
+/** A constant (ML constructor `Const`). [[name]] is the fully qualified name of the constant (e.g.,
+ * `"HOL.True"`) and [[typ]] its type. */
 final class Const private[pure](val name: String, val typ: Typ, initialMlValue: MLValue[Term]=null)
                                (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTerm {
   override lazy val mlValue : MLValue[Term] =
@@ -261,10 +264,18 @@ final class Const private[pure](val name: String, val typ: Typ, initialMlValue: 
     .append(name).toHashCode
 }
 
-// TODO document
 object Const {
+  /** Create a constant with name `name` and type `typ`. */
   def apply(name: String, typ: Typ)(implicit isabelle: Isabelle, ec: ExecutionContext) = new Const(name, typ)
 
+  /** Allows to pattern match constants. E.g.,
+   * {{{
+   *   term match {
+   *     case Const(name,typ) => println(s"Constant $name found")
+   *   }
+   * }}}
+   * Note that this will also match a [[Cterm]] and an [[MLValueTerm]] that represent a `Const` in ML.
+   **/
   @tailrec
   def unapply(term: Term): Option[(String, Typ)] = term match {
     case const : Const => Some((const.name,const.typ))
@@ -273,7 +284,8 @@ object Const {
   }
 }
 
-// TODO document
+/** A free variable (ML constructor `Free`). [[name]] is the name of the variable (e.g.,
+ * `"x"`) and [[typ]] its type. */
 final class Free private[pure](val name: String, val typ: Typ, initialMlValue: MLValue[Term]=null)
                               (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTerm {
   override lazy val mlValue : MLValue[Term] =
@@ -285,10 +297,18 @@ final class Free private[pure](val name: String, val typ: Typ, initialMlValue: M
     .append(name).toHashCode
 }
 
-// TODO document
 object Free {
+  /** Create a free variable with name `name` and type `typ`. */
   def apply(name: String, typ: Typ)(implicit isabelle: Isabelle, ec: ExecutionContext) = new Free(name, typ)
 
+  /** Allows to pattern match free variables. E.g.,
+   * {{{
+   *   term match {
+   *     case Free(name,typ) => println(s"Free variable $name found")
+   *   }
+   * }}}
+   * Note that this will also match a [[Cterm]] and an [[MLValueTerm]] that represent a `Free` in ML.
+   **/
   @tailrec
   def unapply(term: Term): Option[(String, Typ)] = term match {
     case free : Free => Some((free.name,free.typ))
@@ -297,7 +317,15 @@ object Free {
   }
 }
 
-// TODO document
+/** A schematic variable (ML constructor `Var`). [[name]] is the name of the variable (e.g.,
+ * `"x"`), [[index]] its index, and [[typ]] its type.
+ *
+ * Schematic variables are the ones that are represented with a leading question mark in
+ * Isabelle's parsing and pretty printing. E.g., `?x` is a [[Var]] with [[name]]`="x"`
+ * and [[index]]`=0`. And `?y1` or `?y.1` is a [[Var]] with [[name]]`="y"` and [[index]]`=1`.
+ *
+ * By convention, schematic variables indicate variables that are can be instantiated/unified.
+ **/
 final class Var private[pure](val name: String, val index: Int, val typ: Typ, initialMlValue: MLValue[Term]=null)
                        (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTerm {
   override lazy val mlValue : MLValue[Term] =
@@ -309,10 +337,19 @@ final class Var private[pure](val name: String, val index: Int, val typ: Typ, in
     .append(name).append(index).toHashCode
 }
 
-// TODO document
 object Var {
+  /** Create a schematic variable with name `name`, index `index`, and type `typ`. */
+  // TODO Add default 0 for index
   def apply(name: String, index: Int, typ: Typ)(implicit isabelle: Isabelle, ec: ExecutionContext) = new Var(name, index, typ)
 
+  /** Allows to pattern match schematic variables. E.g.,
+   * {{{
+   *   term match {
+   *     case Var(name,index,typ) => println(s"Schematic variable $name.$index found")
+   *   }
+   * }}}
+   * Note that this will also match a [[Cterm]] and an [[MLValueTerm]] that represent a `Var` in ML.
+   **/
   @tailrec
   def unapply(term: Term): Option[(String, Int, Typ)] = term match {
     case v : Var => Some((v.name,v.index,v.typ))
@@ -321,7 +358,12 @@ object Var {
   }
 }
 
-// TODO document
+/** A function application (ML constructor `$`). [[fun]] is the function to be applied and [[arg]] its
+ * argument. (E.g., `t1$t2` in ML would have [[fun]]=t1 and [[arg]]=t2.)
+ *
+ * Can be constructed both as `App(t1,t2)` or `t1 $ t2` in Isabelle.
+ * (Pattern matching only supports the syntax `App(...)`, not `$`.)
+ **/
 final class App private[pure] (val fun: Term, val arg: Term, initialMlValue: MLValue[Term]=null)
                               (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTerm {
   override lazy val mlValue : MLValue[Term] =
@@ -334,10 +376,18 @@ final class App private[pure] (val fun: Term, val arg: Term, initialMlValue: MLV
     .append(arg).toHashCode
 }
 
-// TODO document
 object App {
+  /** Create a function application with function `fun` and argument `arg`. */
   def apply(fun: Term, arg: Term)(implicit isabelle: Isabelle, ec: ExecutionContext) = new App(fun, arg)
 
+  /** Allows to pattern match function applications. E.g.,
+   * {{{
+   *   term match {
+   *     case App(t1,t2) => println(s"${t1.pretty(ctxt)} was applied to ${t2.pretty(ctxt)}")
+   *   }
+   * }}}
+   * Note that this will also match a [[Cterm]] and an [[MLValueTerm]] that represent a `$` in ML.
+   **/
   @tailrec
   def unapply(term: Term): Option[(Term, Term)] = term match {
     case app : App => Some((app.fun,app.arg))
@@ -346,7 +396,14 @@ object App {
   }
 }
 
-// TODO document
+/** A lambda abstraction (ML constructor `Abs`). [[name]] is the name of the bound variable,
+ * [[typ]] is the type of the bound variable, and [[body]] is the body of the lambda abstraction.
+ *
+ * E.g., `λx. x` would be represented as `Abs("x",typ, Bound(0))` for suitable `typ`.
+ *
+ * Note that [[name]] is for informative purposes only (i.e., it has no logical relevance)
+ * since deBrujn indices are used. [[name]] can even be `""`.
+ */
 final class Abs private[pure] (val name: String, val typ: Typ, val body: Term, initialMlValue: MLValue[Term]=null)
                               (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTerm {
   override lazy val mlValue : MLValue[Term] =
@@ -358,10 +415,19 @@ final class Abs private[pure] (val name: String, val typ: Typ, val body: Term, i
     .append(name).append(body).toHashCode
 }
 
-// TODO document
 object Abs {
+  /** Create a lambda abstraction with bound variable name `name`, bound variable type `typ`,
+   * and body `body`. */
   def apply(name: String, typ: Typ, body: Term)(implicit isabelle: Isabelle, ec: ExecutionContext) = new Abs(name,typ,body)
 
+  /** Allows to pattern match lambda abstractions. E.g.,
+   * {{{
+   *   term match {
+   *     case Abs(name,typ,body) => println(s"Lambda abstraction λ$name found")
+   *   }
+   * }}}
+   * Note that this will also match a [[Cterm]] and an [[MLValueTerm]] that represent an `Abs` in ML.
+   **/
   @tailrec
   def unapply(term: Term): Option[(String, Typ, Term)] = term match {
     case abs : Abs => Some((abs.name,abs.typ,abs.body))
@@ -370,7 +436,11 @@ object Abs {
   }
 }
 
-// TODO document
+/** A bound variable (ML constructor `Bound`). [[index]] is the deBrujn index of the variable.
+ *
+ * In a well-formed term, `Bound(i)` refers to the bound variable from the `i`-th enclosing [[Abs]].
+ * (Starting from 0, i.e., `Bound(0)` refers to the directly enclosing [[Abs]].)
+ **/
 final class Bound private[pure] (val index: Int, initialMlValue: MLValue[Term]=null)
                                 (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTerm {
   override lazy val mlValue : MLValue[Term] =
@@ -382,10 +452,18 @@ final class Bound private[pure] (val index: Int, initialMlValue: MLValue[Term]=n
     .append(index).toHashCode
 }
 
-// TODO document
 object Bound {
+  /** Create a bound variable with index `index`. */
   def apply(index: Int)(implicit isabelle: Isabelle, ec: ExecutionContext) = new Bound(index)
 
+  /** Allows to pattern match bound variables. E.g.,
+   * {{{
+   *   term match {
+   *     case Bound(index) => println(s"Bound variable found, index: $index")
+   *   }
+   * }}}
+   * Note that this will also match a [[Cterm]] and an [[MLValueTerm]] that represent a `Bound` in ML.
+   **/
   @tailrec
   def unapply(term: Term): Option[Int] = term match {
     case bound : Bound => Some(bound.index)
@@ -435,12 +513,22 @@ object Term extends OperationCollection {
     val makeAbs : MLFunction3[String, Typ, Term, Term] = MLValue.compileFunction("Abs")
   }
 
-  // TODO document
+  /** Creates a term from a string (using the parser from Isabelle).
+   * E.g., `Term(context, "1+2")`.
+   * @param context The context relative to which parsing takes place (contains syntax declarations etc.)
+   * @param string The string to be parsed
+   **/
   def apply(context: Context, string: String)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValueTerm = {
     new MLValueTerm(Ops.readTerm(MLValue((context, string))))
   }
 
-  // TODO document
+  /** Creates a term from a string (using the parser from Isabelle), subject to a type constraint.
+   * E.g., `Term(context, "1+2", Type("Nat.nat"))` will infer that 1 and 2 are natural numbers.
+   *
+   * @param context The context relative to which parsing takes place (contains syntax declarations etc.)
+   * @param string The string to be parsed
+   * @param typ The type constraint. I.e., the returned term will have type `typ`
+   **/
   def apply(context: Context, string: String, typ: Typ)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValueTerm = {
     new MLValueTerm(Ops.readTermConstrained(MLValue((context, string, typ))))
   }
