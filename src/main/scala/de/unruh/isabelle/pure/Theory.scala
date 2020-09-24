@@ -22,7 +22,53 @@ import de.unruh.isabelle.pure.Implicits._
  */
 final class Theory private [Theory](val name: String, val mlValue : MLValue[Theory]) extends FutureValue {
   override def toString: String = s"theory $name${mlValue.stateString}"
-  // DOCUMENT
+
+  /** Imports an ML structure from a theory into the global ML namespace.
+   *
+   * WARNING: This has a global effect on the Isabelle process because it modifies the ML name space.
+   *
+   * In an Isabelle theory `T`, it is possible to include ML source code using the `ML_file` command and related commands.
+   * In that ML source code, new symbols (values, types, structures) can be declared. These will be visible
+   * to further ML code in the same theory `T` and in theories that import `T`. However, it is not directly possible
+   * to use those symbols in ML code on the ML toplevel (i.e., in commands such as [[Isabelle.executeMLCode]]
+   * or [[MLValue.compileValue]] and friends). Instead, the symbols must be imported using this method. (Only supported
+   * for ML structures, not for values or types that are declared outside a structure.) [[importMLStructure]]`(name,newName)`
+   * will import the structure called `name` under the new name `newName` into the toplevel.
+   *
+   * We give an example.
+   *
+   * File `test.ML`:
+   * {{{
+   *   structure Test = struct
+   *   val num = 123
+   *   end
+   * }}}
+   * This declares a structure `Test` with a value member `num`.
+   *
+   * File `TestThy.thy`:
+   * {{{
+   *   theory TestThy imports Main begin
+   *
+   *   ML_file "test.ML"
+   *
+   *   end
+   * }}}
+   * This declares a theory which loads the ML code from "test.ML" (and thus all theories importing `TestThy`
+   * have access to the ML structure `Test`).
+   *
+   * In Scala:
+   * {{{
+   *   implicit val isabelle = new Isabelle(... suitable setup ...)
+   *   val thy : Theory = Theory("Draft.TestThy")                  // load the theory TestThy
+   *   val num1 : MLValue[Int] = MLValue.compileValue("Test.num")  // fails
+   *   thy.importMLStructure("Test", "Test")                       // import the structure Test into the ML toplevel
+   *   val num2 : MLValue[Int] = MLValue.compileValue("Test.num")  // access Test in compiled ML code
+   *   println(num2.retrieveNow)                                   // ==> 123
+   * }}}
+   */
+  // TODO: Check if the above example works. (test case)
+  // TODO: Default for newName: name
+  // TODO: Is there an alternative for this that does not affect the global namespace?
   def importMLStructure(name: String, newName: String)
                        (implicit isabelle: Isabelle, executionContext: ExecutionContext): Unit =
     Ops.importMLStructure(this, name, newName).retrieveNow
@@ -50,8 +96,7 @@ object Theory extends OperationCollection {
                   in () end""")
   }
 
-  /** Retrieves a theory by its name. E.g., `Theory("HOL-Analysis.Inner_Product")`.
-   **/
+  /** Retrieves a theory by its name. E.g., `Theory("HOL-Analysis.Inner_Product")`. **/
   // TODO: Find out whether short names are possible.
   // TODO: Find out whether theories that aren't in the heap can be loaded
   // TODO: Make test case to find that out

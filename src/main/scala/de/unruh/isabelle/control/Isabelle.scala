@@ -359,6 +359,9 @@ class Isabelle(val setup: Setup, build: Boolean = true) {
   }
 
   /** Executes the ML code `ml` in the Isabelle process.
+    *
+    * WARNING: This has a global effect on the Isabelle process because it modifies the ML name space.
+    *
     * Definitions made in `ml` affect the global Isabelle name space.
     * This is intended mostly for defining new types.
     * To create values (e.g., if `ml` is the code of a function that should be executed),
@@ -380,6 +383,9 @@ class Isabelle(val setup: Setup, build: Boolean = true) {
   def executeMLCodeNow(ml : String): Unit = Await.result(executeMLCode(ml), Duration.Inf)
 
   /** Executes the ML expression `ml` in the Isabelle process.
+    *
+    * WARNING: This has a global effect on the Isabelle process because it modifies the ML name space.
+    *
     * The expression must be of ML type `exn`.
     * The result of evaluating the expression is added to the object store.
     * The ML code is executed in a context where the structure `Control_Isabelle` is opened
