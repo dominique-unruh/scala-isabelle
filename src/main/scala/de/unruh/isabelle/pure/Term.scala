@@ -20,12 +20,12 @@ import scala.concurrent.{Await, Awaitable, ExecutionContext, Future}
  * In most respects, [[Term]] behaves as if it was an algebraic datatype defined as follows:
  * {{{
  *   sealed abstract class Term
- *   final case class Const(name: String, typ: Typ)                        // Corresponds to ML constructor 'Const'
- *   final case class Free(name: String, typ: Typ)                         // Corresponds to ML constructor 'Free'
- *   final case class Var(val name: String, val index: Int, val typ: Typ)  // Corresponds to ML constructor 'Var'
- *   final case class Abs(val name: String, val typ: Typ, val body: Term)  // Corresponds to ML constructor 'Abs'
- *   final case class Bound private (val index: Int)                       // Corresponds to ML constructor 'Bound'
- *   final case class App private (val fun: Term, val arg: Term)           // Corresponds to ML constructor '$'
+ *   final case class Const(name: String, typ: Typ)            // Corresponds to ML constructor 'Const'
+ *   final case class Free(name: String, typ: Typ)             // Corresponds to ML constructor 'Free'
+ *   final case class Var(name: String, index: Int, typ: Typ)  // Corresponds to ML constructor 'Var'
+ *   final case class Abs(name: String, typ: Typ, body: Term)  // Corresponds to ML constructor 'Abs'
+ *   final case class Bound private (index: Int)               // Corresponds to ML constructor 'Bound'
+ *   final case class App private (fun: Term, arg: Term)       // Corresponds to ML constructor '$'
  * }}}
  *
  * tl;dr for the explanation below: Terms can be treated as if they were the case classes above (even though
@@ -39,7 +39,7 @@ import scala.concurrent.{Await, Awaitable, ExecutionContext, Future}
  * the Isabelle process. That is, an instance of [[Term]] can be any of the above classes, or a reference to a term
  * in the object store in the Isabelle process, or both at the same time. And the same applies to subterms, too.
  * So for example, if we retrieve terms `t`,`u` from Isabelle to Scala, and then in Scala construct `App(t,u)`,
- * and then transfer `App(t,u)` back to Isabelle, the processes `t`,`u` will never be serialized, and only the
+ * and then transfer `App(t,u)` back to Isabelle, the terms `t`,`u` will never be serialized, and only the
  * constructor `App` will need to be transferred.
  *
  * In order to faciliate this, the classes [[Const]], [[Free]], [[Var]], [[Abs]], [[Bound]], [[App]]
@@ -62,7 +62,7 @@ import scala.concurrent.{Await, Awaitable, ExecutionContext, Future}
  * determining equality.)
  *
  * Furthermore, there is a subclass [[Cterm]] of [[Term]] that represents an ML value of type `cterm`. This is
- * logically a term with additional that is certified to be well-typed with respect to some Isabelle context.
+ * logically a term that is certified to be well-typed with respect to some Isabelle context.
  * In this implementation, a [[Cterm]] is also a [[Term]], so it is possible to do, e.g., equality tests between
  * [[Cterm]]s and regular terms (such as [[Const]]) without explicit conversions. Similarly, patterns such as
  * `case Const(name,typ) =>` also match [[Cterm]]s.
@@ -70,7 +70,7 @@ import scala.concurrent.{Await, Awaitable, ExecutionContext, Future}
 sealed abstract class Term extends FutureValue {
   /** Transforms this term into an [[mlvalue.MLValue MLValue]] containing this term. This causes transfer of
    * the term to Isabelle only the first time it is accessed (and not at all if the term
-   * came from the Isabelle process). */
+   * came from the Isabelle process in the first place). */
   val mlValue : MLValue[Term]
   /** [[control.Isabelle Isabelle]] instance relative to which this term was constructed. */
   implicit val isabelle : Isabelle
@@ -121,6 +121,17 @@ sealed abstract class Term extends FutureValue {
       else Ops.equalsTerm(t1,t2).retrieveNow
     case _ => false
   }
+
+  /** Produces a string representation of this term.
+   *
+   * This is not a "pretty" representation, it does not use Isabelle syntax, and subterms that are stored only
+   * in the Isabelle process are replaced with
+   * a placeholder (thus this method does not invoke any potentially communication with the Isabelle process).
+   *
+   * @see pretty for pretty printed terms
+   **/
+  // TODO: Make abstract
+  override def toString: String = super.toString
 }
 
 /** Base class for all concrete terms.
@@ -137,8 +148,8 @@ sealed abstract class ConcreteTerm extends Term {
   override def await: Unit = {}
 }
 
-/** Represents a `cterm` in Isabelle. In Isabelle, a `cterm` must be explicitly converted into a `term`,
- * this class inherits from [[Term]], so no explicit conversions are needed. (They happen automatically on
+/** Represents a `cterm` in Isabelle. In Isabelle, a `cterm` must be explicitly converted into a `term`.
+ * In contrast, this class inherits from [[Term]], so no explicit conversions are needed. (They happen automatically on
  * demand.)
  * A [[Cterm]] is always well-typed relative to the context for which it was
  * created (this is ensured by the Isabelle trusted core).
@@ -183,7 +194,7 @@ object Cterm {
    * If you need to ensure that it is defined for compiling own ML code, invoke [[Term.init]].)
    *
    * Available as an implicit value by importing [[de.unruh.isabelle.pure.Implicits]]`._`
-   * */
+   **/
   object CtermConverter extends Converter[Cterm] {
     override def store(value: Cterm)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[Cterm] =
       value.ctermMlValue
@@ -197,6 +208,9 @@ object Cterm {
   }
 }
 
+/** A [[Term]] that is stored in the Isabelle process's object store
+ * and may or may not be known in Scala. Use [[concrete]] to
+ * get a representation of the same term as a [[ConcreteTerm]]. */
 final class MLValueTerm(val mlValue: MLValue[Term])(implicit val isabelle: Isabelle, ec: ExecutionContext) extends Term {
   override def someFuture: Future[Any] = mlValue.someFuture
   override def await: Unit = mlValue.await
@@ -236,15 +250,6 @@ final class MLValueTerm(val mlValue: MLValue[Term])(implicit val isabelle: Isabe
     term
   }
 
-  /** Produces a string representation of this term.
-   *
-   * This is not a "pretty" representation, it does
-   * not use Isabelle syntax, and subterms that are stored only in the Isabelle process are replaced with
-   * a placeholder (thus this method does not invoke any potentially communication with the Isabelle process).
-   *
-   * @see Term.pretty for pretty printed terms
-   * */
-    // TODO move this docstring to Term.toString
   override def toString: String =
     if (concreteLoaded) concrete.toString
     else s"‹term${mlValue.stateString}›"
