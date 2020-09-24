@@ -585,7 +585,9 @@ object MLValue extends OperationCollection {
     def valueToExn : String
   }
 
-  // DOCUMENT
+  /** Creates an MLValue containing the value `value`.
+   * This transfers `value` to the Isabelle process and stores it in the object store there.
+   * @return an [[MLValue]] that references the location in the object store */
   @inline def apply[A](value: A)(implicit conv: Converter[A], isabelle: Isabelle, executionContext: ExecutionContext) : MLValue[A] =
     conv.store(value)
 
