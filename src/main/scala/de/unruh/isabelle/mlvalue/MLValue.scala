@@ -591,57 +591,92 @@ object MLValue extends OperationCollection {
   @inline def apply[A](value: A)(implicit conv: Converter[A], isabelle: Isabelle, executionContext: ExecutionContext) : MLValue[A] =
     conv.store(value)
 
-  // DOCUMENT
+  /** Compiles `ml` code and inserts it into the object store (without any conversion).
+   *
+   * `ml` must compile to an ML value of type `exn` that is the encoding of some Scala value of type `A`.
+   * (As specified by the [[Converter]] for `A`, even though that converter is not actually used by this function.)
+   *
+   * The function does not check whether the encoding is correct for the type `A`! (And if that is not the case,
+   * the returned [[MLValue]] breaks type-safety.)
+   *
+   * In most situations, it is preferrable to use higher level compilation functions such as [[compileValue]]
+   * or [[compileFunction[D,R]* compileFunction]] or [[MLStoreFunction]] or [[MLRetrieveFunction]] that take care of the encoding as exceptions
+   * automatically.
+   **/
   def compileValueRaw[A](ml: String)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[A] =
     new MLValue[A](isabelle.storeValue(ml)).logError(s"""Error while compiling value "$ml":""")
 
-  // DOCUMENT
+  /** Compiles ML code `ml` and inserts it into the object store.
+   *
+   * `ml` must compile to an ML value of type `a` where `a` is the ML type corresponding to `A` (as specified
+   * by the implicit [[Converter]]). Then the result is converted to an exception and stored in the object store.
+   * An [[MLValue]] referencing that object is returned.
+   *
+   * If `ml` is an ML function, [[compileFunction[D,R]* compileFunction]] below might be more convenient.
+   **/
+  // TODO: check that ml has type converter.mlType (and document)
   def compileValue[A](ml: String)(implicit isabelle: Isabelle, ec: ExecutionContext, converter: Converter[A]): MLValue[A] =
     compileValueRaw[A](s"(${converter.valueToExn}) ($ml)")
 
-  // DOCUMENT
+  // TODO: remove this function
+  @deprecated("will be removed, use compileFunction or compileValueRaw", "0.1.1-SNAPSHOT")
   def compileFunctionRaw[D, R](ml: String)(implicit isabelle: Isabelle, ec: ExecutionContext): MLFunction[D, R] =
     MLFunction.unsafeFromId[D,R](isabelle.storeValue(s"E_Function (fn DObject x => ($ml) x |> DObject)")).logError(s"""Error while compiling function "$ml":""")
 
-  // DOCUMENT
+  /** Compiles an ML function and inserts it into the object store.
+   *
+   * `ml` must compile to an ML value of type `d -> r` where `d,r` are the ML type corresponding to `D,R` (as specified
+   * by the implicit [[Converter]]s). Then the result is converted to an exception and stored in the object store.
+   * An [[MLFunction]] referencing that object is returned. (An [[MLFunction]] is an [[MLValue]] with some extra methods
+   * for evaluating functions.)
+   *
+   * For functions with more than one argument, see also [[compileFunction[D1,D2,R]* compileFunction[D1,D2,R]]],
+   * [[compileFunction[D1,D2,D3,R]* compileFunction[D1,D2,D3,R]]], etc.
+   **/
+  //noinspection ScalaDeprecation
+  // TODO rename converter arguments (D,R)
   def compileFunction[D, R](ml: String)(implicit isabelle: Isabelle, ec: ExecutionContext, converterA: Converter[D], converterB: Converter[R]): MLFunction[D, R] =
     compileFunctionRaw(s"(${converterB.valueToExn}) o ($ml) o (${converterA.exnToValue})")
 
-  // DOCUMENT
+  /** Like [[compileFunction[D,R]* compileFunction[D,R]]], except that the ML code `ml` must be a function of type `d1 * d2 -> r`
+   * where `d1,d2,r` are the ML types corresponding to `D1,D2,R`. The resulting [[MLFunction2]] `f` can then be invoked
+   * also as `f(x1,x2)` and not only as `f((x1,x2))` (as would be the case if we had used
+   * [[compileFunction[D,R]* compileFunction[D,R]]]`[(D1,D2),R](ml)` to compile the function).
+   **/
   def compileFunction[D1, D2, R](ml: String)
                                  (implicit isabelle: Isabelle, ec: ExecutionContext,
                                  converter1: Converter[D1], converter2: Converter[D2], converterR: Converter[R]): MLFunction2[D1, D2, R] =
     compileFunction[(D1,D2), R](ml).function2
 
-  // DOCUMENT
+  /** Analogous to [[compileFunction[D1,D2,R]* compileFunction[D1,D2,R]]], except for 3-tuples instead of 2-tuples. */
   def compileFunction[D1, D2, D3, R](ml: String)
                                     (implicit isabelle: Isabelle, ec: ExecutionContext,
                                      converter1: Converter[D1], converter2: Converter[D2], converter3: Converter[D3],
                                      converterR: Converter[R]): MLFunction3[D1, D2, D3, R] =
     compileFunction[(D1,D2,D3), R](ml).function3
 
-  // DOCUMENT
+  /** Analogous to [[compileFunction[D1,D2,R]* compileFunction[D1,D2,R]]], except for 4-tuples instead of 2-tuples. */
   def compileFunction[D1, D2, D3, D4, R](ml: String)
                                     (implicit isabelle: Isabelle, ec: ExecutionContext,
                                      converter1: Converter[D1], converter2: Converter[D2], converter3: Converter[D3],
                                      converter4: Converter[D4], converterR: Converter[R]): MLFunction4[D1, D2, D3, D4, R] =
     compileFunction[(D1,D2,D3,D4), R](ml).function4
 
-  // DOCUMENT
+  /** Analogous to [[compileFunction[D1,D2,R]* compileFunction[D1,D2,R]]], except for 5-tuples instead of 2-tuples. */
   def compileFunction[D1, D2, D3, D4, D5, R](ml: String)
                                         (implicit isabelle: Isabelle, ec: ExecutionContext,
                                          converter1: Converter[D1], converter2: Converter[D2], converter3: Converter[D3],
                                          converter4: Converter[D4], converter5: Converter[D5], converterR: Converter[R]): MLFunction5[D1, D2, D3, D4, D5, R] =
     compileFunction[(D1,D2,D3,D4,D5), R](ml).function5
 
-  // DOCUMENT
+  /** Analogous to [[compileFunction[D1,D2,R]* compileFunction[D1,D2,R]]], except for 6-tuples instead of 2-tuples. */
   def compileFunction[D1, D2, D3, D4, D5, D6, R](ml: String)
                                                 (implicit isabelle: Isabelle, ec: ExecutionContext,
                                                  converter1: Converter[D1], converter2: Converter[D2], converter3: Converter[D3],
                                                  converter4: Converter[D4], converter5: Converter[D5], converter6: Converter[D6], converterR: Converter[R]): MLFunction6[D1, D2, D3, D4, D5, D6, R] =
     compileFunction[(D1,D2,D3,D4,D5,D6), R](ml).function6
 
-  // DOCUMENT
+  /** Analogous to [[compileFunction[D1,D2,R]* compileFunction[D1,D2,R]]], except for 7-tuples instead of 2-tuples. */
   def compileFunction[D1, D2, D3, D4, D5, D6, D7, R](ml: String)
                                                     (implicit isabelle: Isabelle, ec: ExecutionContext,
                                                      converter1: Converter[D1], converter2: Converter[D2], converter3: Converter[D3],

@@ -30,8 +30,8 @@ final class Theory private [Theory](val name: String, val mlValue : MLValue[Theo
    * In an Isabelle theory `T`, it is possible to include ML source code using the `ML_file` command and related commands.
    * In that ML source code, new symbols (values, types, structures) can be declared. These will be visible
    * to further ML code in the same theory `T` and in theories that import `T`. However, it is not directly possible
-   * to use those symbols in ML code on the ML toplevel (i.e., in commands such as [[Isabelle.executeMLCode]]
-   * or [[MLValue.compileValue]] and friends). Instead, the symbols must be imported using this method. (Only supported
+   * to use those symbols in ML code on the ML toplevel (i.e., in commands such as [[control.Isabelle.executeMLCode Isabelle.executeMLCode]]
+   * or [[mlvalue.MLValue.compileValue MLValue.compileValue]] and friends). Instead, the symbols must be imported using this method. (Only supported
    * for ML structures, not for values or types that are declared outside a structure.) [[importMLStructure]]`(name,newName)`
    * will import the structure called `name` under the new name `newName` into the toplevel.
    *
