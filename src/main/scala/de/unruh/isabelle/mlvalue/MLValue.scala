@@ -585,61 +585,61 @@ object MLValue extends OperationCollection {
     def valueToExn : String
   }
 
-  // TODO: Document API
+  // DOCUMENT
   @inline def apply[A](value: A)(implicit conv: Converter[A], isabelle: Isabelle, executionContext: ExecutionContext) : MLValue[A] =
     conv.store(value)
 
-  // TODO: Document API
+  // DOCUMENT
   def compileValueRaw[A](ml: String)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[A] =
     new MLValue[A](isabelle.storeValue(ml)).logError(s"""Error while compiling value "$ml":""")
 
-  // TODO: Document API
+  // DOCUMENT
   def compileValue[A](ml: String)(implicit isabelle: Isabelle, ec: ExecutionContext, converter: Converter[A]): MLValue[A] =
     compileValueRaw[A](s"(${converter.valueToExn}) ($ml)")
 
-  // TODO: Document API
+  // DOCUMENT
   def compileFunctionRaw[D, R](ml: String)(implicit isabelle: Isabelle, ec: ExecutionContext): MLFunction[D, R] =
     MLFunction.unsafeFromId[D,R](isabelle.storeValue(s"E_Function (fn DObject x => ($ml) x |> DObject)")).logError(s"""Error while compiling function "$ml":""")
 
-  // TODO: Document API
+  // DOCUMENT
   def compileFunction[D, R](ml: String)(implicit isabelle: Isabelle, ec: ExecutionContext, converterA: Converter[D], converterB: Converter[R]): MLFunction[D, R] =
     compileFunctionRaw(s"(${converterB.valueToExn}) o ($ml) o (${converterA.exnToValue})")
 
-  // TODO: Document API
+  // DOCUMENT
   def compileFunction[D1, D2, R](ml: String)
                                  (implicit isabelle: Isabelle, ec: ExecutionContext,
                                  converter1: Converter[D1], converter2: Converter[D2], converterR: Converter[R]): MLFunction2[D1, D2, R] =
     compileFunction[(D1,D2), R](ml).function2
 
-  // TODO: Document API
+  // DOCUMENT
   def compileFunction[D1, D2, D3, R](ml: String)
                                     (implicit isabelle: Isabelle, ec: ExecutionContext,
                                      converter1: Converter[D1], converter2: Converter[D2], converter3: Converter[D3],
                                      converterR: Converter[R]): MLFunction3[D1, D2, D3, R] =
     compileFunction[(D1,D2,D3), R](ml).function3
 
-  // TODO: Document API
+  // DOCUMENT
   def compileFunction[D1, D2, D3, D4, R](ml: String)
                                     (implicit isabelle: Isabelle, ec: ExecutionContext,
                                      converter1: Converter[D1], converter2: Converter[D2], converter3: Converter[D3],
                                      converter4: Converter[D4], converterR: Converter[R]): MLFunction4[D1, D2, D3, D4, R] =
     compileFunction[(D1,D2,D3,D4), R](ml).function4
 
-  // TODO: Document API
+  // DOCUMENT
   def compileFunction[D1, D2, D3, D4, D5, R](ml: String)
                                         (implicit isabelle: Isabelle, ec: ExecutionContext,
                                          converter1: Converter[D1], converter2: Converter[D2], converter3: Converter[D3],
                                          converter4: Converter[D4], converter5: Converter[D5], converterR: Converter[R]): MLFunction5[D1, D2, D3, D4, D5, R] =
     compileFunction[(D1,D2,D3,D4,D5), R](ml).function5
 
-  // TODO: Document API
+  // DOCUMENT
   def compileFunction[D1, D2, D3, D4, D5, D6, R](ml: String)
                                                 (implicit isabelle: Isabelle, ec: ExecutionContext,
                                                  converter1: Converter[D1], converter2: Converter[D2], converter3: Converter[D3],
                                                  converter4: Converter[D4], converter5: Converter[D5], converter6: Converter[D6], converterR: Converter[R]): MLFunction6[D1, D2, D3, D4, D5, D6, R] =
     compileFunction[(D1,D2,D3,D4,D5,D6), R](ml).function6
 
-  // TODO: Document API
+  // DOCUMENT
   def compileFunction[D1, D2, D3, D4, D5, D6, D7, R](ml: String)
                                                     (implicit isabelle: Isabelle, ec: ExecutionContext,
                                                      converter1: Converter[D1], converter2: Converter[D2], converter3: Converter[D3],

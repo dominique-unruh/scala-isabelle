@@ -22,7 +22,7 @@ import de.unruh.isabelle.pure.Implicits._
  */
 final class Theory private [Theory](val name: String, val mlValue : MLValue[Theory]) extends FutureValue {
   override def toString: String = s"theory $name${mlValue.stateString}"
-  // TODO document
+  // DOCUMENT
   def importMLStructure(name: String, newName: String)
                        (implicit isabelle: Isabelle, executionContext: ExecutionContext): Unit =
     Ops.importMLStructure(this, name, newName).retrieveNow
