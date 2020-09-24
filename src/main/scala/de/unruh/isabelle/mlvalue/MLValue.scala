@@ -211,7 +211,7 @@ class MLStoreFunction[A] private (val id: Future[ID]) {
     })
   }
 
-  /** Like [[apply apply(Data)]] but `data` can be a future.
+  /** Like [[apply(data:de* apply(Data)]] but `data` can be a future.
    * The returned [[MLValue]] `mlVal` will then internally contain that future (i.e.,
    * for example `mlVal.`[[MLValue.retrieveNow retrieveNow]] will wait for `data` to complete first).
    **/
@@ -223,7 +223,7 @@ object MLStoreFunction {
   /** Creates an [[MLStoreFunction]] from ML code `ml`.
    *
    * The ML code `ml` should have type `data -> a` where `a` is the ML type associated with `A` by the
-   * implicit [[Isabelle.Converter Converter]].
+   * implicit [[MLValue.Converter Converter]].
    *
    * This method will not invoke `converter.`[[MLValue.Converter.store store]] or
    * `converter.`[[MLValue.Converter.retrieve retrieve]].
@@ -266,7 +266,7 @@ class MLRetrieveFunction[A] private (id: Future[ID]) {
 /** Creates an [[MLRetrieveFunction]] from ML code `ml`.
  *
  * The ML code `ml` should have type `a -> data` where `a` is the ML type associated with `A` by the
- * implicit [[Isabelle.Converter Converter]].
+ * implicit [[MLValue.Converter Converter]].
  *
  * This method will not invoke `converter.`[[MLValue.Converter.store store]] or
  * `converter.`[[MLValue.Converter.retrieve retrieve]].
@@ -282,7 +282,7 @@ object MLValue extends OperationCollection {
    * Using this function should rarely be necessary, except possibly when defining new [[Converter]]s.
    */
   def unsafeFromId[A](id: Future[Isabelle.ID]) = new MLValue[A](id)
-  /** Same as [[unsafeFromId(id:scala.conc* unsafeFromId(Future[ID])]], except
+  /** Same as [[unsafeFromId[A](id:scala* unsafeFromId(Future[ID])]], except
    * that `id` is given directly and not as a [[scala.concurrent.Future Future]]. */
   def unsafeFromId[A](id: Isabelle.ID): MLValue[A] = unsafeFromId[A](Future.successful(id))
 
@@ -544,20 +544,20 @@ object MLValue extends OperationCollection {
       * Scala does not include an extra field or perform an unnecessary computation in the class when this function
       * is not used.) */
     def mlType : String
-    /** Given an [[MLValue]] `value`, retrieves and returns the value referenced by `value` in the Isabelle
+    /** Given an [[mlvalue.MLValue]] `value`, retrieves and returns the value referenced by `value` in the Isabelle
      * object store.
      *
-     * Must not invoke `value.`[[MLValue.retrieve retrieve]] or `value.`[[MLValue.retrieveNow retrieveNow]] because those functions
-     * invoke `this.`[[retrieve]]. (But calling [[MLValue.retrieve retrieve]] or [[MLValue.retrieveNow retrieveNow]]
-     * on other [[MLValue]]s is allowed as long as no cyclic dependencies are created.)
+     * Must not invoke `value.`[[mlvalue.MLValue.retrieve retrieve]] or `value.`[[mlvalue.MLValue.retrieveNow retrieveNow]] because those functions
+     * invoke `this.`[[retrieve]]. (But calling [[mlvalue.MLValue.retrieve retrieve]] or [[mlvalue.MLValue.retrieveNow retrieveNow]]
+     * on other [[mlvalue.MLValue MLValue]]s is allowed as long as no cyclic dependencies are created.)
      **/
     def retrieve(value: MLValue[A])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[A]
 
     /** Given a `value : A`, transfers and stores `value` in the Isabelle object store and returns
-     * an [[MLValue]] referencing the value in the object store.
+     * an [[mlvalue.MLValue]] referencing the value in the object store.
      *
-     * Must not invoke [[MLValue.apply MLValue]]`(value)` because that functions
-     * invokes `this.`[[store]]. (But calling [[MLValue.apply MLValue]]`(...)`
+     * Must not invoke [[mlvalue.MLValue.apply MLValue]]`(value)` because that functions
+     * invokes `this.`[[store]]. (But calling [[mlvalue.MLValue.apply MLValue]]`(...)`
      * on other values is allowed as long as no cyclic dependencies are created.)
      **/
     def store(value: A)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[A]

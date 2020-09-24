@@ -276,7 +276,7 @@ object Const {
   /** Allows to pattern match constants. E.g.,
    * {{{
    *   term match {
-   *     case Const(name,typ) => println(s"Constant $name found")
+   *     case Const(name,typ) => println(s"Constant \$name found")
    *   }
    * }}}
    * Note that this will also match a [[Cterm]] and an [[MLValueTerm]] that represent a `Const` in ML.
@@ -309,7 +309,7 @@ object Free {
   /** Allows to pattern match free variables. E.g.,
    * {{{
    *   term match {
-   *     case Free(name,typ) => println(s"Free variable $name found")
+   *     case Free(name,typ) => println(s"Free variable \$name found")
    *   }
    * }}}
    * Note that this will also match a [[Cterm]] and an [[MLValueTerm]] that represent a `Free` in ML.
@@ -350,7 +350,7 @@ object Var {
   /** Allows to pattern match schematic variables. E.g.,
    * {{{
    *   term match {
-   *     case Var(name,index,typ) => println(s"Schematic variable $name.$index found")
+   *     case Var(name,index,typ) => println(s"Schematic variable \$name.\$index found")
    *   }
    * }}}
    * Note that this will also match a [[Cterm]] and an [[MLValueTerm]] that represent a `Var` in ML.
@@ -364,7 +364,7 @@ object Var {
 }
 
 /** A function application (ML constructor `$`). [[fun]] is the function to be applied and [[arg]] its
- * argument. (E.g., `t1$t2` in ML would have [[fun]]=t1 and [[arg]]=t2.)
+ * argument. (E.g., `t1 $ t2` in ML would have [[fun]]=t1 and [[arg]]=t2.)
  *
  * Can be constructed both as `App(t1,t2)` or `t1 $ t2` in Isabelle.
  * (Pattern matching only supports the syntax `App(...)`, not `$`.)
@@ -388,7 +388,7 @@ object App {
   /** Allows to pattern match function applications. E.g.,
    * {{{
    *   term match {
-   *     case App(t1,t2) => println(s"${t1.pretty(ctxt)} was applied to ${t2.pretty(ctxt)}")
+   *     case App(t1,t2) => println(s"\${t1.pretty(ctxt)} was applied to \${t2.pretty(ctxt)}")
    *   }
    * }}}
    * Note that this will also match a [[Cterm]] and an [[MLValueTerm]] that represent a `$` in ML.
@@ -428,7 +428,7 @@ object Abs {
   /** Allows to pattern match lambda abstractions. E.g.,
    * {{{
    *   term match {
-   *     case Abs(name,typ,body) => println(s"Lambda abstraction λ$name found")
+   *     case Abs(name,typ,body) => println(s"Lambda abstraction λ\$name found")
    *   }
    * }}}
    * Note that this will also match a [[Cterm]] and an [[MLValueTerm]] that represent an `Abs` in ML.
@@ -464,7 +464,7 @@ object Bound {
   /** Allows to pattern match bound variables. E.g.,
    * {{{
    *   term match {
-   *     case Bound(index) => println(s"Bound variable found, index: $index")
+   *     case Bound(index) => println(s"Bound variable found, index: \$index")
    *   }
    * }}}
    * Note that this will also match a [[Cterm]] and an [[MLValueTerm]] that represent a `Bound` in ML.

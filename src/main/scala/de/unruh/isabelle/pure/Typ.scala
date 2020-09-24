@@ -269,7 +269,7 @@ object Type {
   /** Allows to pattern match types. E.g.,
    * {{{
    *   typ match {
-   *     case Type(name,args) => println(s"Type $name found (with ${args.length} parameters)")
+   *     case Type(name,args) => println(s"Type \$name found (with \${args.length} parameters)")
    *   }
    * }}}
    * Note that this will also match a [[Ctyp]] and an [[MLValueTyp]] that represent a `Type` in ML.
@@ -308,7 +308,7 @@ object TFree {
   /** Allows to pattern match free type variables. E.g.,
    * {{{
    *   typ match {
-   *     case TFree(name,sort) => println(s"Free type variable $name found")
+   *     case TFree(name,sort) => println(s"Free type variable \$name found")
    *   }
    * }}}
    * Note that this will also match a [[Ctyp]] and an [[MLValueTyp]] that represent a `TFree` in ML.
@@ -353,7 +353,7 @@ object TVar {
   /** Allows to pattern match schematic type variables. E.g.,
    * {{{
    *   typ match {
-   *     case TVar(name,index,sort) => println(s"Schematic type variable ?$name$index found")
+   *     case TVar(name,index,sort) => println(s"Schematic type variable ?\$name\$index found")
    *   }
    * }}}
    * Note that this will also match a [[Ctyp]] and an [[MLValueTyp]] that represent a `TVar` in ML.
