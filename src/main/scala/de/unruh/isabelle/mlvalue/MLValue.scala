@@ -381,7 +381,6 @@ object MLValue extends OperationCollection {
     val storeInt = MLStoreFunction[Int]("fn DInt i => i")
     val retrieveLong = MLRetrieveFunction[Long]("DInt")
     val storeLong = MLStoreFunction[Long]("fn DInt i => i")
-    // TODO: more efficient than decimal representation?
     val retrieveBigInt = MLRetrieveFunction[BigInt]("fn i => DString (string_of_int i)")
     val storeBigInt = MLStoreFunction[BigInt]("fn DString s => Int.fromString s |> Option.valOf")
 
@@ -620,9 +619,8 @@ object MLValue extends OperationCollection {
    *
    * If `ml` is an ML function, [[compileFunction[D,R]* compileFunction]] below might be more convenient.
    **/
-  // TODO: check that ml has type converter.mlType (and document)
   def compileValue[A](ml: String)(implicit isabelle: Isabelle, ec: ExecutionContext, converter: Converter[A]): MLValue[A] =
-    compileValueRaw[A](s"(${converter.valueToExn}) ($ml)")
+    compileValueRaw[A](s"(${converter.valueToExn}) (($ml) : (${converter.mlType}))")
 
   // TODO: remove this function
   @deprecated("will be removed, use compileFunction or compileValueRaw", "0.1.1-SNAPSHOT")
@@ -642,7 +640,7 @@ object MLValue extends OperationCollection {
   //noinspection ScalaDeprecation
   // TODO rename converter arguments (D,R)
   def compileFunction[D, R](ml: String)(implicit isabelle: Isabelle, ec: ExecutionContext, converterA: Converter[D], converterB: Converter[R]): MLFunction[D, R] =
-    compileFunctionRaw(s"(${converterB.valueToExn}) o ($ml) o (${converterA.exnToValue})")
+    compileFunctionRaw(s"(${converterB.valueToExn}) o (($ml) : ((${converterA.mlType}) -> (${converterB.mlType}))) o (${converterA.exnToValue})")
 
   /** Like [[compileFunction[D,R]* compileFunction[D,R]]], except that the ML code `ml` must be a function of type `d1 * d2 -> r`
    * where `d1,d2,r` are the ML types corresponding to `D1,D2,R`. The resulting [[MLFunction2]] `f` can then be invoked
