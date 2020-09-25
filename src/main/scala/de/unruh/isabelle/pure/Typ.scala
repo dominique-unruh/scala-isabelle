@@ -310,8 +310,7 @@ final class TFree private[pure] (val name: String, val sort: List[String], val i
 
 object TFree {
   /** Create a free type variable with name `name` and sort `sort`. */
-  // TODO: Make sort a Seq[String] instead
-  def apply(name: String, sort: String*)
+  def apply(name: String, sort: Seq[String])
            (implicit isabelle: Isabelle, ec: ExecutionContext) = new TFree(name, sort.toList)
 
   /** Allows to pattern match free type variables. E.g.,
@@ -358,9 +357,8 @@ final class TVar private[pure] (val name: String, val index: Int, val sort: List
 
 object TVar {
   /** Create a schematic type variable with name `name`, index `index`, and sort `sort`. */
-  // TODO: Make sort a Seq[String] instead
   // TODO Add default 0 for index
-  def apply(name: String, index: Int, sort: String*)
+  def apply(name: String, index: Int, sort: Seq[String])
            (implicit isabelle: Isabelle, ec: ExecutionContext) = new TVar(name, index, sort.toList)
 
   /** Allows to pattern match schematic type variables. E.g.,
