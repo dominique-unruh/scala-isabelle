@@ -67,8 +67,7 @@ final class Theory private [Theory](val name: String, val mlValue : MLValue[Theo
    * }}}
    */
   // TODO: Check if the above example works. (test case)
-  // TODO: Default for newName: name
-  // TODO: Is there an alternative for this that does not affect the global namespace?
+  // TODO: Is there an alternative for this that does not affect the global namespace? (And then deprecate.)
   def importMLStructure(name: String, newName: String)
                        (implicit isabelle: Isabelle, executionContext: ExecutionContext): Unit =
     Ops.importMLStructure(this, name, newName).retrieveNow

@@ -201,8 +201,7 @@ final class MLValueTyp(val mlValue: MLValue[Typ])(implicit val isabelle: Isabell
   }
   private var mlValueLoaded = false
   /** Transforms this [[Ctyp]] into an [[MLValueTyp]]. */
-  // TODO: Make package private. There is probably no public use case for this.
-  def mlValueTyp = new MLValueTyp(mlValue)
+  private [pure] def mlValueTyp = new MLValueTyp(mlValue)
   override def pretty(ctxt: Context)(implicit ec: ExecutionContext): String =
     Ops.stringOfCtyp(MLValue((ctxt, this))).retrieveNow
   lazy val concrete: ConcreteTyp = new MLValueTyp(mlValue).concrete

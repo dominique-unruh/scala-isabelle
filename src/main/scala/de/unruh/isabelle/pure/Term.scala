@@ -163,8 +163,7 @@ final class Cterm private(val ctermMlValue: MLValue[Cterm])(implicit val isabell
     result }
   private var mlValueLoaded = false
   /** Transforms this [[Cterm]] into an [[MLValueTerm]]. */
-  // TODO: Make package private. There is probably no public use case for this.
-  def mlValueTerm = new MLValueTerm(mlValue)
+  private [pure] def mlValueTerm = new MLValueTerm(mlValue)
   override def pretty(ctxt: Context)(implicit ec: ExecutionContext): String =
     Ops.stringOfCterm(MLValue((ctxt, this))).retrieveNow
   lazy val concrete: ConcreteTerm = mlValueTerm.concrete
