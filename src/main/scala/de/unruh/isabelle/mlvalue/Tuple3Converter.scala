@@ -19,7 +19,7 @@ import Implicits._
  */
 @inline final class Tuple3Converter[A, B, C](converterA: Converter[A], converterB: Converter[B], converterC: Converter[C]) extends Converter[(A, B, C)] {
   @inline override def retrieve(value: MLValue[(A, B, C)])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[(A, B, C)] = {
-    for (DList(DObject(aID), DObject(bID), DObject(cID)) <- Ops.retrieveTuple3(value.id);
+    for (DList(DObject(aID), DObject(bID), DObject(cID)) <- Ops.retrieveTuple3(value.asInstanceOf[MLValue[(MLValue[A], MLValue[B], MLValue[C])]]);
          a <- converterA.retrieve(MLValue.unsafeFromId[A](Future.successful(aID)));
          b <- converterB.retrieve(MLValue.unsafeFromId[B](Future.successful(bID)));
          c <- converterC.retrieve(MLValue.unsafeFromId[C](Future.successful(cID))))

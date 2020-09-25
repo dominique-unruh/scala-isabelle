@@ -29,7 +29,7 @@ object StringConverter extends Converter[String] {
 
   @inline override def retrieve(value: MLValue[String])
                                (implicit isabelle: Isabelle, ec: ExecutionContext): Future[String] =
-    for (DString(str) <- Ops.retrieveString(value.id))
+    for (DString(str) <- Ops.retrieveString(value))
       yield str
 
   @inline override def exnToValue: String = s"fn E_String str => str | ${matchFailExn("BooleanConverter.exnToValue")}"

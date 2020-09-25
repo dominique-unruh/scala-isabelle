@@ -5,8 +5,8 @@ import de.unruh.isabelle.control.Isabelle.{DList, DObject}
 import de.unruh.isabelle.mlvalue.MLValue.{Converter, Ops, matchFailExn}
 
 import scala.concurrent.{ExecutionContext, Future}
-
 import Implicits._
+import scalaz.Id.Id
 
 /**
  * [[MLValue.Converter]] for type [[scala.Option Option]][A].
@@ -26,7 +26,7 @@ import Implicits._
   }
 
   @inline override def retrieve(value: MLValue[Option[A]])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Option[A]] = {
-    for (data <- Ops.retrieveOption(value.id);
+    for (data <- Ops.retrieveOption[A](value.insertMLValue[Option,A]);
          option <- data match {
            case DList() => Future.successful(None): Future[Option[A]]
            case DList(DObject(id)) => converter.retrieve(MLValue.unsafeFromId[A](Future.successful(id))).map(Some(_)): Future[Option[A]]

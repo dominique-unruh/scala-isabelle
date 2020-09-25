@@ -251,16 +251,17 @@ object MLStoreFunction {
  * those functions in the first place.
  **/
 class MLRetrieveFunction[A] private (id: Future[ID]) {
-  // TODO remove/private
-  def apply(id: ID)(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Isabelle.Data] =
+/*
+  private def apply(id: ID)(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Isabelle.Data] =
     isabelle.applyFunction(this.id, DObject(id))
-  // TODO remove/private
-  def apply(id: Future[ID])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Isabelle.Data] =
-    for (id <- id; data <- apply(id)) yield data
+  private def apply(id: Future[ID])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Isabelle.Data] =
+    for (id <- id; data <- isabelle.applyFunction(this.id, DObject(id))) yield data
+*/
+
   /** Calls the compiled function on the value of ML type `a` referenced by `value`
    * and returns the result to the Isabelle process (in a [[scala.concurrent.Future Future]]). */
   def apply(value: MLValue[A])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Data] =
-    apply(value.id)
+    for (valueId <- value.id; data <- isabelle.applyFunction(this.id, DObject(valueId))) yield data
 }
 
 /** Creates an [[MLRetrieveFunction]] from ML code `ml`.
@@ -324,47 +325,52 @@ object MLValue extends OperationCollection {
 
     val unitValue = MLValue.compileValueRaw[Unit]("E_Int 0")
 
-    val retrieveTuple2 =
+    private val retrieveTuple2_ =
       MLRetrieveFunction[(MLValue[Nothing], MLValue[Nothing])]("fn (a,b) => DList [DObject a, DObject b]")
-    /*@inline def retrieveTuple2[A,B]: MLRetrieveFunction[(MLValue[A], MLValue[B])] =
-      retrieveTuple2_.asInstanceOf[MLRetrieveFunction[(MLValue[A], MLValue[B])]]*/
+    @inline def retrieveTuple2[A,B]: MLRetrieveFunction[(MLValue[A], MLValue[B])] =
+      retrieveTuple2_.asInstanceOf[MLRetrieveFunction[(MLValue[A], MLValue[B])]]
     private val storeTuple2_ =
       MLStoreFunction[(MLValue[Nothing], MLValue[Nothing])](s"fn DList [DObject a, DObject b] => (a,b) | ${matchFailData("storeTuple2")}")
     @inline def storeTuple2[A,B]: MLStoreFunction[(MLValue[A], MLValue[B])] =
       storeTuple2_.asInstanceOf[MLStoreFunction[(MLValue[A], MLValue[B])]]
 
-    val retrieveTuple3: MLRetrieveFunction[(MLValue[Nothing], MLValue[Nothing], MLValue[Nothing])] =
+    private val retrieveTuple3_ : MLRetrieveFunction[(MLValue[Nothing], MLValue[Nothing], MLValue[Nothing])] =
       MLRetrieveFunction[(MLValue[Nothing], MLValue[Nothing], MLValue[Nothing])](s"fn (a,b,c) => DList [DObject a, DObject b, DObject c]")
+    def retrieveTuple3[A,B,C] = retrieveTuple3_.asInstanceOf[MLRetrieveFunction[(MLValue[A], MLValue[B], MLValue[C])]]
     private val storeTuple3_ =
       MLStoreFunction[(MLValue[Nothing], MLValue[Nothing], MLValue[Nothing])](s"fn DList [DObject a, DObject b, DObject c] => (a,b,c) | ${matchFailData("storeTuple3")}")
     @inline def storeTuple3[A,B,C]: MLStoreFunction[(MLValue[A], MLValue[B], MLValue[C])] =
       storeTuple3_.asInstanceOf[MLStoreFunction[(MLValue[A], MLValue[B], MLValue[C])]]
 
-    val retrieveTuple4: MLRetrieveFunction[(MLValue[Nothing], MLValue[Nothing], MLValue[Nothing], MLValue[Nothing])] =
+    private val retrieveTuple4_ : MLRetrieveFunction[(MLValue[Nothing], MLValue[Nothing], MLValue[Nothing], MLValue[Nothing])] =
       MLRetrieveFunction(s"fn (a,b,c,d) => DList [DObject a, DObject b, DObject c, DObject d]")
+    def retrieveTuple4[A,B,C,D] = retrieveTuple4_.asInstanceOf[MLRetrieveFunction[(MLValue[A], MLValue[B], MLValue[C], MLValue[D])]]
     private val storeTuple4_ =
       MLStoreFunction[(MLValue[Nothing], MLValue[Nothing], MLValue[Nothing], MLValue[Nothing])](s"fn DList [DObject a, DObject b, DObject c, DObject d] => (a,b,c,d) | ${matchFailData("storeTuple4")}")
     @inline def storeTuple4[A,B,C,D] =
       storeTuple4_.asInstanceOf[MLStoreFunction[(MLValue[A], MLValue[B], MLValue[C], MLValue[D])]]
 
-    val retrieveTuple5: MLRetrieveFunction[(MLValue[Nothing], MLValue[Nothing], MLValue[Nothing], MLValue[Nothing], MLValue[Nothing])] =
+    private val retrieveTuple5_ : MLRetrieveFunction[(MLValue[Nothing], MLValue[Nothing], MLValue[Nothing], MLValue[Nothing], MLValue[Nothing])] =
       MLRetrieveFunction(s"fn (a,b,c,d,e) => DList [DObject a, DObject b, DObject c, DObject d, DObject e]")
+    def retrieveTuple5[A,B,C,D,E] = retrieveTuple5_.asInstanceOf[MLRetrieveFunction[(MLValue[A], MLValue[B], MLValue[C], MLValue[D], MLValue[E])]]
     private val storeTuple5_ =
       MLStoreFunction[(MLValue[Nothing], MLValue[Nothing], MLValue[Nothing], MLValue[Nothing], MLValue[Nothing])](
         s"fn DList [DObject a, DObject b, DObject c, DObject d, DObject e] => (a,b,c,d,e) | ${matchFailData("storeTuple5")}")
     @inline def storeTuple5[A,B,C,D,E] =
       storeTuple5_.asInstanceOf[MLStoreFunction[(MLValue[A], MLValue[B], MLValue[C], MLValue[D], MLValue[E])]]
 
-    val retrieveTuple6: MLRetrieveFunction[(MLValue[Nothing], MLValue[Nothing], MLValue[Nothing], MLValue[Nothing], MLValue[Nothing], MLValue[Nothing])] =
+    private val retrieveTuple6_ : MLRetrieveFunction[(MLValue[Nothing], MLValue[Nothing], MLValue[Nothing], MLValue[Nothing], MLValue[Nothing], MLValue[Nothing])] =
       MLRetrieveFunction(s"fn (a,b,c,d,e,f) => DList [DObject a, DObject b, DObject c, DObject d, DObject e, DObject f]")
+    def retrieveTuple6[A,B,C,D,E,F] = retrieveTuple6_.asInstanceOf[MLRetrieveFunction[(MLValue[A], MLValue[B], MLValue[C], MLValue[D], MLValue[E], MLValue[F])]]
     private val storeTuple6_ =
       MLStoreFunction[(MLValue[Nothing], MLValue[Nothing], MLValue[Nothing], MLValue[Nothing], MLValue[Nothing], MLValue[Nothing])](
         s"fn DList [DObject a, DObject b, DObject c, DObject d, DObject e, DObject f] => (a,b,c,d,e,f) | ${matchFailData("storeTuple6")}")
     @inline def storeTuple6[A,B,C,D,E,F] =
       storeTuple6_.asInstanceOf[MLStoreFunction[(MLValue[A], MLValue[B], MLValue[C], MLValue[D], MLValue[E], MLValue[F])]]
 
-    val retrieveTuple7: MLRetrieveFunction[(MLValue[Nothing], MLValue[Nothing], MLValue[Nothing], MLValue[Nothing], MLValue[Nothing], MLValue[Nothing], MLValue[Nothing])] =
+    private val retrieveTuple7_ : MLRetrieveFunction[(MLValue[Nothing], MLValue[Nothing], MLValue[Nothing], MLValue[Nothing], MLValue[Nothing], MLValue[Nothing], MLValue[Nothing])] =
       MLRetrieveFunction(s"fn (a,b,c,d,e,f,g) => DList [DObject a, DObject b, DObject c, DObject d, DObject e, DObject f, DObject g]")
+    def retrieveTuple7[A,B,C,D,E,F,G] = retrieveTuple7_.asInstanceOf[MLRetrieveFunction[(MLValue[A], MLValue[B], MLValue[C], MLValue[D], MLValue[E], MLValue[F], MLValue[G])]]
     private val storeTuple7_ =
       MLStoreFunction[(MLValue[Nothing], MLValue[Nothing], MLValue[Nothing], MLValue[Nothing], MLValue[Nothing], MLValue[Nothing], MLValue[Nothing])](
         s"fn DList [DObject a, DObject b, DObject c, DObject d, DObject e, DObject f, DObject g] => (a,b,c,d,e,f,g) | ${matchFailData("storeTuple7")}")
@@ -391,9 +397,9 @@ object MLValue extends OperationCollection {
     def optionNone[A]: MLValue[Option[A]] = optionNone_.asInstanceOf[MLValue[Option[A]]]
     private val optionSome_ = MLValue.compileFunctionRaw[Nothing, Option[Nothing]]("E_Option o SOME")
     def optionSome[A]: MLFunction[A, Option[A]] = optionSome_.asInstanceOf[MLFunction[A, Option[A]]]
-    val retrieveOption : MLRetrieveFunction[Option[MLValue[Nothing]]] =
+    val retrieveOption_ : MLRetrieveFunction[Option[MLValue[Nothing]]] =
       MLRetrieveFunction("fn NONE => DList [] | SOME x => DList [DObject x]")
-
+    def retrieveOption[A] = retrieveOption_.asInstanceOf[MLRetrieveFunction[Option[MLValue[A]]]]
 
     val retrieveList : MLRetrieveFunction[List[MLValue[Nothing]]] =
       MLRetrieveFunction("DList o map DObject")

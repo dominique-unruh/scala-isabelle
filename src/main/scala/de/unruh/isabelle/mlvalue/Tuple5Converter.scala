@@ -20,7 +20,7 @@ import Implicits._
 final class Tuple5Converter[A, B, C, D, E](converterA: Converter[A], converterB: Converter[B], converterC: Converter[C], converterD: Converter[D], converterE: Converter[E])
   extends Converter[(A, B, C, D, E)] {
   override def retrieve(value: MLValue[(A, B, C, D, E)])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[(A, B, C, D, E)] = {
-    for (DList(DObject(aID), DObject(bID), DObject(cID), DObject(dID), DObject(eID)) <- Ops.retrieveTuple5(value.id);
+    for (DList(DObject(aID), DObject(bID), DObject(cID), DObject(dID), DObject(eID)) <- Ops.retrieveTuple5(value.asInstanceOf[MLValue[(MLValue[A], MLValue[B], MLValue[C], MLValue[D], MLValue[E])]]);
          a <- converterA.retrieve(MLValue.unsafeFromId[A](Future.successful(aID)));
          b <- converterB.retrieve(MLValue.unsafeFromId[B](Future.successful(bID)));
          c <- converterC.retrieve(MLValue.unsafeFromId[C](Future.successful(cID)));

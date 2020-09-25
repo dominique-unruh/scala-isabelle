@@ -21,7 +21,7 @@ import Implicits._
                                                    converterD: Converter[D], converterE: Converter[E], converterF: Converter[F],
                                                    converterG: Converter[G]) extends Converter[(A, B, C, D, E, F, G)] {
   @inline override def retrieve(value: MLValue[(A, B, C, D, E, F, G)])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[(A, B, C, D, E, F, G)] = {
-    for (DList(DObject(aID), DObject(bID), DObject(cID), DObject(dID), DObject(eID), DObject(fID), DObject(gID)) <- Ops.retrieveTuple7(value.id);
+    for (DList(DObject(aID), DObject(bID), DObject(cID), DObject(dID), DObject(eID), DObject(fID), DObject(gID)) <- Ops.retrieveTuple7(value.asInstanceOf[MLValue[(MLValue[A], MLValue[B], MLValue[C], MLValue[D], MLValue[E], MLValue[F], MLValue[G])]]);
          a <- converterA.retrieve(MLValue.unsafeFromId[A](Future.successful(aID)));
          b <- converterB.retrieve(MLValue.unsafeFromId[B](Future.successful(bID)));
          c <- converterC.retrieve(MLValue.unsafeFromId[C](Future.successful(cID)));
