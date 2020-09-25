@@ -4,7 +4,7 @@ control-click on "\<dots>/control_isabelle.ml" below
 *)
 
 theory Control_Isabelle
-  imports Main
+  imports HOL.Set Main
 begin
 
 ML \<open>
@@ -12,6 +12,6 @@ val inputPipeName = "/dev/null"
 val outputPipeName = "/dev/null"
 \<close>
 
-ML_file "src/main/resources/de/unruh/isabelle/control/control_isabelle.ml"
+ML_file "../../main/resources/de/unruh/isabelle/control/control_isabelle.ml"
 
 end
