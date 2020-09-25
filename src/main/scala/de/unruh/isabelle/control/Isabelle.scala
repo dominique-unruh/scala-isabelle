@@ -502,7 +502,6 @@ object Isabelle {
     * If this ID is not referenced any more, the referenced object will be garbage collected
     * in the Isabelle process, too.
     */
-  // TODO: Define equality and hashCode via the id itself
   final class ID private[control] (private[control] val id: Long, isabelle: Isabelle) {
     isabelle.cleaner.register(this, new IDCleaner(id, isabelle))
 
@@ -510,6 +509,8 @@ object Isabelle {
       case obj: ID => id == obj.id
       case _ => false
     }
+
+    override def hashCode(): Int = id.hashCode()
   }
   private final class IDCleaner(id: Long, isabelle: Isabelle) extends Runnable {
     def run(): Unit = isabelle.garbageQueue.add(id)
