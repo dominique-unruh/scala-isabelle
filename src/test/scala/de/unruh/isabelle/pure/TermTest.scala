@@ -33,7 +33,7 @@ class TermTest extends AnyFunSuite {
     println(term.getClass, term)
 
     term match {
-      case Const("HOL.True", Type("HOL.bool", Nil)) =>
+      case Const("HOL.True", Type("HOL.bool")) =>
     }
   }
 
@@ -47,7 +47,7 @@ class TermTest extends AnyFunSuite {
     println(Const.unapply(cterm))
 
     cterm match {
-      case Const("HOL.True", Type("HOL.bool", List())) =>
+      case Const("HOL.True", Type("HOL.bool")) =>
       case _ => fail()
     }
   }

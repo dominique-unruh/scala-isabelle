@@ -268,21 +268,22 @@ final class Type private[pure](val name: String, val args: List[Typ], val initia
 
 object Type {
   /** Create a type with type constructor `name` and type parameters `args`. */
-    // TODO: Same with Seq[Typ]
   def apply(name: String, args: Typ*)(implicit isabelle: Isabelle, ec: ExecutionContext) = new Type(name, args.toList)
 
   /** Allows to pattern match types. E.g.,
    * {{{
    *   typ match {
-   *     case Type(name,args) => println(s"Type \$name found (with \${args.length} parameters)")
+   *     case Type("Nat.nat") => println(s"Type nat found")
+   *     case Type("List.list", arg) => println(s"List of \$arg found")
+   *     case Type(name, args @ _* => println(s"Type \$name found (with \${args.length} parameters)")
    *   }
    * }}}
    * Note that this will also match a [[Ctyp]] and an [[MLValueTyp]] that represent a `Type` in ML.
    **/
   @tailrec
-  def unapply(typ: Typ): Option[(String, List[Typ])] = typ match {
+  def unapplySeq(typ: Typ): Option[(String, Seq[Typ])] = typ match {
     case typ : Type => Some((typ.name,typ.args))
-    case _ : MLValueTyp | _ : Ctyp => unapply(typ.concrete)
+    case _ : MLValueTyp | _ : Ctyp => unapplySeq(typ.concrete)
     case _ => None
   }
 }

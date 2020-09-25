@@ -14,7 +14,7 @@ class TypTest extends AnyFunSuite {
     val typ = Typ(ctxt, str)
     println(typ.getClass, typ)
     typ match {
-      case Type("Nat.nat", List()) => ()
+      case Type("Nat.nat") => ()
       case _ => fail()
     }
   }
@@ -25,7 +25,7 @@ class TypTest extends AnyFunSuite {
     //noinspection ComparingUnrelatedTypes
     assert(typ == ctyp)
     ctyp match {
-      case Type("List.list", List(Type("Nat.nat", List()))) => ()
+      case Type("List.list", Type("Nat.nat")) => ()
       case _ => fail()
     }
   }
