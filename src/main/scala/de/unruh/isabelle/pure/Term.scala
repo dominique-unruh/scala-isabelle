@@ -141,10 +141,6 @@ sealed abstract class Term extends FutureValue {
 sealed abstract class ConcreteTerm extends Term {
   /** @return this */
   @inline override val concrete: this.type = this
-  // TODO: Incorrect behavior: Should wait for subterms
-  override def someFuture: Future[Any] = Future.successful(())
-  // TODO: Incorrect behavior: Should wait for subterms
-  override def await: Unit = {}
 }
 
 /** Represents a `cterm` in Isabelle. In Isabelle, a `cterm` must be explicitly converted into a `term`.
@@ -272,6 +268,10 @@ final class Const private[pure](val name: String, val typ: Typ, initialMlValue: 
 
   override def hashCode(): Int = new HashCodeBuilder(162389433,568734237)
     .append(name).toHashCode
+
+  override def someFuture: Future[Any] = Future.successful(())
+  override def await: Unit = {}
+  override def forceFuture(implicit ec: ExecutionContext): Future[this.type] = Future.successful(this)
 }
 
 object Const {
@@ -305,6 +305,10 @@ final class Free private[pure](val name: String, val typ: Typ, initialMlValue: M
 
   override def hashCode(): Int = new HashCodeBuilder(384673423,678423475)
     .append(name).toHashCode
+
+  override def someFuture: Future[Any] = Future.successful(())
+  override def await: Unit = {}
+  override def forceFuture(implicit ec: ExecutionContext): Future[this.type] = Future.successful(this)
 }
 
 object Free {
@@ -345,6 +349,10 @@ final class Var private[pure](val name: String, val index: Int, val typ: Typ, in
 
   override def hashCode(): Int = new HashCodeBuilder(3474285, 342683425)
     .append(name).append(index).toHashCode
+
+  override def someFuture: Future[Any] = Future.successful(())
+  override def await: Unit = {}
+  override def forceFuture(implicit ec: ExecutionContext): Future[this.type] = Future.successful(this)
 }
 
 object Var {
@@ -384,6 +392,9 @@ final class App private[pure] (val fun: Term, val arg: Term, initialMlValue: MLV
 
   override def hashCode(): Int = new HashCodeBuilder(334234237,465634533)
     .append(arg).toHashCode
+
+  override def await: Unit = Await.ready(someFuture, Duration.Inf)
+  override lazy val someFuture: Future[Any] = fun.someFuture.flatMap(_ => arg.someFuture)
 }
 
 object App {
@@ -423,6 +434,9 @@ final class Abs private[pure] (val name: String, val typ: Typ, val body: Term, i
 
   override def hashCode(): Int = new HashCodeBuilder(342345635,564562379)
     .append(name).append(body).toHashCode
+
+  override def await: Unit = body.await
+  override lazy val someFuture: Future[Any] = body.someFuture
 }
 
 object Abs {
@@ -460,6 +474,10 @@ final class Bound private[pure] (val index: Int, initialMlValue: MLValue[Term]=n
 
   override def hashCode(): Int = new HashCodeBuilder(442344345,423645769)
     .append(index).toHashCode
+
+  override def someFuture: Future[Any] = Future.successful(())
+  override def await: Unit = {}
+  override def forceFuture(implicit ec: ExecutionContext): Future[this.type] = Future.successful(this)
 }
 
 object Bound {

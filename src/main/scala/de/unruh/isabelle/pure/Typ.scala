@@ -140,12 +140,6 @@ sealed abstract class Typ extends FutureValue {
  */
 sealed abstract class ConcreteTyp extends Typ {
   override val concrete: this.type = this
-  // TODO: Incorrect behavior: Should wait for subterms
-  override def await: Unit = {}
-  // TODO: Incorrect behavior: Should wait for subterms (remove, use inherited behavior)
-  override def forceFuture(implicit ec: ExecutionContext): Future[ConcreteTyp.this.type] = Future.successful(this)
-  // TODO: Incorrect behavior: Should wait for subterms
-  override def someFuture: Future[Any] = Future.successful(())
 }
 
 /** A [[Typ]] that is stored in the Isabelle process's object store
@@ -265,6 +259,11 @@ final class Type private[pure](val name: String, val args: List[Typ], val initia
 
   override def hashCode(): Int = new HashCodeBuilder(342534543,34774653)
     .append(name).toHashCode
+
+  override def await: Unit = Await.ready(someFuture, Duration.Inf)
+  override lazy val someFuture: Future[Any] = {
+    Future.traverse(args : Seq[Typ])(_.someFuture).map(_ => ())
+  }
 }
 
 object Type {
@@ -303,6 +302,10 @@ final class TFree private[pure] (val name: String, val sort: List[String], val i
 
   override def hashCode(): Int = new HashCodeBuilder(335434265,34255633)
     .append(name).append(sort).toHashCode
+
+  override def someFuture: Future[Any] = Future.successful(())
+  override def await: Unit = {}
+  override def forceFuture(implicit ec: ExecutionContext): Future[this.type] = Future.successful(this)
 }
 
 object TFree {
@@ -347,6 +350,10 @@ final class TVar private[pure] (val name: String, val index: Int, val sort: List
 
   override def hashCode(): Int = new HashCodeBuilder(342524363,354523249)
     .append(name).append(index).append(sort).toHashCode
+
+  override def someFuture: Future[Any] = Future.successful(())
+  override def await: Unit = {}
+  override def forceFuture(implicit ec: ExecutionContext): Future[this.type] = Future.successful(this)
 }
 
 object TVar {
