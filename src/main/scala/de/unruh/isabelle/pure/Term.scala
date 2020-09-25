@@ -130,8 +130,7 @@ sealed abstract class Term extends FutureValue {
    *
    * @see pretty for pretty printed terms
    **/
-  // TODO: Make abstract
-  override def toString: String = super.toString
+  override def toString: String
 }
 
 /** Base class for all concrete terms.
@@ -158,7 +157,11 @@ final class Cterm private(val ctermMlValue: MLValue[Cterm])(implicit val isabell
   /** Returns this term as an `MLValue[Term]` (not `MLValue[Cterm]`). The difference is crucial
    * because `MLValue[_]` is not covariant. So for invoking ML functions that expect an argument of type `term`, you
    * need to get an `MLValue[Term]`. In contrast, [[ctermMlValue]] returns this term as an `MLValue[Cterm]`. */
-  override lazy val mlValue: MLValue[Term] = Ops.termOfCterm(ctermMlValue)
+  override lazy val mlValue: MLValue[Term] = {
+    val result = Ops.termOfCterm(ctermMlValue)
+    mlValueLoaded = true
+    result }
+  private var mlValueLoaded = false
   /** Transforms this [[Cterm]] into an [[MLValueTerm]]. */
   // TODO: Make package private. There is probably no public use case for this.
   def mlValueTerm = new MLValueTerm(mlValue)
@@ -169,7 +172,10 @@ final class Cterm private(val ctermMlValue: MLValue[Cterm])(implicit val isabell
   override def force : this.type = { ctermMlValue.force; this }
   override def someFuture: Future[Any] = ctermMlValue.someFuture
   override def await: Unit = ctermMlValue.await
-  // TODO: write toString function
+
+  override def toString: String =
+    if (mlValueLoaded) "cterm:"+mlValue.toString
+    else "cterm"+stateString
 }
 
 object Cterm {

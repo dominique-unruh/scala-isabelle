@@ -130,8 +130,7 @@ sealed abstract class Typ extends FutureValue {
    *
    * @see pretty for pretty printed type
    **/
-  // TODO: Make abstract
-  override def toString: String = super.toString
+  override def toString: String
 }
 
 /** Base class for all concrete types.
@@ -195,7 +194,12 @@ final class MLValueTyp(val mlValue: MLValue[Typ])(implicit val isabelle: Isabell
   /** Returns this term as an `MLValue[Typ]` (not `MLValue[Ctyp]`). The difference is crucial
    * because `MLValue[_]` is not covariant. So for invoking ML functions that expect an argument of type `typ`, you
    * need to get an `MLValue[Typ]`. In contrast, [[ctypMlValue]] returns this type as an `MLValue[Ctyp]`. */
-  override lazy val mlValue: MLValue[Typ] = Ops.typOfCtyp(ctypMlValue)
+  override lazy val mlValue: MLValue[Typ] = {
+    val result = Ops.typOfCtyp(ctypMlValue)
+    mlValueLoaded = true
+    result
+  }
+  private var mlValueLoaded = false
   /** Transforms this [[Ctyp]] into an [[MLValueTyp]]. */
   // TODO: Make package private. There is probably no public use case for this.
   def mlValueTyp = new MLValueTyp(mlValue)
@@ -206,7 +210,10 @@ final class MLValueTyp(val mlValue: MLValue[Typ])(implicit val isabelle: Isabell
 
   override def await: Unit = ctypMlValue.await
   override def someFuture: Future[Any] = ctypMlValue.someFuture
-  // TODO: write toString function
+
+  override def toString: String =
+    if (mlValueLoaded) "cterm:"+mlValue.toString
+    else "cterm"+stateString
 }
 
 object Ctyp {
