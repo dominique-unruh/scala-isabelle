@@ -394,7 +394,7 @@ object MLValue extends OperationCollection {
 
     private val optionNone_ = MLValue.compileValueRaw[Option[_]]("E_Option NONE")
     def optionNone[A]: MLValue[Option[A]] = optionNone_.asInstanceOf[MLValue[Option[A]]]
-    private val optionSome_ = MLValue.compileFunctionRaw[Nothing, Option[Nothing]]("E_Option o SOME")
+    private val optionSome_ = MLValue.compileFunction[MLValue[Nothing], Option[MLValue[Nothing]]]("SOME")
     def optionSome[A]: MLFunction[A, Option[A]] = optionSome_.asInstanceOf[MLFunction[A, Option[A]]]
     val retrieveOption_ : MLRetrieveFunction[Option[MLValue[Nothing]]] =
       MLRetrieveFunction("fn NONE => DList [] | SOME x => DList [DObject x]")
@@ -406,7 +406,7 @@ object MLValue extends OperationCollection {
       MLStoreFunction(s"fn DList list => map (fn DObject obj => obj | ${matchFailData("storeList.map")}) list | ${matchFailData("storeList")}")
 
     val debugInfo_ : MLFunction[MLValue[Nothing], String] =
-      compileFunctionRaw[MLValue[Nothing], String]("E_String o string_of_exn")
+      compileFunction[MLValue[Nothing], String]("string_of_exn")
     def debugInfo[A]: MLFunction[MLValue[A], String] = debugInfo_.asInstanceOf[MLFunction[MLValue[A], String]]
   }
 
@@ -619,9 +619,9 @@ object MLValue extends OperationCollection {
     compileValueRaw[A](s"(${converter.valueToExn}) (($ml) : (${converter.mlType}))")
 
   // TODO: remove this function
-  @deprecated("will be removed, use compileFunction or compileValueRaw", "0.1.1-SNAPSHOT")
+/*  @deprecated("will be removed, use compileFunction or compileValueRaw", "0.1.1-SNAPSHOT")
   def compileFunctionRaw[D, R](ml: String)(implicit isabelle: Isabelle, ec: ExecutionContext): MLFunction[D, R] =
-    MLFunction.unsafeFromId[D,R](isabelle.storeValue(s"E_Function (fn DObject x => ($ml) x |> DObject)")).logError(s"""Error while compiling function "$ml":""")
+    MLFunction.unsafeFromId[D,R](isabelle.storeValue(s"E_Function (fn DObject x => ($ml) x |> DObject)")).logError(s"""Error while compiling function "$ml":""")*/
 
   /** Compiles an ML function and inserts it into the object store.
    *
@@ -636,7 +636,10 @@ object MLValue extends OperationCollection {
   //noinspection ScalaDeprecation
   // TODO rename converter arguments (D,R)
   def compileFunction[D, R](ml: String)(implicit isabelle: Isabelle, ec: ExecutionContext, converterA: Converter[D], converterB: Converter[R]): MLFunction[D, R] =
-    compileFunctionRaw(s"(${converterB.valueToExn}) o (($ml) : ((${converterA.mlType}) -> (${converterB.mlType}))) o (${converterA.exnToValue})")
+    MLFunction.unsafeFromId[D,R](isabelle.storeValue(
+      s"E_Function (DObject o (${converterB.valueToExn}) o (($ml) : ((${converterA.mlType}) -> (${converterB.mlType}))) o (${converterA.exnToValue}) o (fn DObject d => d))"
+    )).logError(s"""Error while compiling function "$ml":""")
+//    compileFunctionRaw(s"(${converterB.valueToExn}) o (($ml) : ((${converterA.mlType}) -> (${converterB.mlType}))) o (${converterA.exnToValue})")
 
   /** Like [[compileFunction[D,R]* compileFunction[D,R]]], except that the ML code `ml` must be a function of type `d1 * d2 -> r`
    * where `d1,d2,r` are the ML types corresponding to `D1,D2,R`. The resulting [[MLFunction2]] `f` can then be invoked

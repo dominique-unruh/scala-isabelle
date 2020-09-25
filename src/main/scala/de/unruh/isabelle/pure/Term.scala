@@ -482,7 +482,7 @@ object Bound {
 object Term extends OperationCollection {
   override protected def newOps(implicit isabelle: Isabelle, ec: ExecutionContext): Ops = new Ops()
   protected[pure] class Ops(implicit val isabelle: Isabelle, ec: ExecutionContext) {
-    import MLValue.{compileFunction, compileFunctionRaw}
+    import MLValue.compileFunction
     Typ.init()
     isabelle.executeMLCodeNow("exception E_Term of term;; exception E_Cterm of cterm")
 

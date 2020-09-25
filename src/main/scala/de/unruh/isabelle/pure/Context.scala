@@ -6,6 +6,9 @@ import de.unruh.isabelle.mlvalue.{FutureValue, MLFunction, MLValue}
 
 import scala.concurrent.{ExecutionContext, Future}
 
+// Implicits
+import de.unruh.isabelle.pure.Implicits._
+
 /** Represents a proof context (ML type `Proof.context`) in the Isabelle process.
  *
  * An instance of this class is merely a thin wrapper around an [[mlvalue.MLValue MLValue]],
@@ -47,11 +50,11 @@ final class Context private [Context](val mlValue : MLValue[Context]) extends Fu
 object Context extends OperationCollection {
   override protected def newOps(implicit isabelle: Isabelle, ec: ExecutionContext): Ops = new Ops()
   protected[isabelle] class Ops(implicit val isabelle: Isabelle, ec: ExecutionContext) {
-    import MLValue.compileFunctionRaw
+    import MLValue.compileFunction
     Theory.init()
     isabelle.executeMLCodeNow("exception E_Context of Proof.context")
     val contextFromTheory : MLFunction[Theory, Context] =
-      compileFunctionRaw[Theory, Context]("fn (E_Theory thy) => Proof_Context.init_global thy |> E_Context")
+      compileFunction[Theory, Context]("Proof_Context.init_global")
   }
 
   /** Initializes a new context from the Isabelle theory `theory` */
