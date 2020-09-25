@@ -541,10 +541,6 @@ object MLValue extends OperationCollection {
   abstract class Converter[A] {
     /** Returns the ML type corresponding to `A`.
      *
-     * If it is not possible to determine this type (this can happen in rare situations, e.g.,
-     * in [[de.unruh.isabelle.mlvalue.MLValueConverter MLValueConverter]]), a typ involving placeholders `_` can be used. In that case,
-     * the most specific type possible should be used.
-     *
      * This function should always return the same value. (It is declared as a `def` only to make sure
       * Scala does not include an extra field or perform an unnecessary computation in the class when this function
       * is not used.) */

@@ -8,13 +8,10 @@ import scala.concurrent.{ExecutionContext, Future}
 
 /** A special [[MLValue.Converter]] that allows us to create [[MLValue]]s that contain [[MLValue]]s.
  *
- * MLType: `a` (if `a` is the type corresponding to `A`). (However, [[mlType]] returns "_" for technical reasons,
- * see below.)
- * Encoding of `a` as an exception: Same as the encoding specified by the converter for `A`.
- *
- * This means that both [[MLValue]]`[A]` and `A` correspond to the same ML type and are encoded in the same way.
- * Consequently, an instance of `MLValue[MLValue[A]]` can be safely typecast to an instance of `MLValue[A]` and vice versa.
- * (Or more generally, `MLValue[C[MLValue[A]]]` into `MLValue[C[A]]` and vice versa.)
+ *  - MLType: `exn`.
+ *  - Constraint on the values: only `exn`'s that are the encoding of a value of type a` as an exception are allowed.
+ *    (`a` is the type associated with `A`)
+ *  - Encoding of `exn` as an exception: itself
  *
  * The benefit of this special converter is probably best illustrated by an example. Say `Huge` is an Scala type
  * corresponding to an ML type `huge`. And assume transferring `huge` between the Isabelle process and Scala is
@@ -33,7 +30,6 @@ import scala.concurrent.{ExecutionContext, Future}
  * An instance of [[MLValueConverter]] can be constructed without using a [[MLValue.Converter Converter]] for `A`. This
  * means the above approach (except for retrieving values of type `huge`) can even be used if no converter for `A`
  * has not actually been implemented. (As long as we consistently imagine a specific ML type and encoding for `A`.)
- * As a consequence, [[mlType]] returns "_" instead of the ML type `a` corresponding to `A`.
  */
 @inline final class MLValueConverter[A] extends Converter[MLValue[A]] {
   override def retrieve(value: MLValue[MLValue[A]])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[MLValue[A]] =
@@ -45,5 +41,5 @@ import scala.concurrent.{ExecutionContext, Future}
   @inline override def exnToValue: String = "fn x => x"
   @inline override def valueToExn: String = "fn x => x"
 
-  override def mlType: String = "_"
+  override def mlType: String = "exn"
 }
