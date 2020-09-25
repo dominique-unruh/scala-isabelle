@@ -24,8 +24,7 @@ final class Thm private [Thm](val mlValue : MLValue[Thm])
   override def toString: String = s"thm${mlValue.stateString}"
 
   /** Returns the proposition of this theorem (a term of Isabelle type `prop`). */
-  // TODO rename to `proposition`
-  lazy val cterm : Cterm = Cterm(Ops.cpropOf(mlValue))
+  lazy val proposition : Cterm = Cterm(Ops.cpropOf(mlValue))
 
   /** Produces a string representation of this theorem.
    * Uses the Isabelle pretty printer.

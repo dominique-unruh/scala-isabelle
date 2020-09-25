@@ -9,9 +9,9 @@ class ThmTest extends AnyFunSuite {
   test("retrieve thm") {
     val ctxt = Context("Main")
     val thm = Thm(ctxt, "HOL.TrueI")
-    thm.cterm match {
+    thm.proposition match {
       case App(Const("HOL.Trueprop",_), Const("HOL.True", _)) =>
-      case _ => fail("Proposition is: "+thm.cterm.pretty(ctxt))
+      case _ => fail("Proposition is: "+thm.proposition.pretty(ctxt))
     }
   }
 
