@@ -618,7 +618,6 @@ object MLValue extends OperationCollection {
   def compileValue[A](ml: String)(implicit isabelle: Isabelle, ec: ExecutionContext, converter: Converter[A]): MLValue[A] =
     compileValueRaw[A](s"(${converter.valueToExn}) (($ml) : (${converter.mlType}))")
 
-  // TODO: remove this function
 /*  @deprecated("will be removed, use compileFunction or compileValueRaw", "0.1.1-SNAPSHOT")
   def compileFunctionRaw[D, R](ml: String)(implicit isabelle: Isabelle, ec: ExecutionContext): MLFunction[D, R] =
     MLFunction.unsafeFromId[D,R](isabelle.storeValue(s"E_Function (fn DObject x => ($ml) x |> DObject)")).logError(s"""Error while compiling function "$ml":""")*/
@@ -634,10 +633,9 @@ object MLValue extends OperationCollection {
    * [[compileFunction[D1,D2,D3,R]* compileFunction[D1,D2,D3,R]]], etc.
    **/
   //noinspection ScalaDeprecation
-  // TODO rename converter arguments (D,R)
-  def compileFunction[D, R](ml: String)(implicit isabelle: Isabelle, ec: ExecutionContext, converterA: Converter[D], converterB: Converter[R]): MLFunction[D, R] =
+  def compileFunction[D, R](ml: String)(implicit isabelle: Isabelle, ec: ExecutionContext, converterD: Converter[D], converterR: Converter[R]): MLFunction[D, R] =
     MLFunction.unsafeFromId[D,R](isabelle.storeValue(
-      s"E_Function (DObject o (${converterB.valueToExn}) o (($ml) : ((${converterA.mlType}) -> (${converterB.mlType}))) o (${converterA.exnToValue}) o (fn DObject d => d))"
+      s"E_Function (DObject o (${converterR.valueToExn}) o (($ml) : ((${converterD.mlType}) -> (${converterR.mlType}))) o (${converterD.exnToValue}) o (fn DObject d => d))"
     )).logError(s"""Error while compiling function "$ml":""")
 //    compileFunctionRaw(s"(${converterB.valueToExn}) o (($ml) : ((${converterA.mlType}) -> (${converterB.mlType}))) o (${converterA.exnToValue})")
 

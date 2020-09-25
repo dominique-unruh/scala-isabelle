@@ -404,7 +404,9 @@ class Isabelle(val setup: Setup, build: Boolean = true) {
     val promise : Promise[ID] = Promise()
 //    logger.debug(s"Compiling ML value: $ml")
     send({ stream => stream.writeByte(4); writeString(stream, ml) },
-      { result => promise.complete(result.map { case DInt(id) => new ID(id, this) }) })
+      { result => promise.complete(result.map {
+        case DInt(id) => new ID(id, this)
+        case data => throw IsabelleException(s"Internal error: expected DInt, not $data")}) })
     promise.future
   }
 
