@@ -43,6 +43,22 @@ object MLFunction {
   def unsafeFromId[D,R](id: Future[ID]): MLFunction[D, R] = new MLFunction(id)
 }
 
+
+/** A refinement of [[MLFunction]] (see there). If the function takes a unit-value as an argument, then
+ * we can treat it as a function with no arguments. Thus this class adds additional method
+ * for invoking the function with no arguments instead of expecting a dummy unit-value. An [[MLValue]] (or [[MLFunction]])
+ * can be converted into an [[MLFunction0]] using [[MLValue.function0]].
+ */
+class MLFunction0[R] protected (id: Future[ID]) extends MLFunction[Unit, R](id) {
+  def apply()(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[R] =
+    apply(())
+}
+
+object MLFunction0 {
+  def unsafeFromId[R](id: Future[ID]): MLFunction0[R] = new MLFunction0(id)
+}
+
+
 /** A refinement of [[MLFunction]] (see there). If the function takes a pair `(d1,d2)` as an argument, then
  * we can treat it as a function with two arguments `d1` and `d2`. Thus this class adds additional method
  * for invoking the function with two arguments instead of a tuple. An [[MLValue]] (or [[MLFunction]])

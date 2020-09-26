@@ -137,7 +137,10 @@ class MLValue[A] protected (/** the ID of the referenced object in the Isabelle 
   def function[D, R](implicit ev: MLValue[A] =:= MLValue[D => R]): MLFunction[D, R] =
     MLFunction.unsafeFromId(id)
 
-  // TODO: Add function0, for type Unit => R
+
+  // DOCUMENT
+  def function0[R](implicit ev: MLValue[A] =:= MLValue[Unit => R]) : MLFunction0[R] =
+    MLFunction0.unsafeFromId(id)
 
   /** Analogous to [[function]] but for functions that take a pair as argument, i.e., `this : MLValue[((D1, D2)) => R]`.
    * @see [[MLFunction2]] */
@@ -640,7 +643,10 @@ object MLValue extends OperationCollection {
     MLFunction.unsafeFromId[D,R](isabelle.storeValue(
       s"E_Function (DObject o (${converterR.valueToExn}) o (($ml) : ((${converterD.mlType}) -> (${converterR.mlType}))) o (${converterD.exnToValue}) o (fn DObject d => d))"
     )).logError(s"""Error while compiling function "$ml":""")
-//    compileFunctionRaw(s"(${converterB.valueToExn}) o (($ml) : ((${converterA.mlType}) -> (${converterB.mlType}))) o (${converterA.exnToValue})")
+
+  // DOCUMENT
+  def compileFunction0[R](ml: String)(implicit isabelle: Isabelle, ec: ExecutionContext, converter: Converter[R]): MLFunction0[R] =
+    compileFunction[Unit, R](ml).function0
 
   /** Like [[compileFunction[D,R]* compileFunction[D,R]]], except that the ML code `ml` must be a function of type `d1 * d2 -> r`
    * where `d1,d2,r` are the ML types corresponding to `D1,D2,R`. The resulting [[MLFunction2]] `f` can then be invoked
@@ -648,7 +654,7 @@ object MLValue extends OperationCollection {
    * [[compileFunction[D,R]* compileFunction[D,R]]]`[(D1,D2),R](ml)` to compile the function).
    **/
   def compileFunction[D1, D2, R](ml: String)
-                                 (implicit isabelle: Isabelle, ec: ExecutionContext,
+                                (implicit isabelle: Isabelle, ec: ExecutionContext,
                                  converter1: Converter[D1], converter2: Converter[D2], converterR: Converter[R]): MLFunction2[D1, D2, R] =
     compileFunction[(D1,D2), R](ml).function2
 
