@@ -89,6 +89,7 @@ import scala.util.{Failure, Success}
   * @param id the ID of the referenced object in the Isabelle process
   * @tparam A the Scala type corresponding to the ML type of the value referenced by [[id]]
   */
+// DOCUMENT that .retrieveNow does not guarantee that ML code exceptions are thrown. .force is needed for that. Convention: .retrieveNow forces unless the output type is a FutureValue or a Future
 class MLValue[A] protected (/** the ID of the referenced object in the Isabelle process */ val id: Future[Isabelle.ID])
   extends FutureValue {
   def logError(message: => String)(implicit executionContext: ExecutionContext): this.type = {

@@ -83,6 +83,17 @@ class IsabelleTest extends AnyFunSuite {
       roundTrip(DInt(0))
     }
   }
+
+  // TODO disable build on tests to be faster?
+  test("destroy & wait future") {
+    implicit val isabelle: Isabelle = new Isabelle(IsabelleTest.setup)
+    // Basically never finishes
+    val slowComputation = isabelle.storeValue("OS.Process.sleep (Time.fromSeconds 1000000000); Match")
+    isabelle.destroy()
+    assertThrows[IsabelleDestroyedException] {
+      await(slowComputation)
+    }
+  }
 }
 
 object IsabelleTest {
@@ -95,6 +106,7 @@ object IsabelleTest {
     Paths.get(path)
   }
 
+  // TODO: working directory src/test/isabelle
   val setup: Setup = Setup(
     isabelleHome = isabelleHome,
     sessionRoots = Nil,
