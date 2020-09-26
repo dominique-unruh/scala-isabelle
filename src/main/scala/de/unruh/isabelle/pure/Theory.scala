@@ -144,8 +144,27 @@ final class Theory private [Theory](val name: String, val mlValue : MLValue[Theo
 }
 
 object Theory extends OperationCollection {
-  // DOCUMENT
-  // TODO find out (& document) what happens when we register a session path for an already loaded session (with correct/different path) -> ignored in both cases
+  /** Registers session directories.
+   *
+   * Each Isabelle session (such as `HOL`, `HOL-Library`, `FOL`, ...) has one (or several) associated session directories
+   * that contain the theory files. (E.g., the session directory of `HOL` is `.../src/HOL`, and thus the theory
+   * `HOL.List` is found in `.../src/HOL/List.thy`.) The session directories are configured in Isabelle via the
+   * `ROOT` and `ROOTS` files. Currently, however, scala-isabelle cannot read the `ROOT(S)` files. Instead,
+   * session directories need to be registered with this function.
+   *
+   * More specifically:
+   *  - When Isabelle loads a theory `X.Y`, and `X.Y` is in contained the session image (configured with
+   *    [[control.Isabelle.Setup.logic Isabelle.Setup.logic]]), then the theory contained in the session image is used.
+   *    (Conflicting session directory specifications will be ignored.)
+   *  - Otherwise, the session directory `D` for `X` is looked up, and the file `D/Y.thy` is read.
+   *  - Otherwise `Y.thy` in the current directory is opened.
+   *  - When a theory file is read, resolution of the imports of that theory is done the same way.
+   *  - One session can have several session directories, but one session directory must not be shared by
+   *    several sessions
+   *
+   * @param paths Pairs `(session, dir)`. Meaning that `dir` is a session directory for `session`.
+   * @see [[Theory.apply(name:* Theory.apply(String)]]
+   */
   def registerSessionDirectoriesNow(paths: (String,Path)*)(implicit isabelle: Isabelle, ec: ExecutionContext): Unit =
     Await.result(registerSessionDirectories(paths : _*), Duration.Inf)
 
