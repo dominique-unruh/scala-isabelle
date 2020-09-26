@@ -64,8 +64,8 @@ object Context extends OperationCollection {
   }
 
   /** Initializes a new context from the Isabelle theory `theory`.
-   * @param name full name of the theory (see [[Theory.apply]] for details)
-   * */
+   * @param name full name of the theory (see [[Theory.apply(name:* Theory.apply(String)]] for details)
+   **/
   def apply(name: String)(implicit isabelle: Isabelle, ec: ExecutionContext) : Context =
     Context(Theory(name))
 

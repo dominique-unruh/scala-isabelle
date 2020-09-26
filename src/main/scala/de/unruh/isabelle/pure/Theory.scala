@@ -26,7 +26,7 @@ import de.unruh.isabelle.pure.Implicits._
  * all explanations and examples given for [[Context]] also apply here.
  *
  * The name of the theory can be retrieved via the member [[name]] if the theory was created
- * by [[Theory.apply]]`(ctxt, name)`. Otherwise, [[name]] returns a placeholder.
+ * by [[Theory.apply(name:* Theory]]`(name)`. Otherwise, [[name]] returns a placeholder.
  */
 final class Theory private [Theory](val name: String, val mlValue : MLValue[Theory]) extends FutureValue {
   override def toString: String = s"theory $name${mlValue.stateString}"
@@ -34,14 +34,14 @@ final class Theory private [Theory](val name: String, val mlValue : MLValue[Theo
   /** Imports an ML structure from a theory into the global ML namespace.
    *
    * WARNING: This has a global effect on the Isabelle process because it modifies the ML name space.
-   * Use [[importMLStructure]] instead.
+   * Use [[importMLStructure(name:String)* importMLStructure(String)]] instead.
    *
    * In an Isabelle theory `T`, it is possible to include ML source code using the `ML_file` command and related commands.
    * In that ML source code, new symbols (values, types, structures) can be declared. These will be visible
    * to further ML code in the same theory `T` and in theories that import `T`. However, it is not directly possible
    * to use those symbols in ML code on the ML toplevel (i.e., in commands such as [[control.Isabelle.executeMLCode Isabelle.executeMLCode]]
    * or [[mlvalue.MLValue.compileValue MLValue.compileValue]] and friends). Instead, the symbols must be imported using this method. (Only supported
-   * for ML structures, not for values or types that are declared outside a structure.) [[importMLStructure]]`(name,newName)`
+   * for ML structures, not for values or types that are declared outside a structure.) `importMLStructure(name,newName)`
    * will import the structure called `name` under the new name `newName` into the toplevel.
    *
    * We give an example.
@@ -88,7 +88,7 @@ final class Theory private [Theory](val name: String, val mlValue : MLValue[Theo
    * to use those symbols in ML code on the ML toplevel (i.e., in commands such as [[control.Isabelle.executeMLCode Isabelle.executeMLCode]]
    * or [[mlvalue.MLValue.compileValue MLValue.compileValue]] and friends). Instead, the symbols must be imported using this method. (Only supported
    * for ML structures, not for values or types that are declared outside a structure.) [[importMLStructureNow]]`(name)`
-   * (or [[importMLStructure]]`(name)` for asynchronous execution)
+   * (or [[importMLStructure(name:String)* importMLStructure]]`(name)` for asynchronous execution)
    * imports the structure called `name` under a new (unique) name into the toplevel, and returns the name of the
    * structure.
    *
@@ -119,7 +119,7 @@ final class Theory private [Theory](val name: String, val mlValue : MLValue[Theo
    *   val thy : Theory = Theory(Path.of("ImportMeThy.thy"))              // load the theory TestThy
    *   val num1 : MLValue[Int] = MLValue.compileValue("ImportMe.num")     // fails
    *   val importMe : String = thy.importMLStructureNow("ImportMe")       // import the structure Test into the ML toplevel
-   *   val num2 : MLValue[Int] = MLValue.compileValue(s"${importMe}.num") // access Test (under new name) in compiled ML code
+   *   val num2 : MLValue[Int] = MLValue.compileValue(s"\${importMe}.num") // access Test (under new name) in compiled ML code
    *   println(num2.retrieveNow)                                          // ==> 123
    * }}}
    */
@@ -149,7 +149,9 @@ object Theory extends OperationCollection {
   def registerSessionDirectoriesNow(paths: (String,Path)*)(implicit isabelle: Isabelle, ec: ExecutionContext): Unit =
     Await.result(registerSessionDirectories(paths : _*), Duration.Inf)
 
-  // DOCUMENT
+  /** Like [[registerSessionDirectoriesNow]] but returns a [[scala.concurrent.Future Future]]. Only once the future completes successfully,
+   * the session directories are guaranteed to have been registered.
+   **/
   def registerSessionDirectories(paths: (String,Path)*)(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Unit] = {
     var changed = false
     for ((session, path) <- paths) {
