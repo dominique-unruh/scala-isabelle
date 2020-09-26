@@ -1,11 +1,16 @@
 package de.unruh.isabelle.pure
 
+import java.nio.file.{Files, Path}
+import java.util.concurrent.ConcurrentHashMap
+
 import de.unruh.isabelle.control.{Isabelle, OperationCollection}
 import de.unruh.isabelle.mlvalue.MLValue.Converter
 import de.unruh.isabelle.mlvalue.{FutureValue, MLFunction, MLFunction3, MLValue}
 import de.unruh.isabelle.pure.Theory.Ops
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.collection.JavaConverters.{asScalaIteratorConverter, mapAsScalaMapConverter}
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, ExecutionContext, Future}
 
 // Implicits
 import de.unruh.isabelle.mlvalue.Implicits._
@@ -77,13 +82,56 @@ final class Theory private [Theory](val name: String, val mlValue : MLValue[Theo
 }
 
 object Theory extends OperationCollection {
+  // DOCUMENT
+  def registerTheoryPathsNow(paths: (String,Path)*)(implicit isabelle: Isabelle, ec: ExecutionContext): Unit =
+    Await.ready(registerTheoryPaths(paths : _*), Duration.Inf)
+  def registerTheoryPaths(paths: (String,Path)*)(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Unit] = {
+    var changed = false
+    def put(thy: String, path: String): Unit = {
+      val previous = Ops.knownTheories.put(thy, path)
+      if (previous != path)
+        changed = true
+    }
+
+    for ((name, path) <- paths) {
+      if (Files.isDirectory(path)) {
+        // name=session, path=session directory
+        for (file <- Files.list(path).iterator().asScala;
+             fileName = file.getFileName.toString;
+             if fileName.endsWith(".thy");
+             thyName = fileName.stripSuffix(".thy"))
+          put(s"$name.$thyName", file.toString)
+      } else {
+        // name=theory, path=.thy file
+        put(name, path.toString)
+      }
+    }
+    if (changed)
+      Ops.updateKnownTheories(Ops.knownTheories.asScala.toList).retrieve
+    else
+      Future.successful(())
+  }
+
   override protected def newOps(implicit isabelle: Isabelle, ec: ExecutionContext): Ops = new Ops()
+  //noinspection TypeAnnotation
   protected[isabelle] class Ops(implicit val isabelle: Isabelle, ec: ExecutionContext) {
     import MLValue.compileFunction
     MLValue.init()
     isabelle.executeMLCodeNow("exception E_Theory of theory")
-    val loadTheory : MLFunction[String, Theory] =
-      MLValue.compileFunction[String, Theory]("fn name => (Thy_Info.use_thy name; Thy_Info.get_theory name)")
+
+    val knownTheories = new ConcurrentHashMap[String,String]()
+    val updateKnownTheories = compileFunction[List[(String,String)], Unit]("""fn known => let
+        val names = Thy_Info.get_names ()
+        val global = names |> List.mapPartial (fn n => case Resources.global_theory n of SOME session => SOME (n,session) | NONE => NONE)
+        val loaded = names |> filter Resources.loaded_theory
+
+        in
+          Resources.init_session_base {sessions=[], docs=[], global_theories=global, loaded_theories=[], known_theories=known}
+        end
+        """)
+
+    val loadTheory =
+      MLValue.compileFunction[String, String, Theory]("fn (name1,name2) => (Thy_Info.use_thy name1; Thy_Info.get_theory name2)")
     val importMLStructure : MLFunction3[Theory, String, String, Unit] = compileFunction(
       """fn (thy,theirName,hereStruct) => let
                   val theirAllStruct = Context.setmp_generic_context (SOME (Context.Theory thy))
@@ -96,13 +144,18 @@ object Theory extends OperationCollection {
   }
 
   /** Retrieves a theory by its name. E.g., `Theory("HOL-Analysis.Inner_Product")`. **/
-  // TODO: Find out whether short names are possible.
-  // TODO: Find out whether theories that aren't in the heap can be loaded
-  // TODO: Make test case to find that out
-  def apply(name: String)(implicit isabelle: Isabelle, ec: ExecutionContext): Theory = {
-    val mlName = MLValue(name)
-    val mlThy : MLValue[Theory] = Ops.loadTheory(mlName)
-    new Theory(name, mlThy)
+  // DOCUMENT caveats: full name, only names in heap (unless registerTheoryPaths), ignores ROOT/ROOTS
+  def apply(name: String)(implicit isabelle: Isabelle, ec: ExecutionContext): Theory =
+    Ops.loadTheory(name, name).retrieveNow
+
+  // DOCUMENT
+  def apply(path: Path)(implicit isabelle: Isabelle, ec: ExecutionContext): Theory = {
+    val filename = path.getFileName.toString
+    if (!filename.endsWith(".thy"))
+      throw new IllegalArgumentException("Theory file must end in .thy")
+    val thyName = filename.stripSuffix(".thy")
+    val thyPath = path.toString.stripSuffix(".thy")
+    Ops.loadTheory(thyPath, s"Draft.$thyName").retrieveNow
   }
 
   /** Representation of theories in ML. (See the general discussion of [[Context]], the same things apply to [[Theory]].)
