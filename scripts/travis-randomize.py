@@ -33,7 +33,7 @@ with open(".travis.yml","rt") as f:
 for line in before: output.append(line)
 
 jobnr = random.randrange(0, len(jobs))
-print(f"Picking job {jobnr+1}")
+print(f"Picking job {jobnr+1}: {jobs[jobnr]}")
 for i in range(len(jobs)):
     if i==jobnr:
         output.append(jobs[i])
