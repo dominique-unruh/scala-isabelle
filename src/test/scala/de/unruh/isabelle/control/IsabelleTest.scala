@@ -93,6 +93,15 @@ class IsabelleTest extends AnyFunSuite {
       await(slowComputation)
     }
   }
+
+  test("Isabelle fails to start") {
+    val setup = IsabelleTest.setup.copy(logic="NonexistingLogic")
+    val isabelle = new Isabelle(setup, build=false)
+    val id = isabelle.storeValue("Match")
+    assertThrows[IsabelleDestroyedException] {
+      await(id)
+    }
+  }
 }
 
 object IsabelleTest {

@@ -313,6 +313,8 @@ class Isabelle(val setup: Setup, build: Boolean = true) {
       logStream(process.getErrorStream, Warn) // stderr
       logStream(process.getInputStream, Debug) // stdout
 
+      process.onExit.thenRun(processTerminated _)
+
       process
     } finally {
       // This happens almost immediately, so it would be possible that a build process starts *after*
@@ -351,6 +353,12 @@ class Isabelle(val setup: Setup, build: Boolean = true) {
 
     for (cb <- callbacks.values.asScala)
       callCallback(cb)
+  }
+
+  private def processTerminated() : Unit = {
+    logger.debug("Isabelle process terminated")
+    // TODO: Add last line(s) from the Isabelle stderr if RC != 0
+    destroy(IsabelleDestroyedException(s"Isabelle process finished with return code ${process.exitValue}"))
   }
 
   private def send(str: DataOutputStream => Unit, callback: Try[Data] => Unit) : Unit = {
