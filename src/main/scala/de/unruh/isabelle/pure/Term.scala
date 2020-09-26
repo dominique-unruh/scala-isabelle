@@ -357,7 +357,6 @@ final class Var private[pure](val name: String, val index: Int, val typ: Typ, in
 
 object Var {
   /** Create a schematic variable with name `name`, index `index`, and type `typ`. */
-  // TODO Add default 0 for index
   def apply(name: String, index: Int, typ: Typ)(implicit isabelle: Isabelle, ec: ExecutionContext) = new Var(name, index, typ)
 
   /** Allows to pattern match schematic variables. E.g.,

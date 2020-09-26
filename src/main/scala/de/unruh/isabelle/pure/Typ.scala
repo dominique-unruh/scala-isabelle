@@ -358,7 +358,6 @@ final class TVar private[pure] (val name: String, val index: Int, val sort: List
 
 object TVar {
   /** Create a schematic type variable with name `name`, index `index`, and sort `sort`. */
-  // TODO Add default 0 for index
   def apply(name: String, index: Int, sort: Seq[String])
            (implicit isabelle: Isabelle, ec: ExecutionContext) = new TVar(name, index, sort.toList)
 

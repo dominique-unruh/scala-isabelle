@@ -136,6 +136,8 @@ class MLValue[A] protected (/** the ID of the referenced object in the Isabelle 
   def function[D, R](implicit ev: MLValue[A] =:= MLValue[D => R]): MLFunction[D, R] =
     MLFunction.unsafeFromId(id)
 
+  // TODO: Add function0, for type Unit => R
+
   /** Analogous to [[function]] but for functions that take a pair as argument, i.e., `this : MLValue[((D1, D2)) => R]`.
    * @see [[MLFunction2]] */
   def function2[D1, D2, R](implicit ev: MLValue[A] =:= MLValue[((D1, D2)) => R]): MLFunction2[D1, D2, R] =
