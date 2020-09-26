@@ -1,6 +1,6 @@
 package de.unruh.isabelle
 
-import java.nio.file.{Files, Path}
+import _root_.java.nio.file.{Files, Path}
 
 import de.unruh.isabelle.control.IsabelleTest
 import de.unruh.isabelle.mlvalue.{MLFunction, MLFunction2, MLFunction3, MLValue, Version}
@@ -25,6 +25,9 @@ class Test extends AnyFunSuite {
     Example.main(Array(IsabelleTest.isabelleHome.toString))
   }
 
+  test("Java example") {
+    JavaExample.main(Array(IsabelleTest.isabelleHome.toString))
+  }
 
   test("temporary experiments") {
     MLValue.init()

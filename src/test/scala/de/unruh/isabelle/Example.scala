@@ -1,6 +1,6 @@
 package de.unruh.isabelle
 
-import java.nio.file.Path
+import _root_.java.nio.file.Path
 
 import de.unruh.isabelle.mlvalue.{MLFunction2, MLValue}
 import de.unruh.isabelle.pure.{Abs, App, Const, Term}
