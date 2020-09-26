@@ -13,6 +13,7 @@ import scala.collection.JavaConverters.{asScalaIteratorConverter, mapAsScalaMapC
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.util.Random
 
 // Implicits
 import de.unruh.isabelle.mlvalue.Implicits._
@@ -33,6 +34,7 @@ final class Theory private [Theory](val name: String, val mlValue : MLValue[Theo
   /** Imports an ML structure from a theory into the global ML namespace.
    *
    * WARNING: This has a global effect on the Isabelle process because it modifies the ML name space.
+   * Use [[importMLStructure]] instead.
    *
    * In an Isabelle theory `T`, it is possible to include ML source code using the `ML_file` command and related commands.
    * In that ML source code, new symbols (values, types, structures) can be declared. These will be visible
@@ -74,10 +76,70 @@ final class Theory private [Theory](val name: String, val mlValue : MLValue[Theo
    * }}}
    */
   // TODO: Check if the above example works. (test case)
-  // TODO: Is there an alternative for this that does not affect the global namespace? (And then deprecate.)
+  @deprecated("Use importMLStructure(String) instead")
   def importMLStructure(name: String, newName: String)
                        (implicit isabelle: Isabelle, executionContext: ExecutionContext): Unit =
     Ops.importMLStructure(this, name, newName).retrieveNow
+
+  /** Imports an ML structure from a theory into the global ML namespace.
+   *
+   * In an Isabelle theory `T`, it is possible to include ML source code using the `ML_file` command and related commands.
+   * In that ML source code, new symbols (values, types, structures) can be declared. These will be visible
+   * to further ML code in the same theory `T` and in theories that import `T`. However, it is not directly possible
+   * to use those symbols in ML code on the ML toplevel (i.e., in commands such as [[control.Isabelle.executeMLCode Isabelle.executeMLCode]]
+   * or [[mlvalue.MLValue.compileValue MLValue.compileValue]] and friends). Instead, the symbols must be imported using this method. (Only supported
+   * for ML structures, not for values or types that are declared outside a structure.) [[importMLStructureNow]]`(name)`
+   * (or [[importMLStructure]]`(name)` for asynchronous execution)
+   * imports the structure called `name` under a new (unique) name into the toplevel, and returns the name of the
+   * structure.
+   *
+   * We give an example.
+   *
+   * File `importMe.ML`:
+   * {{{
+   *   structure ImportMe = struct
+   *   val num = 123
+   *   end
+   * }}}
+   * This declares a structure `ImportMe` with a value member `num`.
+   *
+   * File `ImportMeThy.thy`:
+   * {{{
+   *   theory ImportMeThy imports Main begin
+   *
+   *   ML_file "importMe.ML"
+   *
+   *   end
+   * }}}
+   * This declares a theory which loads the ML code from "importMe.ML" (and thus all theories importing `ImportMeThy`
+   * have access to the ML structure `ImportMe`).
+   *
+   * In Scala:
+   * {{{
+   *   implicit val isabelle = new Isabelle(... suitable setup ...)
+   *   val thy : Theory = Theory("Draft.ImportMeThy")                     // load the theory TestThy
+   *   val num1 : MLValue[Int] = MLValue.compileValue("ImportMe.num")     // fails
+   *   val importMe : String = thy.importMLStructureNow("ImportMe")       // import the structure Test into the ML toplevel
+   *   val num2 : MLValue[Int] = MLValue.compileValue(s"${importMe}.num") // access Test (under new name) in compiled ML code
+   *   println(num2.retrieveNow)                                          // ==> 123
+   * }}}
+   */
+  // TODO test the example
+  def importMLStructureNow(name: String)(implicit isabelle: Isabelle, executionContext: ExecutionContext) : String =
+    Await.result(importMLStructure(name), Duration.Inf)
+
+  /** Like [[importMLStructureNow]] but returns a future containing the name of the imported structure without delay. */
+  def importMLStructure(name: String)(implicit isabelle: Isabelle, executionContext: ExecutionContext) : Future[String] = {
+    import scalaz.syntax.id._
+    val newName = name
+      .map { c => if (c<128 && c.isLetterOrDigit) c else '_' }
+      .into { n:String => if (n.head.isLetter) n else "X"+n }
+      .capitalize
+      .appended('_')
+      .appendedAll(Random.alphanumeric.take(12).mkString)
+    for (_ <- Ops.importMLStructure(this, name, newName).retrieve)
+      yield newName
+  }
 
   override def await: Unit = mlValue.await
   override def someFuture: Future[Any] = mlValue.someFuture

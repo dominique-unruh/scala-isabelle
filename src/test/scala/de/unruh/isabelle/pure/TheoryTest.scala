@@ -14,8 +14,9 @@ class TheoryTest extends AnyFunSuite {
     assertThrows[IsabelleException] {
       isabelle.executeMLCodeNow("HOLogic.boolT") }
     val thy = Theory("Main")
-    thy.importMLStructure("HOLogic", "MyHOLogic")
-    isabelle.executeMLCodeNow("MyHOLogic.boolT")
+    val struct = thy.importMLStructureNow("HOLogic")
+    println(struct)
+    isabelle.executeMLCodeNow(s"${struct}.boolT")
   }
 
   test("load theory outside heap") {
