@@ -98,9 +98,11 @@ class IsabelleTest extends AnyFunSuite {
     val setup = IsabelleTest.setup.copy(logic="NonexistingLogic")
     val isabelle = new Isabelle(setup, build=false)
     val id = isabelle.storeValue("Match")
-    assertThrows[IsabelleDestroyedException] {
+    val exn = intercept[IsabelleDestroyedException] {
       await(id)
     }
+    println(exn)
+    assert(exn.message.contains("Undefined session"))
   }
 }
 

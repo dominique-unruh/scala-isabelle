@@ -310,7 +310,7 @@ class Isabelle(val setup: Setup, build: Boolean = true) {
     try {
       val process = processBuilder.start()
 
-      logStream(process.getErrorStream, Warn) // stderr
+      logStream(process.getErrorStream, Warn, storeLast = true) // stderr
       logStream(process.getInputStream, Debug) // stdout
 
       process.onExit.thenRun(processTerminated _)
@@ -357,8 +357,13 @@ class Isabelle(val setup: Setup, build: Boolean = true) {
 
   private def processTerminated() : Unit = {
     logger.debug("Isabelle process terminated")
-    // TODO: Add last line(s) from the Isabelle stderr if RC != 0
-    destroy(IsabelleDestroyedException(s"Isabelle process finished with return code ${process.exitValue}"))
+    val exitValue = process.exitValue
+    if (exitValue == 0)
+      destroy(IsabelleDestroyedException(s"Isabelle process terminated normally"))
+    else {
+      Thread.sleep(500) // To ensure the error processing thread has time to store lastMessage
+      destroy(IsabelleDestroyedException(s"Isabelle process failed with exit value $exitValue: $lastMessage"))
+    }
   }
 
   private def send(str: DataOutputStream => Unit, callback: Try[Data] => Unit) : Unit = {
@@ -498,11 +503,15 @@ class Isabelle(val setup: Setup, build: Boolean = true) {
 object Isabelle {
   private val logger = log4s.getLogger
 
-  private def logStream(stream: InputStream, level: LogLevel) : Unit = {
+  private var lastMessage : String = _
+  private def logStream(stream: InputStream, level: LogLevel, storeLast: Boolean = false) : Unit = {
     val log = logger(level)
     val thread = new Thread(s"Isabelle output logger, $level") {
       override def run(): Unit = {
-        new BufferedReader(new InputStreamReader(stream)).lines().forEach(line => logger.debug(line))
+        new BufferedReader(new InputStreamReader(stream)).lines().forEach { line =>
+          if (storeLast) lastMessage = line
+          logger.debug(line)
+        }
       }
     }
     thread.setDaemon(true)
