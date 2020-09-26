@@ -219,7 +219,6 @@ object Ctyp {
 
   /** Converts a [[Typ]] into a [[Ctyp]]. This involves type-checking (relative to the
    * context `ctxt`). The resulting [[Ctyp]] is then certified to be correctly formed. */
-  // TODO: if the Ctyp is constructed this way, then .mlValue should not involve a query to Isabelle because we already have the Typ. (Same for Cterm.)
   def apply(ctxt: Context, typ: Typ)(implicit isabelle: Isabelle, ec: ExecutionContext) : Ctyp =
     new Ctyp(Ops.ctypOfTyp(MLValue((ctxt, typ))))
 

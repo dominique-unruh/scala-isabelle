@@ -312,6 +312,8 @@ class Isabelle(val setup: Setup, build: Boolean = true) {
 
       logStream(process.getErrorStream, Warn) // stderr
       logStream(process.getInputStream, Debug) // stdout
+
+      process
     } finally {
       // This happens almost immediately, so it would be possible that a build process starts *after*
       // we initiated the Isabelle process. So ideally, the lock.unlock() should be delayed until we know that
@@ -319,7 +321,6 @@ class Isabelle(val setup: Setup, build: Boolean = true) {
       // a very exotic situation, so we just release the lock right away.
       lock.unlock()
     }
-    process
   }
 
   if (build) buildSession(setup)
