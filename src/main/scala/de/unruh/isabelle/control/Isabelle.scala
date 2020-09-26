@@ -313,7 +313,7 @@ class Isabelle(val setup: Setup, build: Boolean = true) {
       logStream(process.getErrorStream, Warn, storeLast = true) // stderr
       logStream(process.getInputStream, Debug) // stdout
 
-      process.onExit.thenRun(processTerminated _)
+      process.onExit.thenRun(() => processTerminated())
 
       process
     } finally {
