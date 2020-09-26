@@ -19,7 +19,7 @@ class TheoryTest extends AnyFunSuite {
   }
 
   test("load theory outside heap") {
-    Theory.registerTheoryPathsNow("HOL-Library" -> isabelle.setup.isabelleHome.resolve("src/HOL/Library"))
+    Theory.registerSessionDirectoriesNow("HOL-Library" -> isabelle.setup.isabelleHome.resolve("src/HOL/Library"))
     Theory("HOL-Library.BigO").force
   }
 

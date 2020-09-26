@@ -35,24 +35,12 @@ class Test extends AnyFunSuite {
     def thyName(thy: Theory) = theoryName(thy).retrieveNow
     def printThyName(thy: Theory): Unit = println(thyName(thy))
 
+    Theory.registerSessionDirectoriesNow("HOL-Library" -> isabelle.setup.isabelleHome.resolve("src/HOL/Library"))
 
-//    val known = ListBuffer[(String,Path)]()
-//
-//    def addFromSession(session: String, path: Path): Unit =
-//      for (file <- Files.list(path).iterator().asScala;
-//           fileName = file.getFileName.toString;
-//           if fileName.endsWith(".thy");
-//           thyName = fileName.stripSuffix(".thy"))
-//        known += session + "." + thyName -> path.resolve(file)
-//
-//    addFromSession("HOL-Library", isabelle.setup.isabelleHome.resolve("src/HOL/Library"))
-//    addFromSession("Program-Conflict-Analysis", Path.of("/opt/afp-2019/thys/Program-Conflict-Analysis"))
+    println(MLValue.compileValue[Option[String]]("Resources.find_theory_file \"HOL-Library.AList\" |> Option.map Path.implode").retrieveNow)
 
-//    Theory.registerTheory(known.toSeq: _*)
-
-    Theory.registerTheoryPaths("HOL-Library" -> isabelle.setup.isabelleHome.resolve("src/HOL/Library"))
-
-//    updateKnownTheories(known.toList).retrieveNow
+//    isabelle.destroy()
+//    Thread.sleep(3000)
 
     val thyMain = Theory("Main")
     printThyName(thyMain)

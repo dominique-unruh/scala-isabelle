@@ -5,10 +5,12 @@ import java.util.concurrent.ConcurrentHashMap
 
 import de.unruh.isabelle.control.{Isabelle, OperationCollection}
 import de.unruh.isabelle.mlvalue.MLValue.Converter
-import de.unruh.isabelle.mlvalue.{FutureValue, MLFunction, MLFunction3, MLValue}
+import de.unruh.isabelle.mlvalue.{FutureValue, MLFunction, MLFunction3, MLValue, Version}
 import de.unruh.isabelle.pure.Theory.Ops
+import org.log4s
 
 import scala.collection.JavaConverters.{asScalaIteratorConverter, mapAsScalaMapConverter}
+import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future}
 
@@ -83,52 +85,66 @@ final class Theory private [Theory](val name: String, val mlValue : MLValue[Theo
 
 object Theory extends OperationCollection {
   // DOCUMENT
-  def registerTheoryPathsNow(paths: (String,Path)*)(implicit isabelle: Isabelle, ec: ExecutionContext): Unit =
-    Await.ready(registerTheoryPaths(paths : _*), Duration.Inf)
-  def registerTheoryPaths(paths: (String,Path)*)(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Unit] = {
+  def registerSessionDirectoriesNow(paths: (String,Path)*)(implicit isabelle: Isabelle, ec: ExecutionContext): Unit =
+    Await.result(registerSessionDirectories(paths : _*), Duration.Inf)
+  def registerSessionDirectories(paths: (String,Path)*)(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Unit] = {
     var changed = false
-    def put(thy: String, path: String): Unit = {
-      val previous = Ops.knownTheories.put(thy, path)
-      if (previous != path)
+    for ((session, path) <- paths) {
+      val absPath = path.toAbsolutePath
+      if (!Files.isDirectory(absPath))
+        throw new IllegalArgumentException(s"Session directory for session $session is not a directory ($path)")
+      logger.debug(s"registerTheoryPaths: Session $session -> $absPath")
+      val previous = Ops.sessionPaths.put(session, absPath)
+      if (previous != absPath)
         changed = true
     }
 
-    for ((name, path) <- paths) {
-      if (Files.isDirectory(path)) {
-        // name=session, path=session directory
-        for (file <- Files.list(path).iterator().asScala;
-             fileName = file.getFileName.toString;
-             if fileName.endsWith(".thy");
-             thyName = fileName.stripSuffix(".thy"))
-          put(s"$name.$thyName", file.toString)
-      } else {
-        // name=theory, path=.thy file
-        put(name, path.toString)
-      }
+    if (!changed) return Future.successful(())
+
+    logger.debug(Ops.sessionPaths.toString)
+
+    if (Version.from2020) {
+      Ops.updateKnownTheories(Ops.sessionPaths.asScala.toList.map { case (n,p) => (p.toString,n) }).retrieve
+    } else {
+      val thyPaths = ListBuffer[(String,String)]()
+      for ((session,path) <- Ops.sessionPaths.asScala;
+           file <- Files.list(path).iterator().asScala;
+           fileName = file.getFileName.toString;
+           if fileName.endsWith(".thy");
+           thyName = fileName.stripSuffix(".thy"))
+        thyPaths += s"$session.$thyName" -> path.resolve(file.toString).toString
+      Ops.updateKnownTheories(thyPaths.toList).retrieve
     }
-    if (changed)
-      Ops.updateKnownTheories(Ops.knownTheories.asScala.toList).retrieve
-    else
-      Future.successful(())
   }
 
   override protected def newOps(implicit isabelle: Isabelle, ec: ExecutionContext): Ops = new Ops()
   //noinspection TypeAnnotation
   protected[isabelle] class Ops(implicit val isabelle: Isabelle, ec: ExecutionContext) {
+
     import MLValue.compileFunction
+
     MLValue.init()
     isabelle.executeMLCodeNow("exception E_Theory of theory")
 
-    val knownTheories = new ConcurrentHashMap[String,String]()
-    val updateKnownTheories = compileFunction[List[(String,String)], Unit]("""fn known => let
+    val sessionPaths = new ConcurrentHashMap[String, Path]()
+
+    /** Before Isabelle2020: Expects (theory-name, theory-file) pairs. From 2020: (session-name, directory) */
+    val updateKnownTheories = {
+      val initSession = if (Version.from2020)
+        "{session_directories=known, session_positions=[], docs=[], global_theories=global, loaded_theories=[]}"
+      else
+        "{sessions=[], docs=[], global_theories=global, loaded_theories=[], known_theories=known}"
+
+      compileFunction[List[(String, String)], Unit](
+        s"""fn known => let
         val names = Thy_Info.get_names ()
         val global = names |> List.mapPartial (fn n => case Resources.global_theory n of SOME session => SOME (n,session) | NONE => NONE)
         val loaded = names |> filter Resources.loaded_theory
-
         in
-          Resources.init_session_base {sessions=[], docs=[], global_theories=global, loaded_theories=[], known_theories=known}
+          Resources.init_session_base $initSession
         end
         """)
+    }
 
     val loadTheory =
       MLValue.compileFunction[String, String, Theory]("fn (name1,name2) => (Thy_Info.use_thy name1; Thy_Info.get_theory name2)")
@@ -145,6 +161,7 @@ object Theory extends OperationCollection {
 
   /** Retrieves a theory by its name. E.g., `Theory("HOL-Analysis.Inner_Product")`. **/
   // DOCUMENT caveats: full name, only names in heap (unless registerTheoryPaths), ignores ROOT/ROOTS
+  // TODO find out (& document) what happens when we register a session path for an already loaded session (with correct/different path)
   def apply(name: String)(implicit isabelle: Isabelle, ec: ExecutionContext): Theory =
     Ops.loadTheory(name, name).retrieveNow
 
@@ -179,4 +196,6 @@ object Theory extends OperationCollection {
 
     override def mlType: String = "theory"
   }
+
+  private val logger = log4s.getLogger
 }
