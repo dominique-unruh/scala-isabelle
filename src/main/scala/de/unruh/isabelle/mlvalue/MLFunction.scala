@@ -41,8 +41,9 @@ class MLFunction[D, R] protected(id: Future[ID]) extends MLValue[D => R](id) {
 
 object MLFunction {
   /** Analogous to [[MLValue.unsafeFromId[A](id:sc* MLValue.unsafeFromId(Future[ID])]]. */
-  // TODO create unsafeFromId(ID)
   def unsafeFromId[D,R](id: Future[ID]): MLFunction[D, R] = new MLFunction(id)
+  /** Analogous to [[MLValue.unsafeFromId[A](id:de* MLValue.unsafeFromId(ID)]]. */
+  def unsafeFromId[D,R](id: ID): MLFunction[D, R] = new MLFunction(Future.successful(id))
 }
 
 
@@ -58,8 +59,9 @@ class MLFunction0[R] protected (id: Future[ID]) extends MLFunction[Unit, R](id) 
 
 object MLFunction0 {
   /** Analogous to [[MLValue.unsafeFromId[A](id:sc* MLValue.unsafeFromId(Future[ID])]]. */
-  // TODO create unsafeFromId(ID)
   def unsafeFromId[R](id: Future[ID]): MLFunction0[R] = new MLFunction0(id)
+  /** Analogous to [[MLValue.unsafeFromId[A](id:de* MLValue.unsafeFromId(ID)]]. */
+  def unsafeFromId[R](id: ID): MLFunction0[R] = new MLFunction0(Future.successful(id))
 }
 
 
@@ -83,8 +85,9 @@ class MLFunction2[D1, D2, R] protected (id: Future[ID]) extends MLFunction[(D1, 
 
 object MLFunction2 {
   /** Analogous to [[MLValue.unsafeFromId[A](id:sc* MLValue.unsafeFromId(Future[ID])]]. */
-  // TODO create unsafeFromId(ID)
   def unsafeFromId[D1, D2, R](id: Future[ID]): MLFunction2[D1, D2, R] = new MLFunction2(id)
+  /** Analogous to [[MLValue.unsafeFromId[A](id:de* MLValue.unsafeFromId(ID)]]. */
+  def unsafeFromId[D1, D2, R](id: ID): MLFunction2[D1, D2, R] = new MLFunction2(Future.successful(id))
 }
 
 /** Analogue to [[MLFunction2]] but for three arguments. See [[MLFunction2]]. */
@@ -101,9 +104,9 @@ class MLFunction3[D1, D2, D3, R] protected (id: Future[ID]) extends MLFunction[(
 
 object MLFunction3 {
   /** Analogous to [[MLValue.unsafeFromId[A](id:sc* MLValue.unsafeFromId(Future[ID])]]. */
-  // TODO create unsafeFromId(ID)
-  def unsafeFromId[D1, D2, D3, R](id: Future[ID]): MLFunction3[D1, D2, D3, R] =
-    new MLFunction3(id)
+  def unsafeFromId[D1, D2, D3, R](id: Future[ID]): MLFunction3[D1, D2, D3, R] = new MLFunction3(id)
+  /** Analogous to [[MLValue.unsafeFromId[A](id:de* MLValue.unsafeFromId(ID)]]. */
+  def unsafeFromId[D1, D2, D3, R](id: ID): MLFunction3[D1, D2, D3, R] = new MLFunction3(Future.successful(id))
 }
 
 /** Analogue to [[MLFunction2]] but for four arguments. See [[MLFunction2]]. */
@@ -120,9 +123,9 @@ class MLFunction4[D1, D2, D3, D4, R] protected (id: Future[ID]) extends MLFuncti
 
 object MLFunction4 {
   /** Analogous to [[MLValue.unsafeFromId[A](id:sc* MLValue.unsafeFromId(Future[ID])]]. */
-  // TODO create unsafeFromId(ID)
-  def unsafeFromId[D1, D2, D3, D4, R](id: Future[ID]): MLFunction4[D1, D2, D3, D4, R] =
-    new MLFunction4(id)
+  def unsafeFromId[D1, D2, D3, D4, R](id: Future[ID]): MLFunction4[D1, D2, D3, D4, R] = new MLFunction4(id)
+  /** Analogous to [[MLValue.unsafeFromId[A](id:de* MLValue.unsafeFromId(ID)]]. */
+  def unsafeFromId[D1, D2, D3, D4, R](id: ID): MLFunction4[D1, D2, D3, D4, R] = new MLFunction4(Future.successful(id))
 }
 
 /** Analogue to [[MLFunction2]] but for five arguments. See [[MLFunction2]]. */
@@ -140,9 +143,9 @@ class MLFunction5[D1, D2, D3, D4, D5, R] protected (id: Future[ID]) extends MLFu
 
 object MLFunction5 {
   /** Analogous to [[MLValue.unsafeFromId[A](id:sc* MLValue.unsafeFromId(Future[ID])]]. */
-  // TODO create unsafeFromId(ID)
-  def unsafeFromId[D1, D2, D3, D4, D5, R](id: Future[ID]): MLFunction5[D1, D2, D3, D4, D5, R] =
-    new MLFunction5(id)
+  def unsafeFromId[D1, D2, D3, D4, D5, R](id: Future[ID]): MLFunction5[D1, D2, D3, D4, D5, R] = new MLFunction5(id)
+  /** Analogous to [[MLValue.unsafeFromId[A](id:de* MLValue.unsafeFromId(ID)]]. */
+  def unsafeFromId[D1, D2, D3, D4, D5, R](id: ID): MLFunction5[D1, D2, D3, D4, D5, R] = new MLFunction5(Future.successful(id))
 }
 
 /** Analogue to [[MLFunction2]] but for six arguments. See [[MLFunction2]]. */
@@ -160,9 +163,9 @@ class MLFunction6[D1, D2, D3, D4, D5, D6, R] protected (id: Future[ID]) extends 
 
 object MLFunction6 {
   /** Analogous to [[MLValue.unsafeFromId[A](id:sc* MLValue.unsafeFromId(Future[ID])]]. */
-  // TODO create unsafeFromId(ID)
-  def unsafeFromId[D1, D2, D3, D4, D5, D6, R](id: Future[ID]): MLFunction6[D1, D2, D3, D4, D5, D6, R] =
-    new MLFunction6(id)
+  def unsafeFromId[D1, D2, D3, D4, D5, D6, R](id: Future[ID]): MLFunction6[D1, D2, D3, D4, D5, D6, R] = new MLFunction6(id)
+  /** Analogous to [[MLValue.unsafeFromId[A](id:de* MLValue.unsafeFromId(ID)]]. */
+  def unsafeFromId[D1, D2, D3, D4, D5, D6, R](id: ID): MLFunction6[D1, D2, D3, D4, D5, D6, R] = new MLFunction6(Future.successful(id))
 }
 
 /** Analogue to [[MLFunction2]] but for seven arguments. See [[MLFunction2]]. */
@@ -180,7 +183,7 @@ class MLFunction7[D1, D2, D3, D4, D5, D6, D7, R] protected (id: Future[ID]) exte
 
 object MLFunction7 {
   /** Analogous to [[MLValue.unsafeFromId[A](id:sc* MLValue.unsafeFromId(Future[ID])]]. */
-  // TODO create unsafeFromId(ID)
-  def unsafeFromId[D1, D2, D3, D4, D5, D6, D7, R](id: Future[ID]): MLFunction7[D1, D2, D3, D4, D5, D6, D7, R] =
-    new MLFunction7(id)
+  def unsafeFromId[D1, D2, D3, D4, D5, D6, D7, R](id: Future[ID]): MLFunction7[D1, D2, D3, D4, D5, D6, D7, R] = new MLFunction7(id)
+  /** Analogous to [[MLValue.unsafeFromId[A](id:de* MLValue.unsafeFromId(ID)]]. */
+  def unsafeFromId[D1, D2, D3, D4, D5, D6, D7, R](id: ID): MLFunction7[D1, D2, D3, D4, D5, D6, D7, R] = new MLFunction7(Future.successful(id))
 }
