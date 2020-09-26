@@ -84,7 +84,6 @@ class IsabelleTest extends AnyFunSuite {
     }
   }
 
-  // TODO disable build on tests to be faster?
   test("destroy & wait for a future") {
     implicit val isabelle: Isabelle = new Isabelle(IsabelleTest.setup, build=false)
     // Basically never finishes
@@ -106,11 +105,11 @@ object IsabelleTest {
     Paths.get(path)
   }
 
-  // TODO: working directory src/test/isabelle
   val setup: Setup = Setup(
     isabelleHome = isabelleHome,
     sessionRoots = Nil,
-    userDir = None
+    userDir = None,
+    workingDirectory = Path.of("src/test/isabelle")
   )
 
   implicit lazy val isabelle: Isabelle = {

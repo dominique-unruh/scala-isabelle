@@ -28,8 +28,8 @@ class TheoryTest extends AnyFunSuite {
   }
 
   test("load theory by path") {
-    val thyPath = Paths.get("src/test/isabelle/Control_Isabelle.thy")
-    assert(Files.exists(thyPath))
+    val thyPath = Paths.get("Empty.thy")
+    assert(Files.exists(isabelle.setup.workingDirectory.resolve(thyPath)))
     Theory(thyPath).force
   }
 

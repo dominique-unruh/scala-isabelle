@@ -165,7 +165,7 @@ object Theory extends OperationCollection {
   def apply(name: String)(implicit isabelle: Isabelle, ec: ExecutionContext): Theory =
     Ops.loadTheory(name, name).retrieveNow
 
-  // DOCUMENT
+  // DOCUMENT (mention: path relative to isabelle wd, where are imports searched (find ou)
   def apply(path: Path)(implicit isabelle: Isabelle, ec: ExecutionContext): Theory = {
     val filename = path.getFileName.toString
     if (!filename.endsWith(".thy"))
