@@ -47,3 +47,7 @@ makeGitrevision := {
     }
 }
 managedResources in Compile := (managedResources in Compile).dependsOn(makeGitrevision).value
+
+Compile / doc / scalacOptions ++=
+    Opts.doc.sourceUrl(s"https://github.com/dominique-unruh/scala-isabelle/tree/${"git rev-parse HEAD".!!}€{FILE_PATH_EXT}#L€{FILE_LINE}")
+Compile / doc / scalacOptions ++= Seq("-sourcepath", baseDirectory.value.toString)
