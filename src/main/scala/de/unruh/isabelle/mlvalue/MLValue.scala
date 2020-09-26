@@ -138,7 +138,8 @@ class MLValue[A] protected (/** the ID of the referenced object in the Isabelle 
     MLFunction.unsafeFromId(id)
 
 
-  // DOCUMENT
+  /** Analogous to [[function]] but for functions that take a unit-valye as argument, i.e., `this : MLValue[Unit => R]`.
+   * @see [[MLFunction0]] */
   def function0[R](implicit ev: MLValue[A] =:= MLValue[Unit => R]) : MLFunction0[R] =
     MLFunction0.unsafeFromId(id)
 
