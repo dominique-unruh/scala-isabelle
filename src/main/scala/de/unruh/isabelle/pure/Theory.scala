@@ -135,8 +135,7 @@ final class Theory private [Theory](val name: String, val mlValue : MLValue[Theo
       .map { c => if (c<128 && c.isLetterOrDigit) c else '_' }
       .into { n:String => if (n.head.isLetter) n else "X"+n }
       .capitalize
-      .appended('_')
-      .appendedAll(Random.alphanumeric.take(12).mkString)
+      .into { _ + '_' + Random.alphanumeric.take(12).mkString }
     for (_ <- Ops.importMLStructure(this, name, newName).retrieve)
       yield newName
   }
