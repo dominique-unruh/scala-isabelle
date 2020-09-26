@@ -117,14 +117,14 @@ final class Theory private [Theory](val name: String, val mlValue : MLValue[Theo
    * In Scala:
    * {{{
    *   implicit val isabelle = new Isabelle(... suitable setup ...)
-   *   val thy : Theory = Theory("Draft.ImportMeThy")                     // load the theory TestThy
+   *   val thy : Theory = Theory(Path.of("ImportMeThy.thy"))              // load the theory TestThy
    *   val num1 : MLValue[Int] = MLValue.compileValue("ImportMe.num")     // fails
    *   val importMe : String = thy.importMLStructureNow("ImportMe")       // import the structure Test into the ML toplevel
    *   val num2 : MLValue[Int] = MLValue.compileValue(s"${importMe}.num") // access Test (under new name) in compiled ML code
    *   println(num2.retrieveNow)                                          // ==> 123
    * }}}
    */
-  // TODO test the example
+  // The example is tested in TheoryTest
   def importMLStructureNow(name: String)(implicit isabelle: Isabelle, executionContext: ExecutionContext) : String =
     Await.result(importMLStructure(name), Duration.Inf)
 
