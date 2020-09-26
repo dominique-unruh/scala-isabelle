@@ -3,7 +3,7 @@ package de.unruh.isabelle
 import java.nio.file.{Files, Path}
 
 import de.unruh.isabelle.control.IsabelleTest
-import de.unruh.isabelle.mlvalue.{MLFunction, MLFunction2, MLFunction3, MLValue}
+import de.unruh.isabelle.mlvalue.{MLFunction, MLFunction2, MLFunction3, MLValue, Version}
 import de.unruh.isabelle.pure.{Abs, App, Const, Context, TFree, TVar, Term, Theory, Typ}
 import org.scalatest.funsuite.AnyFunSuite
 
@@ -29,6 +29,8 @@ class Test extends AnyFunSuite {
   test("temporary experiments") {
     MLValue.init()
     Theory.init()
+
+    if (!Version.from2020) cancel("Only works for Isabelle2020+")
 
     val theoryName: MLFunction[Theory, String] =
       MLValue.compileFunction("Context.theory_id #> Context.theory_id_long_name")

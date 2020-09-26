@@ -19,7 +19,8 @@ object Example {
     // The first command line argument must be the Isabelle installation directory
     val isabelleHome = args(0)
     val setup = Isabelle.Setup(isabelleHome = Path.of(isabelleHome), logic = "HOL")
-    implicit val isabelle: Isabelle = new Isabelle(setup)
+    // Differs from example in README: we skip building to make tests faster
+    implicit val isabelle: Isabelle = new Isabelle(setup, build=false)
 
     // Load the Isabelle/HOL theory "Main" and create a context object
     val ctxt = Context("Main")

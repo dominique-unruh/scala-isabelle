@@ -85,8 +85,8 @@ class IsabelleTest extends AnyFunSuite {
   }
 
   // TODO disable build on tests to be faster?
-  test("destroy & wait future") {
-    implicit val isabelle: Isabelle = new Isabelle(IsabelleTest.setup)
+  test("destroy & wait for a future") {
+    implicit val isabelle: Isabelle = new Isabelle(IsabelleTest.setup, build=false)
     // Basically never finishes
     val slowComputation = isabelle.storeValue("OS.Process.sleep (Time.fromSeconds 1000000000); Match")
     isabelle.destroy()
@@ -102,7 +102,7 @@ object IsabelleTest {
     val path = if (Files.exists(config))
       new BufferedReader(new FileReader(config.toFile)).readLine()
     else
-      "/opt/Isabelle2019"
+      "/opt/Isabelle2020"
     Paths.get(path)
   }
 
@@ -115,7 +115,7 @@ object IsabelleTest {
 
   implicit lazy val isabelle: Isabelle = {
     println("Starting Isabelle")
-    val isa = new Isabelle(setup)
+    val isa = new Isabelle(setup, build=false)
     println("Started. Initializing Term/Typ/Context")
     println("Initialized.")
     isa
