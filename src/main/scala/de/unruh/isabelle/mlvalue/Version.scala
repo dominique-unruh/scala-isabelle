@@ -10,12 +10,21 @@ import scala.util.matching.Regex.{Groups, Match}
 // Implicits
 import Implicits._
 
-// DOCUMENT
+/** Version information for the Isabelle process.
+ *
+ * All methods take the Isabelle process as an implicit parameter.
+ * The integers [[year]], [[step]], [[rc]] are chosen such
+ * that `(year,step,rc)` is increasing lexicographically if the version increases.
+ * (Development releases are currently not supported and may break this ordering.)
+ **/
 object Version extends OperationCollection {
-  // DOCUMENT
+  /** Value for [[rc]] that represents that the version is not a release candidate.
+   * Guaranteed to be larger than any release candidate number. */
   final val NOT_RC = 99999
-  // DOCUMENT
-  final val INVALID_YEAR = 9999
+  /** Value for [[year]] that indicates that the version could not be determined.
+   * Guaranteed to be larger than any correct year value */
+  final val INVALID_YEAR = 99998
+
   override protected def newOps(implicit isabelle: Isabelle, ec:  ExecutionContext): Ops = new Ops
   protected class Ops(implicit isabelle: Isabelle, ec:  ExecutionContext) {
     MLValue.init()
@@ -34,16 +43,26 @@ object Version extends OperationCollection {
     }
   }
 
-  // DOCUMENT
+  /** The Isabelle version string (e.g., `"Isabelle2020: April 2020"`) */
   def versionString(implicit isabelle: Isabelle, ec:  ExecutionContext): String = Ops.versionString
-  // DOCUMENT
+  /** The year of this Isabelle version (e.g., 2020).
+   *
+   * If the version string could not be parsed, returns [[INVALID_YEAR]]. */
   def year(implicit isabelle: Isabelle, ec:  ExecutionContext): Int = Ops.year
-  // DOCUMENT
+  /** The version within the current year.
+   *
+   * E.g. `Isabelle2020` would have `step=0`, and `Isabelle2020-1` would have `step=1`. */
   def step(implicit isabelle: Isabelle, ec:  ExecutionContext): Int = Ops.step
-  // DOCUMENT
+  /** Number of the release candidate.
+   *
+   * E.g., `Isabelle2020-RC4` would have `rc=4`.
+   * If this is not a release candidate, `rc=`[[NOT_RC]]. */
   def rc(implicit isabelle: Isabelle, ec:  ExecutionContext): Int = Ops.rc
 
+  /** True, if the current version is at least Isabelle2020 (including the release candidates).
+   *
+   * Unspecified behavior on development versions. */
   def from2020(implicit isabelle: Isabelle, ec:  ExecutionContext): Boolean = year >= 2020
 
-  val logger: Logger = log4s.getLogger
+  private val logger = log4s.getLogger
 }
