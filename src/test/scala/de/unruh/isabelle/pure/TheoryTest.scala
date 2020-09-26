@@ -45,4 +45,19 @@ class TheoryTest extends AnyFunSuite {
     Theory(thyPath).force
   }
 
+  test("registerSessionDirectories loaded session") {
+    Theory.registerSessionDirectoriesNow("HOL" -> isabelle.setup.isabelleHome.resolve("src/HOL"))
+    Theory("HOL.Filter").force
+  }
+
+  test("registerSessionDirectories loaded session, wrong session dir") {
+    val badHOL = Path.of("src/test/isabelle/Bad-HOL").toAbsolutePath
+    assert(Files.isDirectory(badHOL))
+    Theory.registerSessionDirectoriesNow("HOL" -> badHOL)
+    val thy = Theory("HOL.Filter").force
+    val ctxt = Context(thy)
+    val thm = Thm(ctxt, "Filter.filter_eq_iff").force
+    println(thm.pretty(ctxt))
+  }
+
 }

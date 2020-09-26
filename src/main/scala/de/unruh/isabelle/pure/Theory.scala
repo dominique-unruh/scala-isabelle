@@ -75,8 +75,7 @@ final class Theory private [Theory](val name: String, val mlValue : MLValue[Theo
    *   println(num2.retrieveNow)                                   // ==> 123
    * }}}
    */
-  // TODO: Check if the above example works. (test case)
-  @deprecated("Use importMLStructure(String) instead")
+  @deprecated("Use importMLStructure(String) instead","0.1.1")
   def importMLStructure(name: String, newName: String)
                        (implicit isabelle: Isabelle, executionContext: ExecutionContext): Unit =
     Ops.importMLStructure(this, name, newName).retrieveNow
@@ -146,15 +145,18 @@ final class Theory private [Theory](val name: String, val mlValue : MLValue[Theo
 
 object Theory extends OperationCollection {
   // DOCUMENT
+  // TODO find out (& document) what happens when we register a session path for an already loaded session (with correct/different path) -> ignored in both cases
   def registerSessionDirectoriesNow(paths: (String,Path)*)(implicit isabelle: Isabelle, ec: ExecutionContext): Unit =
     Await.result(registerSessionDirectories(paths : _*), Duration.Inf)
+
+  // DOCUMENT
   def registerSessionDirectories(paths: (String,Path)*)(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Unit] = {
     var changed = false
     for ((session, path) <- paths) {
       val absPath = path.toAbsolutePath
       if (!Files.isDirectory(absPath))
         throw new IllegalArgumentException(s"Session directory for session $session is not a directory ($path)")
-      logger.debug(s"registerTheoryPaths: Session $session -> $absPath")
+      logger.debug(s"registerSessionDirectories: Session $session -> $absPath")
       val previous = Ops.sessionPaths.put(session, absPath)
       if (previous != absPath)
         changed = true
@@ -221,8 +223,7 @@ object Theory extends OperationCollection {
   }
 
   /** Retrieves a theory by its name. E.g., `Theory("HOL-Analysis.Inner_Product")`. **/
-  // DOCUMENT caveats: full name, only names in heap (unless registerTheoryPaths), ignores ROOT/ROOTS
-  // TODO find out (& document) what happens when we register a session path for an already loaded session (with correct/different path)
+  // DOCUMENT caveats: full name, only names in heap (unless registerSessionDirectories), ignores ROOT/ROOTS
   def apply(name: String)(implicit isabelle: Isabelle, ec: ExecutionContext): Theory =
     Ops.loadTheory(name, name).retrieveNow
 
