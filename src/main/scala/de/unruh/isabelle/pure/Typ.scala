@@ -84,6 +84,11 @@ sealed abstract class Typ extends FutureValue {
    * constructor on Isabelle side (`Type`, `TFree`, `TVar`). */
   val concrete : Typ
 
+  /** Indicates whether [[concrete]] has already been initialized. (I.e.,
+   * whether it can be accessed without delay and without incurring communication with
+   * the Isabelle process. */
+  def concreteComputed: Boolean
+
   /** `t -->: u` is shorthand for `Type("fun", t, u)`, i.e., for a function from `t` to `u`. */
   def -->:(that: Typ)(implicit ec: ExecutionContext): Type = Type("fun", that, this)
 
@@ -139,17 +144,18 @@ sealed abstract class Typ extends FutureValue {
  * constructor on Isabelle side (`Type`, `TFree`, `TVar`).
  */
 sealed abstract class ConcreteTyp extends Typ {
+  /** @return this */
   override val concrete: this.type = this
+
+  /** @return true */
+  override def concreteComputed: Boolean = true
 }
 
 /** A [[Typ]] that is stored in the Isabelle process's object store
  * and may or may not be known in Scala. Use [[concrete]] to
  * get a representation of the same type as a [[ConcreteTyp]]. */
 final class MLValueTyp(val mlValue: MLValue[Typ])(implicit val isabelle: Isabelle, ec: ExecutionContext) extends Typ {
-  def concreteComputed: Boolean = concreteLoaded
-  /** Indicates whether [[concrete]] has already been initialized. (I.e.,
-   * whether it can be accessed without delay and without incurring communication with
-   * the Isabelle process. */
+  @inline override def concreteComputed: Boolean = concreteLoaded
   @volatile private var concreteLoaded = false
 
   lazy val concrete : ConcreteTyp = {
@@ -198,7 +204,12 @@ final class MLValueTyp(val mlValue: MLValue[Typ])(implicit val isabelle: Isabell
   private [pure] def mlValueTyp = new MLValueTyp(mlValue)
   override def pretty(ctxt: Context)(implicit ec: ExecutionContext): String =
     Ops.stringOfCtyp(MLValue((ctxt, this))).retrieveNow
-  lazy val concrete: ConcreteTyp = new MLValueTyp(mlValue).concrete
+
+  override lazy val concrete: ConcreteTyp = new MLValueTyp(mlValue).concrete
+  override def concreteComputed: Boolean =
+    if (mlValueLoaded) mlValueTyp.concreteComputed
+    else false
+
   override def hashCode(): Int = concrete.hashCode()
 
   override def await: Unit = ctypMlValue.await

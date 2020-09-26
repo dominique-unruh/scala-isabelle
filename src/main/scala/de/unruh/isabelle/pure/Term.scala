@@ -82,6 +82,12 @@ sealed abstract class Term extends FutureValue {
    * that the type of the term ([[App]],[[Const]],[[Abs]]...) corresponds to the top-level
    * constructor on Isabelle side (`$`, `Const`, `Abs`, ...). */
   val concrete : ConcreteTerm
+
+  /** Indicates whether [[concrete]] has already been initialized. (I.e.,
+   * whether it can be accessed without delay and without incurring communication with
+   * the Isabelle process. */
+  def concreteComputed: Boolean
+
   /** `t $ u` is shorthand for [[App]]`(t,u)` */
   def $(that: Term)(implicit ec: ExecutionContext): App = App(this, that)
 
@@ -141,6 +147,8 @@ sealed abstract class Term extends FutureValue {
 sealed abstract class ConcreteTerm extends Term {
   /** @return this */
   @inline override val concrete: this.type = this
+  /** @return true */
+  @inline override def concreteComputed: Boolean = true
 }
 
 /** Represents a `cterm` in Isabelle. In Isabelle, a `cterm` must be explicitly converted into a `term`.
@@ -171,6 +179,10 @@ final class Cterm private(val ctermMlValue: MLValue[Cterm])(implicit val isabell
   override def toString: String =
     if (mlValueLoaded) "cterm:"+mlValue.toString
     else "cterm"+stateString
+
+  override def concreteComputed: Boolean =
+    if (mlValueLoaded) mlValueTerm.concreteComputed
+    else false
 }
 
 object Cterm {
@@ -219,10 +231,6 @@ final class MLValueTerm(val mlValue: MLValue[Term])(implicit val isabelle: Isabe
   //noinspection EmptyParenMethodAccessedAsParameterless
   override def hashCode(): Int = concrete.hashCode
 
-  /** Indicates whether [[concrete]] has already been initialized. (I.e.,
-   * whether it can be accessed without delay and without incurring communication with
-   * the Isabelle process. */
-  // TODO make a member of Term? (Can it easily be implemented for cterm?)
   def concreteComputed: Boolean = concreteLoaded
 
   @volatile private var concreteLoaded = false
