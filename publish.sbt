@@ -1,3 +1,27 @@
+/*
+
+ Steps when releasing a release/release candidate:
+
+ - git checkout release-candidate
+ - If this is the first RC for a new release, reset release-candidate to master
+ - Update CHANGELOG.md if needed
+ - Set correct date (today) for this version in CHANGELOG.md (only for releases)
+ - Edit version in README.md
+ - git commit (to be able to cherry pick those into master)
+ - Set version in version.sbt
+ - git commit
+ - sbt clean
+ - sbt publishSigned (should run tests!)
+ - gpg -v --keyserver hkp://pool.sks-keyservers.net --send-keys e1f9c7fa4ba66fe2
+ - sbt sonatypeBundleRelease
+ - git tag vXXX (XXX is the version)
+ - git push origin vXXX
+ - git push
+ - git checkout master
+ - Cherry pick commit with edits to CHANGELOG.md and README.md
+
+*/
+
 import sbt.coursierint.LMCoursier
 
 homepage := Some(url("https://github.com/dominique-unruh/scala-isabelle"))
@@ -32,4 +56,4 @@ credentials += Credentials(Path.userHome / ".sbt" / "sonatype_credentials")
 credentials += Credentials("GnuPG Key ID", "gpg", "B12742E4CC2172D894730C1AE1F9C7FA4BA66FE2", "ignored")
 
 publish := publish.dependsOn(test in Test).value
-publish := PgpKeys.publishSigned.dependsOn(test in Test).value
+PgpKeys.publishSigned := PgpKeys.publishSigned.dependsOn(test in Test).value
