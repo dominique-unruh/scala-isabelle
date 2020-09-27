@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.com/dominique-unruh/scala-isabelle.svg?branch=master)](https://travis-ci.com/dominique-unruh/scala-isabelle)
 [![Scaladoc](https://javadoc.io/badge2/de.unruh/scala-isabelle_2.13/scaladoc.svg)](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/index.html)
-[![Scaladoc snapshot](https://img.shields.io/badge/scaladoc-snapshot-brightgreen.svg)](https://oss.sonatype.org/service/local/repositories/snapshots/archive/de/unruh/scala-isabelle_2.13/0.1.1-SNAPSHOT/scala-isabelle_2.13-0.1.1-SNAPSHOT-javadoc.jar/!/de/unruh/isabelle/index.html)
+[![Scaladoc snapshot](https://img.shields.io/badge/scaladoc-snapshot-brightgreen.svg)](https://oss.sonatype.org/service/local/repositories/snapshots/archive/de/unruh/scala-isabelle_2.13/master-SNAPSHOT/scala-isabelle_2.13-master-SNAPSHOT-javadoc.jar/!/de/unruh/isabelle/index.html)
 [![Gitter chat](https://img.shields.io/badge/gitter-chat-brightgreen.svg)](https://gitter.im/dominique-unruh/scala-isabelle?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 ## What is this library for?
@@ -30,9 +30,9 @@ as the discontinued [libisabelle](https://github.com/larsrh/libisabelle).
 
 With sbt, use one of
 ```sbt
-libraryDependencies += "de.unruh" %% "scala-isabelle" % "0.1.1-RC1"  // release
+libraryDependencies += "de.unruh" %% "scala-isabelle" % "0.2.0-RC2"  // release
 
-libraryDependencies += "de.unruh" %% "scala-isabelle" % "0.1.1-SNAPSHOT"  // development snapshot
+libraryDependencies += "de.unruh" %% "scala-isabelle" % "master-SNAPSHOT"  // development snapshot
 resolvers += Resolver.sonatypeRepo("snapshots")
 ```
 to add scala-isabelle to your build.
