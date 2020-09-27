@@ -554,11 +554,11 @@ object Isabelle {
     *                Here Isabelle stores user configuration and heap images (unless
     *                the location of the heap images is configured differently, see the Isabelle system manual)
     */
-  case class Setup(workingDirectory : Path = Paths.get(""),
-                   isabelleHome : Path,
+  case class Setup(isabelleHome : Path,
                    logic : String = "HOL",
-                   sessionRoots : Seq[Path] = Nil,
-                   userDir : Option[Path] = None)
+                   userDir : Option[Path] = None,
+                   workingDirectory : Path = Paths.get(""),
+                   sessionRoots : Seq[Path] = Nil)
 
 
   //noinspection UnstableApiUsage
