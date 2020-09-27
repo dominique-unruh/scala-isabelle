@@ -1,5 +1,4 @@
 import sbt.coursierint.LMCoursier
-import sbtrelease.ReleaseStateTransformations._
 
 homepage := Some(url("https://github.com/dominique-unruh/scala-isabelle"))
 
@@ -34,20 +33,3 @@ credentials += Credentials("GnuPG Key ID", "gpg", "B12742E4CC2172D894730C1AE1F9C
 
 publish := publish.dependsOn(test in Test).value
 publish := PgpKeys.publishSigned.dependsOn(test in Test).value
-
-releaseCrossBuild := true
-
-releaseProcess := Seq[ReleaseStep](
-  checkSnapshotDependencies,
-  inquireVersions,
-  runClean,
-  runTest,
-  setReleaseVersion,
-  commitReleaseVersion,
-  tagRelease,
-  releaseStepCommand("publishSigned"),
-  releaseStepCommand("sonatypeBundleRelease"),
-  setNextVersion,
-  commitNextVersion,
-  pushChanges
-)
