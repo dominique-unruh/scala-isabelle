@@ -10,7 +10,7 @@ import de.unruh.isabelle.control.Isabelle
  * in cases where the original method is difficult to invoke from Java.
  */
 object JIsabelle {
-  /** Invokes [[Isabelle.Setup]]`(isabelleHome=isabelleHome)`. All other arguments to
-   * [[Isabelle.Setup]] take default values. */
+  /** Invokes [[control.Isabelle.Setup Isabelle.Setup]]`(isabelleHome=isabelleHome)`. All other arguments to
+   * [[control.Isabelle.Setup Isabelle.Setup]] take default values. */
   def setup(isabelleHome: Path): Isabelle.Setup = Isabelle.Setup(isabelleHome = isabelleHome)
 }
