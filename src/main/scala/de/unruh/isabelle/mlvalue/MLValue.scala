@@ -53,6 +53,24 @@ import scala.util.{Failure, Success}
   *    [[MLValue.Converter]]).
   *  - To be able to use the automatic conversions etc., converters need to be imported for supported types.
   *    The converters provided by this package can be imported by `import [[de.unruh.isabelle.mlvalue.Implicits]]._`.
+  *  - [[MLValue]]s are asynchronous, i.e., they may finish the computation of the contained value after creation of the
+  *    `MLValue` object. (Like a [[scala.concurrent.Future Future]].) In particular, exception thrown during the
+  *    computation are not thrown during object creation. The value inside an [[MLValue]] can be retrieved
+  *    using [[retrieveNow]] (or [[retrieve]]), this '''may''' wait for the computation to finish and force the exceptions
+  *    to be thrown. However, instead the value returned by [[retrieveNow]] may also be an asynchronous value in the
+  *    sense that it is created before the computation defining it has finished. Thus exceptions thrown in the
+  *    computation of the [[MLValue]] may be delayed even further and only show upon later computations with the
+  *    returned object. To make sure that the computation of the [[MLValue]] has completed, use the methods of
+  *    [[FutureValue]] (which [[MLValue]] inherits), such as [[FutureValue.force force]].
+  *  - We have the convention that if `A` is '''not''' a subtype of [[FutureValue]], then [[retrieveNow]]
+  *    must throw the exceptions raised during the computation of the `MLValue`, and [[retrieve]] must
+  *    return a future that holds those exceptions. (That is, in this case the considerations of the preceding
+  *    bullet point do not apply.) For example, if `MLValue[Unit].retrieveNow` or `MLValue[Int].retrieveNow` guarantee
+  *    that all exceptions are thrown (i.e., if those function calls complete without exception, the underlying
+  *    computation is guaranteed to be have completed without exception). If `MLValue[Term].retrieveNow`
+  *    completes without exception, this is not guaranteed (because [[pure.Term Term]] is a subtype of [[FutureValue]]).
+  *    But `MLValue[Term].force.retrieveNow` and `MLValue[Term].retrieveNow.force` both guarantee that all exceptions
+  *    are thrown.
   *
   * Note: Some operations take an [[control.Isabelle Isabelle]] instance as an implicit argument. It is required that this instance
   *       the same as the one relative to which the MLValue was created.
@@ -89,7 +107,6 @@ import scala.util.{Failure, Success}
   * @param id the ID of the referenced object in the Isabelle process
   * @tparam A the Scala type corresponding to the ML type of the value referenced by [[id]]
   */
-// DOCUMENT that .retrieveNow does not guarantee that ML code exceptions are thrown. .force is needed for that. Convention: .retrieveNow forces unless the output type is a FutureValue or a Future
 class MLValue[A] protected (/** the ID of the referenced object in the Isabelle process */ val id: Future[Isabelle.ID])
   extends FutureValue {
   def logError(message: => String)(implicit executionContext: ExecutionContext): this.type = {
@@ -599,6 +616,14 @@ object MLValue extends OperationCollection {
   @inline def apply[A](value: A)(implicit conv: Converter[A], isabelle: Isabelle, executionContext: ExecutionContext) : MLValue[A] =
     conv.store(value)
 
+  /** Converts a future containing an [[MLValue]] into an [[MLValue]].
+   *
+   * The resulting [[MLValue]] then holds both the computation of the future, as well as the computation held by
+   * the MLValue contained in that future.
+   **/
+  def removeFuture[A](future: Future[MLValue[A]])(implicit ec: ExecutionContext) : MLValue[A] =
+    MLValue.unsafeFromId[A](future.flatMap(_.id))
+
   /** Compiles `ml` code and inserts it into the object store (without any conversion).
    *
    * `ml` must compile to an ML value of type `exn` that is the encoding of some Scala value of type `A`.
@@ -645,7 +670,11 @@ object MLValue extends OperationCollection {
       s"E_Function (DObject o (${converterR.valueToExn}) o (($ml) : ((${converterD.mlType}) -> (${converterR.mlType}))) o (${converterD.exnToValue}) o (fn DObject d => d))"
     )).logError(s"""Error while compiling function "$ml":""")
 
-  // DOCUMENT
+  /** Like [[compileFunction[D,R]* compileFunction[D,R]]], except that the ML code `ml` must be a function of type `unit -> r`
+   * where `r` is the ML type corresponding to `R`. The resulting [[MLFunction2]] `f` can then be invoked
+   * also as `f()` and not only as `f(())` (as would be the case if we had used
+   * [[compileFunction[D,R]* compileFunction[D,R]]]`[Unit,R](ml)` to compile the function).
+   **/
   def compileFunction0[R](ml: String)(implicit isabelle: Isabelle, ec: ExecutionContext, converter: Converter[R]): MLFunction0[R] =
     compileFunction[Unit, R](ml).function0
 

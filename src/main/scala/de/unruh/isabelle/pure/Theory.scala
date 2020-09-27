@@ -243,12 +243,30 @@ object Theory extends OperationCollection {
                   in () end""")
   }
 
-  /** Retrieves a theory by its name. E.g., `Theory("HOL-Analysis.Inner_Product")`. **/
-  // DOCUMENT caveats: full name, only names in heap (unless registerSessionDirectories), ignores ROOT/ROOTS
+  /** Retrieves a theory by its name. E.g., `Theory("HOL-Analysis.Inner_Product")`.
+   *
+   * `name` must be the fully qualified name of the theory (with exception of "global theories"
+   * which have no qualifier, e.g., `Pure`, `Main`, `Complex_Main`, ...).
+   *
+   * For a theory to be found, it needs to be included in the current session image (specified via the
+   * [[Isabelle.Setup.logic logic]] parameter in [[Isabelle.Setup]]), or the directory containing its that theory's
+   * session must be configured via [[registerSessionDirectoriesNow]]. The same requirements apply to all theories imported
+   * by the theory `name`. (I.e., all theories required to execute `name` must be either in the session image or
+   * registered via [[registerSessionDirectoriesNow]].) `ROOT` and `ROOTS` are not taken into account for finding the
+   * theories.
+   **/
   def apply(name: String)(implicit isabelle: Isabelle, ec: ExecutionContext): Theory =
     Ops.loadTheory(name, name).retrieveNow
 
-  // DOCUMENT (mention: path relative to isabelle wd, where are imports searched (find ou)
+  /** Retrieves a theory located at the path `path`.
+   *
+   * The `path` is interpreted relative to the Isabelle working directory ([[Isabelle.Setup.workingDirectory]]).
+   *
+   * If `path` ends in `X.thy`, the theory will have the fully qualified name `Draft.X`.
+   *
+   * DOCUMENT How are imports searched?
+   *
+   **/
   def apply(path: Path)(implicit isabelle: Isabelle, ec: ExecutionContext): Theory = {
     val filename = path.getFileName.toString
     if (!filename.endsWith(".thy"))
