@@ -45,6 +45,12 @@ class TheoryTest extends AnyFunSuite {
     Theory(thyPath).force
   }
 
+  test("load theory by path, nested") {
+    val thyPath = Paths.get("Subdir/B.thy")
+    assert(Files.exists(isabelle.setup.workingDirectory.resolve(thyPath)))
+    Theory(thyPath).force
+  }
+
   test("registerSessionDirectories loaded session") {
     Theory.registerSessionDirectoriesNow("HOL" -> isabelle.setup.isabelleHome.resolve("src/HOL"))
     Theory("HOL.Filter").force

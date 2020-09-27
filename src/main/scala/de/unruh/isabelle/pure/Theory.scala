@@ -249,7 +249,7 @@ object Theory extends OperationCollection {
    * which have no qualifier, e.g., `Pure`, `Main`, `Complex_Main`, ...).
    *
    * For a theory to be found, it needs to be included in the current session image (specified via the
-   * [[Isabelle.Setup.logic logic]] parameter in [[Isabelle.Setup]]), or the directory containing its that theory's
+   * [[control.Isabelle.Setup.logic logic]] parameter in [[control.Isabelle.Setup Isabelle.Setup]]), or the directory containing its that theory's
    * session must be configured via [[registerSessionDirectoriesNow]]. The same requirements apply to all theories imported
    * by the theory `name`. (I.e., all theories required to execute `name` must be either in the session image or
    * registered via [[registerSessionDirectoriesNow]].) `ROOT` and `ROOTS` are not taken into account for finding the
@@ -260,12 +260,13 @@ object Theory extends OperationCollection {
 
   /** Retrieves a theory located at the path `path`.
    *
-   * The `path` is interpreted relative to the Isabelle working directory ([[Isabelle.Setup.workingDirectory]]).
+   * The `path` is interpreted relative to the Isabelle working directory
+   * ([[control.Isabelle.Setup.workingDirectory Isabelle.Setup.workingDirectory]]).
    *
    * If `path` ends in `X.thy`, the theory will have the fully qualified name `Draft.X`.
    *
-   * DOCUMENT How are imports searched?
-   *
+   * Unqualified imports of the theory `X` are searched for in the same directory. Qualified imports
+   * must be findable according to the rules specified in [[apply(name* apply(String)]].
    **/
   def apply(path: Path)(implicit isabelle: Isabelle, ec: ExecutionContext): Theory = {
     val filename = path.getFileName.toString
