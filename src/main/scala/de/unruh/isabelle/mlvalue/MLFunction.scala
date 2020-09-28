@@ -20,7 +20,6 @@ class MLFunction[D, R] protected(id: Future[ID]) extends MLValue[D => R](id) {
    * in the ML code are not immediately thrown. To force exceptions, use, e.g.,
    * `r.[[MLValue.retrieveNow retrieveNow]]` or `r.[[MLValue.force force]]`.
    *
-   *
    * @return the function result inside an [[MLValue]]
    * */
   def apply(arg: MLValue[D])

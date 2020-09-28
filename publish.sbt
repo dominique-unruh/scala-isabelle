@@ -19,7 +19,6 @@
  - git push
  - git checkout master
  - Cherry pick commit with edits to CHANGELOG.md and README.md
- TODO: check
  - Check (a while later): https://mvnrepository.com/artifact/de.unruh/scala-isabelle
 
 */
@@ -39,12 +38,11 @@ developers += Developer(
 
 organization := "de.unruh"
 
-// TODO: https://mvnrepository.com/artifact/de.unruh/scala-isabelle and https://search.maven.org/artifact/de.unruh/scala-isabelle_2.12 don't show the link as a link:
-// TODO: Use HTML links?
+// TODO: Check if https://mvnrepository.com/artifact/de.unruh/scala-isabelle and https://search.maven.org/artifact/de.unruh/scala-isabelle_2.12 show the HTML correctly.
 description :=
-  """This library allows to control an Isabelle process (https://isabelle.in.tum.de/) from a Scala program.
+  """<![CDATA[This library allows to control an <a href="https://isabelle.in.tum.de/">Isabelle</a> process from a Scala program.
     |It allows to execute ML code inside the Isabelle process, and to operate on theories, theorems, terms, etc.
-    |See the README (https://github.com/dominique-unruh/scala-isabelle/blob/master/README.md) for more information.""".stripMargin
+    |See the <a href="https://github.com/dominique-unruh/scala-isabelle/blob/master/README.md">README</a> for more information.]]>""".stripMargin
 
 licenses += "MIT" -> url("https://raw.githubusercontent.com/dominique-unruh/scala-isabelle/5f28d8e6248f39dd7a31649d92c9850498e3985c/LICENSE")
 licenses += "Isabelle" -> url("https://raw.githubusercontent.com/dominique-unruh/scala-isabelle/5f28d8e6248f39dd7a31649d92c9850498e3985c/COPYRIGHT.Isabelle")
