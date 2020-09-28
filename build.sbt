@@ -3,6 +3,7 @@ import java.io.PrintWriter
 import scala.sys.process._
 
 name := "scala-isabelle"
+version := "master-SNAPSHOT"
 
 crossScalaVersions := List("2.13.3", "2.12.12")
 

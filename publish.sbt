@@ -11,7 +11,7 @@
  - Set version in version.sbt
  - git commit
  - sbt clean
- - sbt publishSigned (should run tests!)
+ - sbt +publishSigned (don't forget the +) (should run tests!)
  - gpg -v --keyserver hkp://pool.sks-keyservers.net --send-keys e1f9c7fa4ba66fe2
  - sbt sonatypeBundleRelease
  - git tag vXXX (XXX is the version)
@@ -19,10 +19,10 @@
  - git push
  - git checkout master
  - Cherry pick commit with edits to CHANGELOG.md and README.md
+ TODO: check
+ - Check (a while later): https://mvnrepository.com/artifact/de.unruh/scala-isabelle
 
 */
-
-import sbt.coursierint.LMCoursier
 
 homepage := Some(url("https://github.com/dominique-unruh/scala-isabelle"))
 
@@ -39,9 +39,12 @@ developers += Developer(
 
 organization := "de.unruh"
 
+// TODO: https://mvnrepository.com/artifact/de.unruh/scala-isabelle and https://search.maven.org/artifact/de.unruh/scala-isabelle_2.12 don't show the link as a link:
+// TODO: Use HTML links?
 description :=
   """This library allows to control an Isabelle process (https://isabelle.in.tum.de/) from a Scala program.
-    |It allows to execute ML code inside the Isabelle process, and to operate on theories, theorems, terms, etc.""".stripMargin
+    |It allows to execute ML code inside the Isabelle process, and to operate on theories, theorems, terms, etc.
+    |See the README (https://github.com/dominique-unruh/scala-isabelle/blob/master/README.md) for more information.""".stripMargin
 
 licenses += "MIT" -> url("https://raw.githubusercontent.com/dominique-unruh/scala-isabelle/5f28d8e6248f39dd7a31649d92c9850498e3985c/LICENSE")
 licenses += "Isabelle" -> url("https://raw.githubusercontent.com/dominique-unruh/scala-isabelle/5f28d8e6248f39dd7a31649d92c9850498e3985c/COPYRIGHT.Isabelle")

@@ -18,12 +18,13 @@ as the discontinued [libisabelle](https://github.com/larsrh/libisabelle).
 #### Runtime requirements
 
 * Linux or OS/X
-* Java 11 or newer (both for compilation and running)
+* Java 11 or newer
 * [Isabelle 2019 or newer](https://isabelle.in.tum.de/) (needed at runtime)
 
 #### Compile time requirements
 
 * Scala 2.12 or newer
+* Java 11 or newer
 * [sbt](https://www.scala-sbt.org/) (optional)
 
 ## Installation
@@ -94,4 +95,4 @@ and [Term](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/i
 
 ## Projects using scala-isabelle
 
-* [qrhl-tool](https://github.com/dominique-unruh/qrhl-tool) – A theorem prover for post-quantum security
+* [qrhl-tool](https://github.com/dominique-unruh/qrhl-tool) – A theorem prover for post-quantum security.
