@@ -17,6 +17,8 @@ import static scala.concurrent.ExecutionContext.global;
 public class JavaExample {
     private Isabelle isabelle = null;
 
+    // TODO: the same with patterns
+
     // A function to replace occurrences of X+1 by X (for all X)
     @SuppressWarnings("InfiniteRecursion")
     Term replace(Term term) {
