@@ -76,24 +76,20 @@ public class JavaPatterns {
 
         return match(term,
 
-                withCase(
-                        App(App(Const(Is("Groups.plus_class.plus"), Any), x),
-                                Const(Is("Groups.zero_class.zero"), Any)),
-                        () -> replace(x.v())),
+                App(App(Const(Is("Groups.plus_class.plus"), Any), x),
+                        Const(Is("Groups.zero_class.zero"), Any)),
+                () -> replace(x.v()),
 
-                withCase(
-                        Abs(name, typ, body),
-                        () -> Abs.apply(name.v(), typ.v(), replace(body.v()),
-                                isabelle, global())),
+                Abs(name, typ, body),
+                () -> Abs.apply(name.v(), typ.v(), replace(body.v()),
+                        isabelle, global()),
 
-                withCase(
-                        App(t1, t2),
-                        () -> App.apply(replace(t1.v()), replace(t2.v()),
-                                isabelle, global())),
+                App(t1, t2),
+                () -> App.apply(replace(t1.v()), replace(t2.v()),
+                        isabelle, global()),
 
-                withCase(
-                        Any,
-                        () -> term));
+                Any,
+                () -> term);
     }
 
 
