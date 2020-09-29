@@ -3,4 +3,4 @@
 /project/target
 /target
 *~
-/src/main/resources/de/unruh/isabelle/gitrevision.txt
+/src/test/isabelle/Scratch.thy

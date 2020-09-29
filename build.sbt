@@ -1,5 +1,8 @@
 import java.io.PrintWriter
 
+import sbt.io
+import sbt.io.Path.relativeTo
+
 import scala.sys.process._
 
 name := "scala-isabelle"
@@ -36,9 +39,11 @@ travisRandomize := {
 compile in Compile := (compile in Compile).dependsOn(travisRandomize).value
 doc in Compile := (doc in Compile).dependsOn(travisRandomize).value
 
-lazy val makeGitrevision = taskKey[Unit]("Create gitrevision.txt")
+lazy val makeGitrevision = taskKey[File]("Create gitrevision.txt")
+Compile / resourceGenerators += makeGitrevision.map(Seq(_))
 makeGitrevision := {
-    val file = baseDirectory.value / "src" / "main" / "resources" / "de" / "unruh" / "isabelle" / "gitrevision.txt"
+    val file = (Compile / resourceManaged).value / "de" / "unruh" / "isabelle" / "gitrevision.txt"
+    file.getParentFile.mkdirs()
     if ((baseDirectory.value / ".git").exists())
         Process(List("bash","-c",s"( date && git describe --tags --long --always --dirty --broken && git describe --always --all ) > ${file}")).!!
     else {
@@ -46,8 +51,10 @@ makeGitrevision := {
         pr.println("Not built from a GIT worktree.")
         pr.close()
     }
+    file
 }
-managedResources in Compile := (managedResources in Compile).dependsOn(makeGitrevision).value
+Compile / packageSrc / mappings ++= makeGitrevision.value pair relativeTo((Compile / resourceManaged).value)
+Compile / packageDoc / mappings ++= makeGitrevision.value pair relativeTo((Compile / resourceManaged).value)
 
 Compile / doc / scalacOptions ++=
     Opts.doc.sourceUrl(s"https://github.com/dominique-unruh/scala-isabelle/tree/${"git rev-parse HEAD".!!}€{FILE_PATH_EXT}#L€{FILE_LINE}")
