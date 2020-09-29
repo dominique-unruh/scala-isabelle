@@ -80,7 +80,7 @@ public class JavaExample {
         // Differs from example in README: we skip building to make tests faster
         isabelle = new Isabelle(setup, false);
 
-        // Load the Isabelle/HOL theory "Main" and create a context objglobal()t
+        // Load the Isabelle/HOL theory "Main" and create a context object
         Context ctxt = Context.apply("Main", isabelle, global());
 
         // Create a term by parsing a string
@@ -93,7 +93,7 @@ public class JavaExample {
         out.println("term2: " + term2.pretty(ctxt, global()));
         // ==> term2: x = y * 1
 
-        // Compile an ML function that can be exglobal()uted dirglobal()tly in the Isabelle process
+        // Compile an ML function that can be executed directly in the Isabelle process
         MLFunction2<Context, Term, Term> simplify =
                 MLValue.compileFunction("fn (ctxt,t) => Thm.cterm_of ctxt t |> Simplifier.asm_full_rewrite ctxt " +
                         "|> Thm.rhs_of |> Thm.term_of",
