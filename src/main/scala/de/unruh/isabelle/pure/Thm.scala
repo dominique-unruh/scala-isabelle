@@ -70,7 +70,7 @@ object Thm extends OperationCollection {
    * */
   object ThmConverter extends Converter[Thm] {
     override def retrieve(value: MLValue[Thm])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Thm] =
-      for (_ <- value.id)
+      for (_ <- value.id) // TODO: this is not needed by current convention (check also Context, ...)
         yield new Thm(mlValue = value)
     override def store(value: Thm)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[Thm] =
       value.mlValue

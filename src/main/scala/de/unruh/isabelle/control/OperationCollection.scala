@@ -165,6 +165,7 @@ trait OperationCollection {
     *
     * Can safely be called several times with the same `isabelle` and/or `executionContext`.
     */
+  // TODO: Change return value to this
   def init()(implicit isabelle: Isabelle, executionContext: ExecutionContext): Unit =
     Ops
 }
