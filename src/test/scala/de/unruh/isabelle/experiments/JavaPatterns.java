@@ -10,11 +10,14 @@ import de.unruh.javapatterns.PatternMatchReject;
 import de.unruh.isabelle.mlvalue.MLFunction2;
 import de.unruh.isabelle.mlvalue.MLValue;
 import de.unruh.isabelle.pure.*;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import scala.Tuple2;
 
 import java.nio.file.Path;
 
 import static de.unruh.javapatterns.Patterns.*;
+import static de.unruh.javapatterns.Match.*;
 import static de.unruh.isabelle.java.patterns.IsabellePatterns.*;
 import static de.unruh.isabelle.pure.Implicits.contextConverter;
 import static de.unruh.isabelle.pure.Implicits.termConverter;
@@ -25,7 +28,8 @@ public class JavaPatterns {
     public static <T,U> Pattern<Tuple2<T,U>> Pair(Pattern<? super T> pattern1, Pattern<? super U> pattern2) {
         return new Pattern<>() {
             @Override
-            public void apply(MatchManager mgr, Tuple2<T, U> value) throws PatternMatchReject {
+            public void apply(@NotNull MatchManager mgr, @Nullable Tuple2<T, U> value) throws PatternMatchReject {
+                if (value == null) reject();
                 pattern1.apply(mgr, value._1());
                 pattern2.apply(mgr, value._2());
             }
@@ -48,13 +52,11 @@ public class JavaPatterns {
 
         Integer result = match(testValue,
 
-                withCase(
-                        Pair(Pair(Is(99), y), Pair(z, w)),   () ->
-                        y.v() + z.v() + w.v()),
+                Pair(Pair(Is(99), y), Pair(z, w)),   () ->
+                        y.v() + z.v() + w.v(),
 
-                withCase(
-                        Pair(Pair(x, y), Pair(z, w)),   () ->
-                        x.v() + y.v() + z.v() + w.v())
+                Pair(Pair(x, y), Pair(z, w)),   () ->
+                        x.v() + y.v() + z.v() + w.v()
 
         );
 
