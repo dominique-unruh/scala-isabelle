@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.2.0] – 2020-09-27
+## [0.2.0] – 2020-10-01
 
 The biggest changes include completed API documentation as well as improved support
 for loading theory files that are not in the session image. 
