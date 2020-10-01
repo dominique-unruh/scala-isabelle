@@ -15,6 +15,9 @@ scalaVersion := "2.13.3"
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
+libraryDependencies += "de.unruh" % "java-patterns" % "master-SNAPSHOT"
+resolvers += Resolver.sonatypeRepo("snapshots")
+
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.2" % "test"
 // https://mvnrepository.com/artifact/org.log4s/log4s
 libraryDependencies += "org.log4s" %% "log4s" % "1.8.2"

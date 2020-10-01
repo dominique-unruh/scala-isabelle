@@ -1,6 +1,7 @@
 package de.unruh.isabelle.java.patterns
 
-import de.unruh.isabelle.java.patterns.Patterns.Is
+import de.unruh.javapatterns.Patterns._;
+import de.unruh.javapatterns._;
 import de.unruh.isabelle.pure._
 
 import scala.annotation.varargs

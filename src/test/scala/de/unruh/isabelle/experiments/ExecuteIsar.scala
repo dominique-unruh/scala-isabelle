@@ -18,7 +18,7 @@ import scala.util.Random
 // Alternative approach: Have the actual converter as a field in this class, pick the type T in this class, copy that type into the converter, and
 // use val Header = new MiniConverter("mltype").converter, and use Header.T as the Header type
 // The header type could even be a retrievable type
-final class QuickConverter private (val mlType: String) extends OperationCollection {
+class QuickConverter protected (val mlType: String) extends OperationCollection {
   val tString = s"‹$mlType›"
   final class T private[QuickConverter] (val mlValue: MLValue[T]) extends FutureValue {
     override def await: Unit = mlValue.await
@@ -30,11 +30,13 @@ final class QuickConverter private (val mlType: String) extends OperationCollect
 
   import scalaz.syntax.id._
 
+  // TODO Make sure this initializes Ops, then init() is never needed.
   val exceptionName: String = mlType
     .map { c => if (c<128 && c.isLetterOrDigit) c else '_' }
     .into { n:String => "E_"+n }
     .into { _ + '_' + Random.alphanumeric.take(12).mkString }
 
+  // Implicit can be used without importing this.converter. Inspired by https://stackoverflow.com/a/64105099/2646248
   implicit object converter extends MLValue.Converter[T] {
     override def mlType: String = QuickConverter.this.mlType
     override def retrieve(value: MLValue[T])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[T] =
@@ -74,17 +76,21 @@ object ExecuteIsar {
   Context.init()
   Theory.init()
 
-  val Header = QuickConverter("Thy_Header.header")
-  implicit val headerConverter = Header.converter.init()
+  object Header extends QuickConverter("Thy_Header.header")
+  Header.init()
+//  implicit val headerConverter = Header.converter.init()
 
-  val RuntimeError = QuickConverter("Runtime.error")
-  implicit val runtimeErrorConverter = RuntimeError.converter.init()
+  object RuntimeError extends QuickConverter("Runtime.error")
+  RuntimeError.init()
+//  implicit val runtimeErrorConverter = RuntimeError.converter.init()
 
-  val ToplevelState = QuickConverter("Toplevel.state")
-  implicit val toplevelStateConverter = ToplevelState.converter.init()
+  object ToplevelState extends QuickConverter("Toplevel.state")
+  ToplevelState.init()
+//  implicit val toplevelStateConverter = ToplevelState.converter.init()
 
-  implicit val Transition = QuickConverter("Toplevel.transition")
-  implicit val transitionConverter = Transition.converter.init()
+  object Transition extends QuickConverter("Toplevel.transition")
+  Transition.init()
+//  implicit val transitionConverter = Transition.converter.init()
 
   val script_thy = compileFunction[String, Theory, Theory]("fn (str,thy) => Thy_Info.script_thy Position.none str thy")
   val begin_theory = compileFunction[String, Header.T, List[Theory], Theory]("fn (path, header, parents) => Resources.begin_theory (Path.explode path) header parents")

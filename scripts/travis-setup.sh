@@ -4,13 +4,12 @@ set -ex
 
 test -n "$ISA"
 
-mkdir -p ~/bin
+mkdir -p ~/install
 if ! [ -e ~/install/sbt ]; then
   curl -Ls https://git.io/sbt > ~/install/sbt
 fi
 chmod +x ~/install/sbt
 
-mkdir -p ~/install
 if ! [ -e /opt/Isabelle$ISA ]; then
   case "$TRAVIS_OS_NAME" in
     linux) curl https://isabelle.in.tum.de/website-Isabelle$ISA/dist/Isabelle${ISA}_linux.tar.gz | tar -x -z -C ~/install;;

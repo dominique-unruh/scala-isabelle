@@ -8,12 +8,15 @@ cache:
   - directories:
     - $HOME/install
     - $HOME/.isabelle
+    - $HOME/.sbt
+    - $HOME/.ivy2
+    - $HOME/.cache/coursier
 
 jobs:
   include:
 #    - {os: osx, env: ISA=2020}
 #    - {os: osx, env: ISA=2019}
-#    - {os: linux, jdk: openjdk11, env: ISA=2020}
-    - {os: linux, jdk: openjdk11, env: ISA=2019}
+    - {os: linux, jdk: openjdk11, env: ISA=2020}
+#    - {os: linux, jdk: openjdk11, env: ISA=2019}
 #    - {os: linux, jdk: openjdk14, env: ISA=2020}
 #    - {os: linux, jdk: openjdk14, env: ISA=2019}
