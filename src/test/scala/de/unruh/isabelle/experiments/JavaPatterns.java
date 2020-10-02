@@ -16,6 +16,7 @@ import scala.Tuple2;
 
 import java.nio.file.Path;
 
+import static de.unruh.javapatterns.Pattern.capture;
 import static de.unruh.javapatterns.Patterns.*;
 import static de.unruh.javapatterns.Match.*;
 import static de.unruh.isabelle.java.patterns.IsabellePatterns.*;
@@ -45,10 +46,10 @@ public class JavaPatterns {
         Tuple2<Tuple2<Integer, Integer>, Tuple2<Integer, Integer>> testValue =
                 new Tuple2<>(new Tuple2<>(99, 2), new Tuple2<>(3, 4));
 
-        Capture<Integer> x = new Capture<>("x");
-        Capture<Integer> y = new Capture<>("y");
-        Capture<Integer> z = new Capture<>("z");
-        Capture<Integer> w = new Capture<>("w");
+        Capture<Integer> x = capture("x"),
+                         y = capture("y"),
+                         z = capture("z"),
+                         w = capture("w");
 
         Integer result = match(testValue,
 
@@ -68,12 +69,12 @@ public class JavaPatterns {
 
     // A function to replace occurrences of X+1 by X (for all X)
     static Term replace(Term term) throws Exception {
-        Capture<Term> x = new Capture<>("x");
-        Capture<Term> t1 = new Capture<>("t1");
-        Capture<Term> t2 = new Capture<>("t2");
-        Capture<String> name = new Capture<>("name");
-        Capture<Typ> typ = new Capture<>("typ");
-        Capture<Term> body = new Capture<>("body");
+        Capture<Term> x = capture("x"),
+                      t1 = capture("t1"),
+                      t2 = capture("t2"),
+                      body = capture("body");
+        Capture<Typ> typ = capture("typ");
+        Capture<String> name = capture("name");
 
 
         return match(term,

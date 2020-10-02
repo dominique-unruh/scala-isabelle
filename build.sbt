@@ -15,8 +15,8 @@ scalaVersion := "2.13.3"
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
-libraryDependencies += "de.unruh" % "java-patterns" % "master-SNAPSHOT"
-resolvers += Resolver.sonatypeRepo("snapshots")
+libraryDependencies += "de.unruh" % "java-patterns" % "0.1.0-RC1"
+//resolvers += Resolver.sonatypeRepo("snapshots")
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.2" % "test"
 // https://mvnrepository.com/artifact/org.log4s/log4s
@@ -33,6 +33,7 @@ libraryDependencies += "org.apache.commons" % "commons-lang3" % "3.11"
 libraryDependencies += "org.apache.commons" % "commons-text" % "1.9"
 // https://mvnrepository.com/artifact/com.google.guava/guava
 libraryDependencies += "com.google.guava" % "guava" % "29.0-jre"
+libraryDependencies += "org.jetbrains" % "annotations" % "20.1.0"
 
 lazy val travisRandomize = taskKey[Unit]("Randomize which test is run on Travis next time")
 travisRandomize := {
