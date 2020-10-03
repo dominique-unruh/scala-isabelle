@@ -19,7 +19,7 @@ import java.nio.file.Path;
 import static de.unruh.javapatterns.Pattern.capture;
 import static de.unruh.javapatterns.Patterns.*;
 import static de.unruh.javapatterns.Match.*;
-import static de.unruh.isabelle.java.patterns.IsabellePatterns.*;
+import static de.unruh.isabelle.java.JPatterns.*;
 import static de.unruh.isabelle.pure.Implicits.contextConverter;
 import static de.unruh.isabelle.pure.Implicits.termConverter;
 import static java.lang.System.out;
