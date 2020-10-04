@@ -15,7 +15,7 @@ scalaVersion := "2.13.3"
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
-libraryDependencies += "de.unruh" % "java-patterns" % "0.1.0-RC1"
+libraryDependencies += "de.unruh" % "java-patterns" % "0.1.0"
 //resolvers += Resolver.sonatypeRepo("snapshots")
 
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.2" % "test"
