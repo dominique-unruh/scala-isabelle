@@ -21,8 +21,8 @@ object UnitConverter extends Converter[Unit] {
     Ops.unitValue
   }
 
-  override val exnToValue: String = "K()"
-  override val valueToExn: String = "K(E_Int 0)"
+  override def exnToValue(implicit isabelle: Isabelle, ec: ExecutionContext): String = "K()"
+  override def valueToExn(implicit isabelle: Isabelle, ec: ExecutionContext): String = "K(E_Int 0)"
 
-  override def mlType: String = "unit"
+  override def mlType(implicit isabelle: Isabelle, ec: ExecutionContext): String = "unit"
 }

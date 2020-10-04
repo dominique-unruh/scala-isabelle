@@ -35,8 +35,8 @@ import Implicits._
       .asInstanceOf[MLValue[(A, B, C)]]
   }
 
-  @inline override def exnToValue: String = s"fn E_Pair (a, E_Pair (b, c)) => ((${converterA.exnToValue}) a, (${converterB.exnToValue}) b, (${converterC.exnToValue}) c)"
-  @inline override def valueToExn: String = s"fn (a,b,c) => E_Pair ((${converterA.valueToExn}) a, E_Pair ((${converterB.valueToExn}) b, (${converterC.valueToExn}) c))"
+  @inline override def exnToValue(implicit isabelle: Isabelle, ec: ExecutionContext): String = s"fn E_Pair (a, E_Pair (b, c)) => ((${converterA.exnToValue}) a, (${converterB.exnToValue}) b, (${converterC.exnToValue}) c)"
+  @inline override def valueToExn(implicit isabelle: Isabelle, ec: ExecutionContext): String = s"fn (a,b,c) => E_Pair ((${converterA.valueToExn}) a, E_Pair ((${converterB.valueToExn}) b, (${converterC.valueToExn}) c))"
 
-  override def mlType: String = s"(${converterA.mlType}) * (${converterB.mlType}) * (${converterC.mlType})"
+  override def mlType(implicit isabelle: Isabelle, ec: ExecutionContext): String = s"(${converterA.mlType}) * (${converterB.mlType}) * (${converterC.mlType})"
 }

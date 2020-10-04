@@ -14,7 +14,7 @@ import scala.concurrent.{ExecutionContext, Future}
  * @see MLValue.Converter for explanations what [[MLValue.Converter Converter]]s are for.
  */
 object DataConverter extends Converter[Isabelle.Data] {
-  override def mlType: String = "data"
+  override def mlType(implicit isabelle: Isabelle, ec: ExecutionContext): String = "data"
 
   override def retrieve(value: MLValue[Isabelle.Data])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Isabelle.Data] =
     Ops.retrieveData(value)
@@ -22,6 +22,6 @@ object DataConverter extends Converter[Isabelle.Data] {
   override def store(value: Isabelle.Data)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[Isabelle.Data] =
     Ops.storeData(value)
 
-  override def exnToValue: String = "fn E_Data data => data"
-  override def valueToExn: String = "E_Data"
+  override def exnToValue(implicit isabelle: Isabelle, ec: ExecutionContext): String = "fn E_Data data => data"
+  override def valueToExn(implicit isabelle: Isabelle, ec: ExecutionContext): String = "E_Data"
 }

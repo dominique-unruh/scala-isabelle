@@ -32,8 +32,8 @@ object LongConverter extends Converter[Long] {
                                (implicit isabelle: Isabelle, ec: ExecutionContext): Future[Long] =
     for (DInt(i) <- Ops.retrieveLong(value)) yield i
 
-  @inline override def exnToValue: String = IntConverter.exnToValue
-  @inline override def valueToExn: String = IntConverter.valueToExn
+  @inline override def exnToValue(implicit isabelle: Isabelle, ec: ExecutionContext): String = IntConverter.exnToValue
+  @inline override def valueToExn(implicit isabelle: Isabelle, ec: ExecutionContext): String = IntConverter.valueToExn
 
-  override def mlType: String = IntConverter.mlType
+  override def mlType(implicit isabelle: Isabelle, ec: ExecutionContext): String = IntConverter.mlType
 }

@@ -38,8 +38,8 @@ import Implicits._
       yield list.toList
   }
 
-  @inline override def exnToValue: String = s"fn E_List list => map (${converter.exnToValue}) list | ${matchFailExn("ListConverter.exnToValue")}"
-  @inline override def valueToExn: String = s"E_List o map (${converter.valueToExn})"
+  @inline override def exnToValue(implicit isabelle: Isabelle, ec: ExecutionContext): String = s"fn E_List list => map (${converter.exnToValue}) list | ${matchFailExn("ListConverter.exnToValue")}"
+  @inline override def valueToExn(implicit isabelle: Isabelle, ec: ExecutionContext): String = s"E_List o map (${converter.valueToExn})"
 
-  override def mlType: String = s"(${converter.mlType}) list"
+  override def mlType(implicit isabelle: Isabelle, ec: ExecutionContext): String = s"(${converter.mlType}) list"
 }

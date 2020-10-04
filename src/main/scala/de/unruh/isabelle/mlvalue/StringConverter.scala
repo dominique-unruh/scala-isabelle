@@ -32,8 +32,8 @@ object StringConverter extends Converter[String] {
     for (DString(str) <- Ops.retrieveString(value))
       yield str
 
-  @inline override def exnToValue: String = s"fn E_String str => str | ${matchFailExn("BooleanConverter.exnToValue")}"
-  @inline override def valueToExn: String = "E_String"
+  @inline override def exnToValue(implicit isabelle: Isabelle, ec: ExecutionContext): String = s"fn E_String str => str | ${matchFailExn("BooleanConverter.exnToValue")}"
+  @inline override def valueToExn(implicit isabelle: Isabelle, ec: ExecutionContext): String = "E_String"
 
-  override def mlType: String = "string"
+  override def mlType(implicit isabelle: Isabelle, ec: ExecutionContext): String = "string"
 }

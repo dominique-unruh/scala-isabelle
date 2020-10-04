@@ -86,9 +86,9 @@ object Context extends OperationCollection {
 
     override def store(value: Context)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[Context] =
       value.mlValue
-    override lazy val exnToValue: String = "fn E_Context ctxt => ctxt"
-    override lazy val valueToExn: String = "E_Context"
+    override def exnToValue(implicit isabelle: Isabelle, ec: ExecutionContext): String = "fn E_Context ctxt => ctxt"
+    override def valueToExn(implicit isabelle: Isabelle, ec: ExecutionContext): String = "E_Context"
 
-    override def mlType: String = "Proof.context"
+    override def mlType(implicit isabelle: Isabelle, ec: ExecutionContext): String = "Proof.context"
   }
 }

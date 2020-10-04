@@ -15,12 +15,10 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.ClassTag
 import scala.util.Random
 
-// Alternative approach: Have the actual converter as a field in this class, pick the type T in this class, copy that type into the converter, and
-// use val Header = new MiniConverter("mltype").converter, and use Header.T as the Header type
-// The header type could even be a retrievable type
-class QuickConverter protected (val mlType: String) extends OperationCollection {
+// TODO: Add to library
+class AdHocConverter protected(val mlType: String) extends OperationCollection {
   val tString = s"‹$mlType›"
-  final class T private[QuickConverter] (val mlValue: MLValue[T]) extends FutureValue {
+  final class T private[AdHocConverter] (val mlValue: MLValue[T]) extends FutureValue {
     override def await: Unit = mlValue.await
     override def someFuture: Future[Any] = mlValue.someFuture
     override def toString: String = tString
@@ -30,32 +28,33 @@ class QuickConverter protected (val mlType: String) extends OperationCollection 
 
   import scalaz.syntax.id._
 
-  // TODO Make sure this initializes Ops, then init() is never needed.
-  val exceptionName: String = mlType
+  private val _exceptionName: String = mlType
     .map { c => if (c<128 && c.isLetterOrDigit) c else '_' }
     .into { n:String => "E_"+n }
     .into { _ + '_' + Random.alphanumeric.take(12).mkString }
 
+  def exceptionName(implicit isabelle: Isabelle, ec: ExecutionContext): String = { init(); _exceptionName }
+
   // Implicit can be used without importing this.converter. Inspired by https://stackoverflow.com/a/64105099/2646248
   implicit object converter extends MLValue.Converter[T] {
-    override def mlType: String = QuickConverter.this.mlType
+    override def mlType(implicit isabelle: Isabelle, ec: ExecutionContext): String = AdHocConverter.this.mlType
     override def retrieve(value: MLValue[T])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[T] =
       Future.successful(new T(value))
     override def store(value: T)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[T] = value.mlValue
-    override def exnToValue: String = s"fn ${exceptionName} x => x"
-    override def valueToExn: String = exceptionName
-    def init()(implicit isabelle: Isabelle, ec: ExecutionContext) : this.type = {
-      QuickConverter.this.init(); this }
+    override def exnToValue(implicit isabelle: Isabelle, ec: ExecutionContext): String = s"fn ${exceptionName} x => x"
+    override def valueToExn(implicit isabelle: Isabelle, ec: ExecutionContext): String = exceptionName
+//    def init()(implicit isabelle: Isabelle, ec: ExecutionContext) : this.type = {
+//      AdHocConverter.this.init(); this }
   }
 
   protected class Ops(implicit isabelle: Isabelle, ec: ExecutionContext) {
-    isabelle.executeMLCodeNow(s"exception $exceptionName of ($mlType)")
+    isabelle.executeMLCodeNow(s"exception ${_exceptionName} of ($mlType)")
   }
 
   override protected def newOps(implicit isabelle: Isabelle, ec: ExecutionContext) = new Ops
 }
-object QuickConverter {
-  def apply(mlType: String): QuickConverter = new QuickConverter(mlType)
+object AdHocConverter {
+  def apply(mlType: String): AdHocConverter = new AdHocConverter(mlType)
 }
 
 
@@ -76,21 +75,10 @@ object ExecuteIsar {
   Context.init()
   Theory.init()
 
-  object Header extends QuickConverter("Thy_Header.header")
-  Header.init()
-//  implicit val headerConverter = Header.converter.init()
-
-  object RuntimeError extends QuickConverter("Runtime.error")
-  RuntimeError.init()
-//  implicit val runtimeErrorConverter = RuntimeError.converter.init()
-
-  object ToplevelState extends QuickConverter("Toplevel.state")
-  ToplevelState.init()
-//  implicit val toplevelStateConverter = ToplevelState.converter.init()
-
-  object Transition extends QuickConverter("Toplevel.transition")
-  Transition.init()
-//  implicit val transitionConverter = Transition.converter.init()
+  object Header extends AdHocConverter("Thy_Header.header")
+  object RuntimeError extends AdHocConverter("Runtime.error")
+  object ToplevelState extends AdHocConverter("Toplevel.state")
+  object Transition extends AdHocConverter("Toplevel.transition")
 
   val script_thy = compileFunction[String, Theory, Theory]("fn (str,thy) => Thy_Info.script_thy Position.none str thy")
   val begin_theory = compileFunction[String, Header.T, List[Theory], Theory]("fn (path, header, parents) => Resources.begin_theory (Path.explode path) header parents")
@@ -139,7 +127,7 @@ val command_exception = compileFunction[Boolean, Transition.T, ToplevelState.T, 
     val headerLine = "theory Test imports Main begin"
     val header = header_read(theoryText).force.retrieveNow
 
-    val thy0 = begin_theory((masterDir.toString), header, List(mainThy)).force.retrieveNow
+    val thy0 = begin_theory(masterDir.toString, header, List(mainThy)).force.retrieveNow
 
     var toplevel = init_toplevel().force.retrieveNow
 

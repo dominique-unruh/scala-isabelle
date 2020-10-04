@@ -293,10 +293,10 @@ object Theory extends OperationCollection {
         yield new Theory(mlValue = value, name="‹theory›")
     override def store(value: Theory)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[Theory] =
       value.mlValue
-    override lazy val exnToValue: String = "fn E_Theory thy => thy"
-    override lazy val valueToExn: String = "E_Theory"
+    override def exnToValue(implicit isabelle: Isabelle, ec: ExecutionContext): String = "fn E_Theory thy => thy"
+    override def valueToExn(implicit isabelle: Isabelle, ec: ExecutionContext): String = "E_Theory"
 
-    override def mlType: String = "theory"
+    override def mlType(implicit isabelle: Isabelle, ec: ExecutionContext): String = "theory"
   }
 
   private val logger = log4s.getLogger

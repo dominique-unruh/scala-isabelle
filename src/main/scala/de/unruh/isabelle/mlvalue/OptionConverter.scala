@@ -34,8 +34,8 @@ import scalaz.Id.Id
       yield option
   }
 
-  @inline override def exnToValue: String = s"fn E_Option x => Option.map (${converter.exnToValue}) x | ${matchFailExn("OptionConverter.exnToValue")}"
-  @inline override def valueToExn: String = s"E_Option o Option.map (${converter.valueToExn})"
+  @inline override def exnToValue(implicit isabelle: Isabelle, ec: ExecutionContext): String = s"fn E_Option x => Option.map (${converter.exnToValue}) x | ${matchFailExn("OptionConverter.exnToValue")}"
+  @inline override def valueToExn(implicit isabelle: Isabelle, ec: ExecutionContext): String = s"E_Option o Option.map (${converter.valueToExn})"
 
-  override def mlType: String = s"(${converter.mlType}) option"
+  override def mlType(implicit isabelle: Isabelle, ec: ExecutionContext): String = s"(${converter.mlType}) option"
 }

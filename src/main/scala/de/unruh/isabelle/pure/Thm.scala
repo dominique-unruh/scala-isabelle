@@ -74,9 +74,9 @@ object Thm extends OperationCollection {
         yield new Thm(mlValue = value)
     override def store(value: Thm)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[Thm] =
       value.mlValue
-    override val exnToValue: String = "fn E_Thm thm => thm"
-    override val valueToExn: String = "E_Thm"
+    override def exnToValue(implicit isabelle: Isabelle, ec: ExecutionContext): String = "fn E_Thm thm => thm"
+    override def valueToExn(implicit isabelle: Isabelle, ec: ExecutionContext): String = "E_Thm"
 
-    override def mlType: String = "thm"
+    override def mlType(implicit isabelle: Isabelle, ec: ExecutionContext): String = "thm"
   }
 }

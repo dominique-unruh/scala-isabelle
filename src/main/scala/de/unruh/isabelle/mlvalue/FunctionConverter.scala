@@ -40,10 +40,10 @@ import scala.concurrent.{ExecutionContext, Future}
   override def store(value: D => R)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[D => R] =
     throw new UnsupportedOperationException("Cannot store a Scala function in the ML process")
 
-  override def exnToValue: String =
+  override def exnToValue(implicit isabelle: Isabelle, ec: ExecutionContext): String =
     s"fn E_Function f => ((${converterR.exnToValue}) o (fn DObject e => e) o f o DObject o (${converterD.valueToExn})) | ${MLValue.matchFailExn("FunctionConverter.exnToValue")}"
-  override def valueToExn: String =
+  override def valueToExn(implicit isabelle: Isabelle, ec: ExecutionContext): String =
     s"fn f => E_Function (DObject o (${converterR.valueToExn}) o f o (${converterD.exnToValue}) o (fn DObject e => e))"
 
-  override def mlType: String = s"(${converterD.mlType}) -> (${converterR.mlType})"
+  override def mlType(implicit isabelle: Isabelle, ec: ExecutionContext): String = s"(${converterD.mlType}) -> (${converterR.mlType})"
 }

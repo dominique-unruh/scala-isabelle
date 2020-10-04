@@ -20,7 +20,7 @@ import scala.concurrent.{ExecutionContext, Future}
  */
 
 object BigIntConverter extends MLValue.Converter[BigInt] {
-  override def mlType: String = IntConverter.mlType
+  override def mlType(implicit isabelle: Isabelle, ec: ExecutionContext): String = IntConverter.mlType
 
   override def retrieve(value: MLValue[BigInt])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[BigInt] =
     for (DString(str) <- Ops.retrieveBigInt(value))
@@ -29,7 +29,7 @@ object BigIntConverter extends MLValue.Converter[BigInt] {
   override def store(value: BigInt)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[BigInt] =
     Ops.storeBigInt(DString(value.toString))
 
-  override def exnToValue: String = IntConverter.exnToValue
+  override def exnToValue(implicit isabelle: Isabelle, ec: ExecutionContext): String = IntConverter.exnToValue
 
-  override def valueToExn: String = IntConverter.valueToExn
+  override def valueToExn(implicit isabelle: Isabelle, ec: ExecutionContext): String = IntConverter.valueToExn
 }

@@ -22,8 +22,8 @@ object BooleanConverter extends Converter[Boolean] {
   override def store(value: Boolean)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[Boolean] =
     if (value) Ops.boolTrue else Ops.boolFalse
 
-  @inline override def exnToValue: String = s"fn E_Bool b => b | ${matchFailExn("BooleanConverter.exnToValue")}"
-  @inline override def valueToExn: String = "E_Bool"
+  @inline override def exnToValue(implicit isabelle: Isabelle, ec: ExecutionContext): String = s"fn E_Bool b => b | ${matchFailExn("BooleanConverter.exnToValue")}"
+  @inline override def valueToExn(implicit isabelle: Isabelle, ec: ExecutionContext): String = "E_Bool"
 
-  override def mlType: String = "bool"
+  override def mlType(implicit isabelle: Isabelle, ec: ExecutionContext): String = "bool"
 }

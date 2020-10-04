@@ -256,10 +256,10 @@ object Ctyp {
     override def retrieve(value: MLValue[Ctyp])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Ctyp] =
       for (_ <- value.id)
         yield new Ctyp(ctypMlValue = value)
-    override lazy val exnToValue: String = "fn (E_Ctyp t) => t"
-    override lazy val valueToExn: String = "E_Ctyp"
+    override def exnToValue(implicit isabelle: Isabelle, ec: ExecutionContext): String = "fn (E_Ctyp t) => t"
+    override def valueToExn(implicit isabelle: Isabelle, ec: ExecutionContext): String = "E_Ctyp"
 
-    override def mlType: String = "ctyp"
+    override def mlType(implicit isabelle: Isabelle, ec: ExecutionContext): String = "ctyp"
   }
 }
 
@@ -454,10 +454,10 @@ object Typ extends OperationCollection {
       Future.successful(new MLValueTyp(mlValue = value))
     override def store(value: Typ)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[Typ] =
       value.mlValue
-    override lazy val exnToValue: String = "fn E_Typ typ => typ"
-    override lazy val valueToExn: String = "E_Typ"
+    override def exnToValue(implicit isabelle: Isabelle, ec: ExecutionContext): String = "fn E_Typ typ => typ"
+    override def valueToExn(implicit isabelle: Isabelle, ec: ExecutionContext): String = "E_Typ"
 
-    override def mlType: String = "typ"
+    override def mlType(implicit isabelle: Isabelle, ec: ExecutionContext): String = "typ"
   }
 }
 

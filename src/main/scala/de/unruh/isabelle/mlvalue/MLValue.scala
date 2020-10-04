@@ -252,7 +252,7 @@ object MLStoreFunction {
    * This method will not invoke `converter.`[[MLValue.Converter.store store]] or
    * `converter.`[[MLValue.Converter.retrieve retrieve]].
    **/
-  def apply[A](ml: String)(implicit isabelle: Isabelle, converter: Converter[A]) : MLStoreFunction[A] =
+  def apply[A](ml: String)(implicit isabelle: Isabelle, ec: ExecutionContext, converter: Converter[A]) : MLStoreFunction[A] =
     new MLStoreFunction(isabelle.storeValue(s"E_Function (DObject o (${converter.valueToExn}) o ($ml))"))
 }
 
@@ -297,7 +297,7 @@ class MLRetrieveFunction[A] private (id: Future[ID]) {
  * `converter.`[[MLValue.Converter.retrieve retrieve]].
  **/
 object MLRetrieveFunction {
-  def apply[A](ml: String)(implicit isabelle: Isabelle, converter: Converter[A]) : MLRetrieveFunction[A] =
+  def apply[A](ml: String)(implicit isabelle: Isabelle, ec: ExecutionContext, converter: Converter[A]) : MLRetrieveFunction[A] =
     new MLRetrieveFunction(isabelle.storeValue(s"E_Function (fn DObject x => ($ml) ((${converter.exnToValue}) x))"))
 }
 
@@ -465,7 +465,7 @@ object MLValue extends OperationCollection {
     * {{{
     * final object IntConverter extends MLValue.Converter[A] {
     *     ...
-    *     override def valueToExn: String = "fn x => E_Int x"  // or equivalently: = "E_Int"
+    *     override def valueToExn(implicit isabelle: Isabelle, ec: ExecutionContext): String = "fn x => E_Int x"  // or equivalently: = "E_Int"
     *     ...
     *   }
     * }}}
@@ -474,7 +474,7 @@ object MLValue extends OperationCollection {
     * {{{
     *   final object IntConverter extends MLValue.Converter[A] {
     *     ...
-    *     override def exnToValue: String = "fn (E_Int x) => x"
+    *     override def exnToValue(implicit isabelle: Isabelle, ec: ExecutionContext): String = "fn (E_Int x) => x"
     *     ...
     *   }
     * }}}
@@ -565,10 +565,8 @@ object MLValue extends OperationCollection {
   abstract class Converter[A] {
     /** Returns the ML type corresponding to `A`.
      *
-     * This function should always return the same value. (It is declared as a `def` only to make sure
-      * Scala does not include an extra field or perform an unnecessary computation in the class when this function
-      * is not used.) */
-    def mlType : String
+     * This function should always return the same value, at least for the same `isabelle`. */
+    def mlType(implicit isabelle: Isabelle, ec: ExecutionContext) : String
     /** Given an [[mlvalue.MLValue]] `value`, retrieves and returns the value referenced by `value` in the Isabelle
      * object store.
      *
@@ -593,10 +591,8 @@ object MLValue extends OperationCollection {
      * It is recommended that this function produces informative match failures in case of invalid inputs.
      * [[de.unruh.isabelle.mlvalue.MLValue.matchFailExn MLValue.matchFailExn]] is a helper function that facilitates this.
      *
-     * This function should always return the same value. (It is declared as a `def` only to make sure
-     * Scala does not include an extra field or perform an unnecessary computation in the class when this function
-     * is not used.) */
-    def exnToValue : String
+     * This function should always return the same value, at least for the same `isabelle`. */
+    def exnToValue(implicit isabelle: Isabelle, ec: ExecutionContext) : String
 
     /** Returns ML code for an (anonymous) function of type `a -> exn` that converts a value
      * into its encoding as an exception.
@@ -604,10 +600,8 @@ object MLValue extends OperationCollection {
      * It is recommended that this function produces informative match failures in case of invalid inputs.
      * [[de.unruh.isabelle.mlvalue.MLValue.matchFailExn MLValue.matchFailExn]] is a helper function that facilitates this.
      *
-     * This function should always return the same value. (It is declared as a `def` only to make sure
-     * Scala does not include an extra field or perform an unnecessary computation in the class when this function
-     * is not used.) */
-    def valueToExn : String
+     * This function should always return the same value, at least for the same `isabelle`. */
+    def valueToExn(implicit isabelle: Isabelle, ec: ExecutionContext) : String
   }
 
   /** Creates an MLValue containing the value `value`.

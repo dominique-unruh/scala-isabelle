@@ -214,10 +214,10 @@ object Cterm {
     override def retrieve(value: MLValue[Cterm])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Cterm] =
       for (_ <- value.id)
         yield new Cterm(ctermMlValue = value)
-    override lazy val exnToValue: String = "fn (E_Cterm t) => t"
-    override lazy val valueToExn: String = "E_Cterm"
+    override def exnToValue(implicit isabelle: Isabelle, ec: ExecutionContext): String = "fn (E_Cterm t) => t"
+    override def valueToExn(implicit isabelle: Isabelle, ec: ExecutionContext): String = "E_Cterm"
 
-    override def mlType: String = "cterm"
+    override def mlType(implicit isabelle: Isabelle, ec: ExecutionContext): String = "cterm"
   }
 }
 
@@ -584,9 +584,9 @@ object Term extends OperationCollection {
     override def retrieve(value: MLValue[Term])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Term] =
       for (_ <- value.id)
         yield new MLValueTerm(mlValue = value)
-    override lazy val exnToValue: String = "fn (E_Term t) => t"
-    override lazy val valueToExn: String = "E_Term"
+    override def exnToValue(implicit isabelle: Isabelle, ec: ExecutionContext): String = "fn (E_Term t) => t"
+    override def valueToExn(implicit isabelle: Isabelle, ec: ExecutionContext): String = "E_Term"
 
-    override def mlType: String = "term"
+    override def mlType(implicit isabelle: Isabelle, ec: ExecutionContext): String = "term"
   }
 }

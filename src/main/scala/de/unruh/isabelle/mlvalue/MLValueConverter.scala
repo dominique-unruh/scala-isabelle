@@ -38,8 +38,8 @@ import scala.concurrent.{ExecutionContext, Future}
   override def store(value: MLValue[A])(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[MLValue[A]] =
     value.insertMLValue[Id, A]
 
-  @inline override def exnToValue: String = "fn x => x"
-  @inline override def valueToExn: String = "fn x => x"
+  @inline override def exnToValue(implicit isabelle: Isabelle, ec: ExecutionContext): String = "fn x => x"
+  @inline override def valueToExn(implicit isabelle: Isabelle, ec: ExecutionContext): String = "fn x => x"
 
-  override def mlType: String = "exn"
+  override def mlType(implicit isabelle: Isabelle, ec: ExecutionContext): String = "exn"
 }
