@@ -2,13 +2,21 @@ package de.unruh.isabelle;
 
 import de.unruh.isabelle.control.Isabelle;
 import de.unruh.isabelle.java.JIsabelle;
+import de.unruh.isabelle.java.JPatterns;
 import de.unruh.isabelle.mlvalue.MLFunction2;
 import de.unruh.isabelle.mlvalue.MLValue;
 import de.unruh.isabelle.pure.*;
+import de.unruh.javapatterns.Capture;
+import de.unruh.javapatterns.MatchException;
 import scala.concurrent.ExecutionContext;
 
 import java.nio.file.Path;
 
+import static de.unruh.isabelle.java.JPatterns.*;
+import static de.unruh.javapatterns.Match.match;
+import static de.unruh.javapatterns.Pattern.capture;
+import static de.unruh.javapatterns.Patterns.Any;
+import static de.unruh.javapatterns.Patterns.Is;
 import static java.lang.System.out;
 import static de.unruh.isabelle.pure.Implicits.*;
 import static de.unruh.isabelle.mlvalue.Implicits.*;
@@ -71,6 +79,39 @@ public class JavaExample {
         // case _ => term
         return term;
     }
+
+    // A function to replace occurrences of X+1 by X (for all X)
+    Term replace2(Term term) {
+        Capture<Term> x = capture("x");
+        Capture<Term> t1 = capture("t1");
+        Capture<Term> t2 = capture("t2");
+        Capture<String> name = capture("name");
+        Capture<Typ> typ = capture("typ");
+        Capture<Term> body = capture("body");
+
+        try {
+            return match(term,
+
+                    App(App(Const(Is("Groups.plus_class.plus"), Any), x),
+                            Const(Is("Groups.zero_class.zero"), Any)),
+                    () -> replace2(x.v()),
+
+                    Abs(name, typ, body),
+                    () -> Abs.apply(name.v(), typ.v(), replace2(body.v()),
+                            isabelle, global()),
+
+                    App(t1, t2),
+                    () -> App.apply(replace2(t1.v()), replace2(t2.v()),
+                            isabelle, global()),
+
+                    Any,
+                    () -> term);
+        } catch (MatchException e) {
+            // Cannot happen
+            throw new AssertionError("Unreachable code reached");
+        }
+    }
+
 
     public static void main(String[] args) {
         new JavaExample().runExample(args[0]);
