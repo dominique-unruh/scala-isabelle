@@ -1,6 +1,7 @@
 package de.unruh.isabelle.mlvalue
 
 import de.unruh.isabelle.control.{Isabelle, OperationCollection}
+import de.unruh.isabelle.misc.Utils
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Random
@@ -17,10 +18,8 @@ abstract class AdHocConverter protected(val mlType: String) extends OperationCol
 
   import scalaz.syntax.id._
 
-  private val _exceptionName: String = mlType
-    .map { c => if (c < 128 && c.isLetterOrDigit) c else '_' }
-    .into { n: String => "E_" + n }
-    .into { _ + '_' + Random.alphanumeric.take(12).mkString }
+  // TODO: Use Utils.randomName
+  private val _exceptionName: String = Utils.freshName("E_" + mlType)
 
   def exceptionName(implicit isabelle: Isabelle, ec: ExecutionContext): String = {
     init(); _exceptionName }

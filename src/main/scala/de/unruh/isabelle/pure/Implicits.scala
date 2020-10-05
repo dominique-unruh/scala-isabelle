@@ -24,4 +24,7 @@ object Implicits {
   implicit val thmConverter: ThmConverter.type = ThmConverter
   implicit val typConverter: TypConverter.type = TypConverter
   implicit val ctypConverter: CtypConverter.type = CtypConverter
+  implicit val theoryHeaderConverter : TheoryHeader.converter.type = TheoryHeader.converter
+  implicit val positionConverter : Position.converter.type = Position.converter
+  implicit val keywordsConverter : Keywords.converter.type = Keywords.converter
 }

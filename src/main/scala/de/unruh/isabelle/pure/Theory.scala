@@ -130,6 +130,7 @@ final class Theory private [Theory](val name: String, val mlValue : MLValue[Theo
   /** Like [[importMLStructureNow]] but returns a future containing the name of the imported structure without delay. */
   def importMLStructure(name: String)(implicit isabelle: Isabelle, executionContext: ExecutionContext) : Future[String] = {
     import scalaz.syntax.id._
+    // TODO: Use Utils.randomName
     val newName = name
       .map { c => if (c<128 && c.isLetterOrDigit) c else '_' }
       .into { n:String => if (n.head.isLetter) n else "X"+n }

@@ -4,3 +4,4 @@
 /target
 *~
 /src/test/isabelle/Scratch.thy
+/src/test/isabelle/#Scratch.thy#

@@ -1,30 +1,28 @@
 package de.unruh.isabelle.experiments
 
-import de.unruh.isabelle.control.{Isabelle, IsabelleException, OperationCollection}
-import de.unruh.isabelle.control.IsabelleTest.isabelle
-import de.unruh.isabelle.experiments
 import de.unruh.isabelle.experiments.ExecuteIsar._
 import de.unruh.isabelle.experiments.ScalaTransition.Info
-import de.unruh.isabelle.mlvalue.{AdHocConverter, FutureValue, MLValue}
-import de.unruh.isabelle.pure.{Context, Theory, Thm}
-import de.unruh.isabelle.pure.Implicits._
-import de.unruh.isabelle.mlvalue.Implicits._
+import de.unruh.isabelle.mlvalue.AdHocConverter
 import de.unruh.isabelle.mlvalue.MLValue.{compileFunction, compileFunction0, compileValue}
+import de.unruh.isabelle.pure.{Context, Theory, TheoryHeader, Thm}
 
-import scala.concurrent.{ExecutionContext, Future}
-import scala.reflect.ClassTag
-import scala.util.Random
 import scala.reflect.runtime.currentMirror
 import scala.tools.reflect.ToolBox
+
+// Implicits
+import de.unruh.isabelle.control.IsabelleTest.isabelle
+import de.unruh.isabelle.mlvalue.Implicits._
+import de.unruh.isabelle.pure.Implicits._
+
 import scala.concurrent.ExecutionContext.Implicits.global
 
-object Header extends AdHocConverter("Thy_Header.header")
 object RuntimeError extends AdHocConverter("Runtime.error")
 object ToplevelState extends AdHocConverter("Toplevel.state")
 object ProofState extends AdHocConverter("Proof.state")
 object Transition extends AdHocConverter("Toplevel.transition")
 object Tactic extends AdHocConverter("tactic")
 object MethodText extends AdHocConverter("Method.text")
+
 
 abstract class ScalaTransition {
   def apply(state: ToplevelState.T, info: Info) : ToplevelState.T
@@ -57,7 +55,10 @@ object TestTransition extends ScalaTransition {
 
 //noinspection TypeAnnotation
 object ExecuteIsar {
+  val theoryManager = new TheoryManager
+
   val masterDir = isabelle.setup.workingDirectory
+//  val masterDir = Paths.get("/tmp/fsdfasdfasdofji/sdfasdf")
   val theoryText =
     """theory Test imports Main begin
       |(* PREAMBLE: import de.unruh.isabelle.experiments._ *)
@@ -73,8 +74,7 @@ object ExecuteIsar {
 
 
   val script_thy = compileFunction[String, Theory, Theory]("fn (str,thy) => Thy_Info.script_thy Position.none str thy")
-  val begin_theory = compileFunction[String, Header.T, List[Theory], Theory]("fn (path, header, parents) => Resources.begin_theory (Path.explode path) header parents")
-  val header_read = compileFunction[String, Header.T]("Thy_Header.read Position.none")
+  val begin_theory = compileFunction[String, TheoryHeader, List[Theory], Theory]("fn (path, header, parents) => Resources.begin_theory (Path.explode path) header parents")
   val init_toplevel = compileFunction0[ToplevelState.T]("Toplevel.init_toplevel")
   val is_proof = compileFunction[ToplevelState.T, Boolean]("Toplevel.is_proof")
   val proof_of = compileFunction[ToplevelState.T, ProofState.T]("Toplevel.proof_of")
@@ -113,11 +113,11 @@ object ExecuteIsar {
   val toolbox = currentMirror.mkToolBox()
 
   def main(args: Array[String]): Unit = {
-    val mainThy = Theory("Main")
+//    val mainThy = Theory("Main")
 
-    val header = header_read(theoryText).force.retrieveNow
-
-    val thy0 = begin_theory(masterDir.toString, header, List(mainThy)).force.retrieveNow
+    val thySource = TheoryManager.Text(theoryText)
+    val header = TheoryManager.getHeader(thySource)
+    val thy0 = begin_theory(masterDir.toString, header, header.imports.map(theoryManager.getTheory)).retrieveNow.force
 
     var toplevel = init_toplevel().force.retrieveNow
     val preamble = new StringBuilder()
