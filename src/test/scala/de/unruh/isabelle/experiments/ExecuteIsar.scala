@@ -1,10 +1,12 @@
 package de.unruh.isabelle.experiments
 
+import java.nio.file.Path
+
 import de.unruh.isabelle.experiments.ExecuteIsar._
 import de.unruh.isabelle.experiments.ScalaTransition.Info
 import de.unruh.isabelle.mlvalue.AdHocConverter
 import de.unruh.isabelle.mlvalue.MLValue.{compileFunction, compileFunction0, compileValue}
-import de.unruh.isabelle.pure.{Context, Theory, TheoryHeader, Thm}
+import de.unruh.isabelle.pure.{Context, Theory, TheoryHeader, Thm, ToplevelState}
 
 import scala.reflect.runtime.currentMirror
 import scala.tools.reflect.ToolBox
@@ -17,7 +19,7 @@ import de.unruh.isabelle.pure.Implicits._
 import scala.concurrent.ExecutionContext.Implicits.global
 
 object RuntimeError extends AdHocConverter("Runtime.error")
-object ToplevelState extends AdHocConverter("Toplevel.state")
+//object ToplevelState extends AdHocConverter("Toplevel.state")
 object ProofState extends AdHocConverter("Proof.state")
 object Transition extends AdHocConverter("Toplevel.transition")
 object Tactic extends AdHocConverter("tactic")
@@ -25,14 +27,15 @@ object MethodText extends AdHocConverter("Method.text")
 
 
 abstract class ScalaTransition {
-  def apply(state: ToplevelState.T, info: Info) : ToplevelState.T
+  def apply(state: ToplevelState, info: Info) : ToplevelState
 }
+
 object ScalaTransition {
   final case class Info()
 }
 
 object TestTransition extends ScalaTransition {
-  override def apply(state: ToplevelState.T, info: Info): ToplevelState.T = {
+  override def apply(state: ToplevelState, info: Info): ToplevelState = {
     println(toplevel_string_of_state(state).retrieveNow)
     assert(is_proof(state).retrieveNow)
     val proof = proof_of(state).retrieveNow.force
@@ -45,7 +48,7 @@ object TestTransition extends ScalaTransition {
 
     val newProof = apply_method(simp_method, proof).retrieveNow.force
     val update_proof =
-      compileFunction[ProofState.T, ToplevelState.T, ToplevelState.T](
+      compileFunction[ProofState.T, ToplevelState, ToplevelState](
         "fn (proof, st) => Toplevel.command_exception false (Toplevel.proof (K proof) Toplevel.empty) st")
     val newState = update_proof(newProof, state).force.retrieveNow
     println(toplevel_string_of_state(newState).retrieveNow)
@@ -57,9 +60,9 @@ object TestTransition extends ScalaTransition {
 object ExecuteIsar {
   val theoryManager = new TheoryManager
 
-  val masterDir = isabelle.setup.workingDirectory
-//  val masterDir = Paths.get("/tmp/fsdfasdfasdofji/sdfasdf")
-  val theoryText =
+  //  val masterDir = isabelle.setup.workingDirectory
+  //  val masterDir = Paths.get("/tmp/fsdfasdfasdofji/sdfasdf")
+  val theorySource = TheoryManager.Text(
     """theory Test imports Main begin
       |(* PREAMBLE: import de.unruh.isabelle.experiments._ *)
       |lemma test: "1+1=(2::nat)"
@@ -67,24 +70,23 @@ object ExecuteIsar {
       |  by -
       |
       |end
-      |""".stripMargin
+      |""".stripMargin,
+    isabelle.setup.workingDirectory.resolve("Test.thy"))
 
   Context.init()
   Theory.init()
 
-
   val script_thy = compileFunction[String, Theory, Theory]("fn (str,thy) => Thy_Info.script_thy Position.none str thy")
-  val begin_theory = compileFunction[String, TheoryHeader, List[Theory], Theory]("fn (path, header, parents) => Resources.begin_theory (Path.explode path) header parents")
-  val init_toplevel = compileFunction0[ToplevelState.T]("Toplevel.init_toplevel")
-  val is_proof = compileFunction[ToplevelState.T, Boolean]("Toplevel.is_proof")
-  val proof_of = compileFunction[ToplevelState.T, ProofState.T]("Toplevel.proof_of")
-  val command_exception = compileFunction[Boolean, Transition.T, ToplevelState.T, ToplevelState.T](
+  val init_toplevel = compileFunction0[ToplevelState]("Toplevel.init_toplevel")
+  val is_proof = compileFunction[ToplevelState, Boolean]("Toplevel.is_proof")
+  val proof_of = compileFunction[ToplevelState, ProofState.T]("Toplevel.proof_of")
+  val command_exception = compileFunction[Boolean, Transition.T, ToplevelState, ToplevelState](
     "fn (int, tr, st) => Toplevel.command_exception int tr st")
-  val command_errors = compileFunction[Boolean, Transition.T, ToplevelState.T, (List[RuntimeError.T], Option[ToplevelState.T])](
+  val command_errors = compileFunction[Boolean, Transition.T, ToplevelState, (List[RuntimeError.T], Option[ToplevelState])](
     "fn (int, tr, st) => Toplevel.command_errors int tr st")
-  val toplevel_end_theory = compileFunction[ToplevelState.T, Theory]("Toplevel.end_theory Position.none")
-  val theory_of_state = compileFunction[ToplevelState.T, Theory]("Toplevel.theory_of")
-  val context_of_state = compileFunction[ToplevelState.T, Context]("Toplevel.context_of")
+  val toplevel_end_theory = compileFunction[ToplevelState, Theory]("Toplevel.end_theory Position.none")
+  val theory_of_state = compileFunction[ToplevelState, Theory]("Toplevel.theory_of")
+  val context_of_state = compileFunction[ToplevelState, Context]("Toplevel.context_of")
 
   val parse_text = compileFunction[Theory, String, List[(Transition.T, String)]](
     """fn (thy, text) => let
@@ -97,13 +99,13 @@ object ExecuteIsar {
       |        in (tr, implode this) :: addtext rest (nextTr::trs) end
       |  in addtext (Symbol.explode text) transitions end""".stripMargin)
 
-  val applyTransitions = compileFunction[Theory, Boolean, String, ToplevelState.T, ToplevelState.T](
+  val applyTransitions = compileFunction[Theory, Boolean, String, ToplevelState, ToplevelState](
     "fn (thy, int, text, state) => fold (Toplevel.command_exception true) (Outer_Syntax.parse_text thy (K thy) Position.none text) state")
 
   val theoryName = compileFunction[Boolean, Theory, String](
     "fn (long, thy) => Context.theory_name' {long=long} thy")
 
-  val toplevel_string_of_state = compileFunction[ToplevelState.T, String]("Toplevel.string_of_state")
+  val toplevel_string_of_state = compileFunction[ToplevelState, String]("Toplevel.string_of_state")
 
   def printTheoryInfo(thy: Theory): Unit = {
     val name = theoryName(true, thy).retrieveNow
@@ -115,13 +117,14 @@ object ExecuteIsar {
   def main(args: Array[String]): Unit = {
 //    val mainThy = Theory("Main")
 
-    val thySource = TheoryManager.Text(theoryText)
-    val header = TheoryManager.getHeader(thySource)
-    val thy0 = begin_theory(masterDir.toString, header, header.imports.map(theoryManager.getTheory)).retrieveNow.force
+//    val thySource = TheoryManager.Text(theoryText, masterDir.resolve("Test.thy"))
+//    val header = TheoryManager.getHeader(thySource)
+//    val thy0 = begin_theory(masterDir, header, header.imports.map(theoryManager.getTheory)).retrieveNow.force
+    val thy0 = theoryManager.beginTheory(theorySource)
 
     var toplevel = init_toplevel().force.retrieveNow
     val preamble = new StringBuilder()
-    for ((transition, text) <- parse_text(thy0, theoryText).force.retrieveNow) {
+    for ((transition, text) <- parse_text(thy0, theorySource.text).force.retrieveNow) {
       println(s"Transition: $text")
       val ScalaComment = """\s*\(\*\s*SCALA:\s*(.*)\s*\*\)\s*""".r
       val PreambleComment = """\s*\(\*\s*PREAMBLE:\s*(.*)\s*\*\)\s*""".r

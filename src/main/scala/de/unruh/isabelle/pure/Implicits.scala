@@ -27,4 +27,6 @@ object Implicits {
   implicit val theoryHeaderConverter : TheoryHeader.converter.type = TheoryHeader.converter
   implicit val positionConverter : Position.converter.type = Position.converter
   implicit val keywordsConverter : Keywords.converter.type = Keywords.converter
+  implicit val toplevelStateConverter : ToplevelState.converter.type = ToplevelState.converter
+  implicit val pathConverter: PathConverter.type = PathConverter
 }
