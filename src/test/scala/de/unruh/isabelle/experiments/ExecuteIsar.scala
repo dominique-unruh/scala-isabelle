@@ -1,13 +1,16 @@
 package de.unruh.isabelle.experiments
 
-import java.nio.file.Path
+import java.nio.file.{Files, Path}
 
+import de.unruh.isabelle.control.Isabelle
+import de.unruh.isabelle.control.IsabelleTest.isabelleHome
 import de.unruh.isabelle.experiments.ExecuteIsar._
 import de.unruh.isabelle.experiments.ScalaTransition.Info
 import de.unruh.isabelle.mlvalue.AdHocConverter
 import de.unruh.isabelle.mlvalue.MLValue.{compileFunction, compileFunction0, compileValue}
 import de.unruh.isabelle.pure.{Context, Theory, TheoryHeader, Thm, ToplevelState}
 
+import scala.concurrent.ExecutionContext
 import scala.reflect.runtime.currentMirror
 import scala.tools.reflect.ToolBox
 
@@ -58,15 +61,32 @@ object TestTransition extends ScalaTransition {
 
 //noinspection TypeAnnotation
 object ExecuteIsar {
-  val theoryManager = new TheoryManager
+  val theoryManager = new TheoryManager {
+    override def getTheorySource(name: String): TheoryManager.Source = name match {
+      case "ScalaKeywords" =>
+        val path = isabelle.setup.workingDirectory.resolve("ScalaKeywords.thy")
+        val text = Files.readString(path)
+        TheoryManager.Text(text, path)
+      case _ =>
+        super.getTheorySource(name)
+    }
+    override def getHeader(source: TheoryManager.Source)(implicit isabelle: Isabelle, ec: ExecutionContext): TheoryHeader = {
+      val global = null
+      val header = super.getHeader(source)
+//      addScalaKeyword(header).retrieveNow
+      header
+    }
+  }
+
+  Theory.registerSessionDirectoriesNow("Draft" -> isabelle.setup.workingDirectory)
 
   //  val masterDir = isabelle.setup.workingDirectory
   //  val masterDir = Paths.get("/tmp/fsdfasdfasdofji/sdfasdf")
   val theorySource = TheoryManager.Text(
-    """theory Test imports Main begin
-      |(* PREAMBLE: import de.unruh.isabelle.experiments._ *)
+    """theory Test imports ScalaKeywords Main begin
+      |preamble "import de.unruh.isabelle.experiments._"
       |lemma test: "1+1=(2::nat)"
-      |  (* SCALA: TestTransition *)
+      |  scala TestTransition
       |  by -
       |
       |end
@@ -76,6 +96,8 @@ object ExecuteIsar {
   Context.init()
   Theory.init()
 
+  val addScalaKeyword = compileFunction[TheoryHeader, TheoryHeader](
+    """fn {name,imports,keywords} => {name=name,imports=imports,keywords=(("scala", Position.none), (("diag", []), []))::(("preamble", Position.none), (("diag", []), []))::keywords}""")
   val script_thy = compileFunction[String, Theory, Theory]("fn (str,thy) => Thy_Info.script_thy Position.none str thy")
   val init_toplevel = compileFunction0[ToplevelState]("Toplevel.init_toplevel")
   val is_proof = compileFunction[ToplevelState, Boolean]("Toplevel.is_proof")
@@ -87,6 +109,7 @@ object ExecuteIsar {
   val toplevel_end_theory = compileFunction[ToplevelState, Theory]("Toplevel.end_theory Position.none")
   val theory_of_state = compileFunction[ToplevelState, Theory]("Toplevel.theory_of")
   val context_of_state = compileFunction[ToplevelState, Context]("Toplevel.context_of")
+  val name_of_transition = compileFunction[Transition.T, String]("Toplevel.name_of")
 
   val parse_text = compileFunction[Theory, String, List[(Transition.T, String)]](
     """fn (thy, text) => let
@@ -125,22 +148,28 @@ object ExecuteIsar {
     var toplevel = init_toplevel().force.retrieveNow
     val preamble = new StringBuilder()
     for ((transition, text) <- parse_text(thy0, theorySource.text).force.retrieveNow) {
-      println(s"Transition: $text")
-      val ScalaComment = """\s*\(\*\s*SCALA:\s*(.*)\s*\*\)\s*""".r
-      val PreambleComment = """\s*\(\*\s*PREAMBLE:\s*(.*)\s*\*\)\s*""".r
-      text match {
-        case PreambleComment(scala) =>
-          preamble.append(scala).append('\n')
-        case ScalaComment(scala) =>
-          println("Scala: " + scala)
-          val scala2 = s"$preamble\n{ {\n$scala\n} : _root_.de.unruh.isabelle.experiments.ScalaTransition }"
-          println("Scala: " + scala2)
-          val transition = toolbox.eval(toolbox.parse(scala2)).asInstanceOf[ScalaTransition]
-          val info = ScalaTransition.Info()
-          toplevel = transition(toplevel, info)
-        case _ =>
-          toplevel = command_exception(true, transition, toplevel).retrieveNow.force
-      }
+      println(s"Transition: $text, ${name_of_transition(transition).retrieveNow}")
+//      val ScalaComment = """\s*\(\*\s*SCALA:\s*(.*)\s*\*\)\s*""".r
+//      val PreambleComment = """\s*\(\*\s*PREAMBLE:\s*(.*)\s*\*\)\s*""".r
+      if (text.startsWith("preamble")) {
+        val text1 = text.stripPrefix("preamble").strip()
+        val text2 =
+          if (text1.startsWith("\"") && text1.endsWith("\"")) text1.stripPrefix("\"").stripSuffix("\"")
+          else text1
+        preamble.append(text2).append('\n')
+      } else if (text.startsWith("scala")) {
+        val text1 = text.stripPrefix("scala").strip()
+        val scala =
+          if (text1.startsWith("\"") && text1.endsWith("\"")) text1.stripPrefix("\"").stripSuffix("\"")
+          else text1
+        println("Scala: " + scala)
+        val scala2 = s"$preamble\n{ {\n$scala\n} : _root_.de.unruh.isabelle.experiments.ScalaTransition }"
+        println("Scala: " + scala2)
+        val transition = toolbox.eval(toolbox.parse(scala2)).asInstanceOf[ScalaTransition]
+        val info = ScalaTransition.Info()
+        toplevel = transition(toplevel, info)
+      } else
+        toplevel = command_exception(true, transition, toplevel).retrieveNow.force
     }
 
     val finalThy = toplevel_end_theory(toplevel).retrieveNow.force
