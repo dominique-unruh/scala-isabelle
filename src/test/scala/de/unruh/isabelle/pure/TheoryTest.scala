@@ -3,6 +3,7 @@ package de.unruh.isabelle.pure
 import java.nio.file.{Files, Path, Paths}
 
 import de.unruh.isabelle.control.IsabelleException
+import de.unruh.isabelle.control.IsabelleTest.setup
 import de.unruh.isabelle.mlvalue.MLValue
 import org.scalatest.funsuite.AnyFunSuite
 
@@ -31,7 +32,7 @@ class TheoryTest extends AnyFunSuite {
   }
 
   test("load theory outside heap") {
-    Theory.registerSessionDirectoriesNow("HOL-Library" -> isabelle.setup.isabelleHome.resolve("src/HOL/Library"))
+    Theory.registerSessionDirectoriesNow("HOL-Library" -> setup.isabelleHome.resolve("src/HOL/Library"))
     Theory("HOL-Library.BigO").force
   }
 
@@ -41,18 +42,18 @@ class TheoryTest extends AnyFunSuite {
 
   test("load theory by path") {
     val thyPath = Paths.get("Empty.thy")
-    assert(Files.exists(isabelle.setup.workingDirectory.resolve(thyPath)))
+    assert(Files.exists(setup.workingDirectory.resolve(thyPath)))
     Theory(thyPath).force
   }
 
   test("load theory by path, nested") {
     val thyPath = Paths.get("Subdir/B.thy")
-    assert(Files.exists(isabelle.setup.workingDirectory.resolve(thyPath)))
+    assert(Files.exists(setup.workingDirectory.resolve(thyPath)))
     Theory(thyPath).force
   }
 
   test("registerSessionDirectories loaded session") {
-    Theory.registerSessionDirectoriesNow("HOL" -> isabelle.setup.isabelleHome.resolve("src/HOL"))
+    Theory.registerSessionDirectoriesNow("HOL" -> setup.isabelleHome.resolve("src/HOL"))
     Theory("HOL.Filter").force
   }
 

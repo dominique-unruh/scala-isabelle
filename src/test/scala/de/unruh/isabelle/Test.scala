@@ -11,6 +11,7 @@ import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import MLValue.{compileFunction, compileValue}
+import de.unruh.isabelle.control.IsabelleTest.setup
 
 import scala.collection.JavaConverters.asScalaIteratorConverter
 
@@ -40,7 +41,7 @@ class Test extends AnyFunSuite {
     def thyName(thy: Theory) = theoryName(thy).retrieveNow
     def printThyName(thy: Theory): Unit = println(thyName(thy))
 
-    Theory.registerSessionDirectoriesNow("HOL-Library" -> isabelle.setup.isabelleHome.resolve("src/HOL/Library"))
+    Theory.registerSessionDirectoriesNow("HOL-Library" -> setup.isabelleHome.resolve("src/HOL/Library"))
 
     println(MLValue.compileValue[Option[String]]("Resources.find_theory_file \"HOL-Library.AList\" |> Option.map Path.implode").retrieveNow)
 

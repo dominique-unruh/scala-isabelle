@@ -249,7 +249,7 @@ class Isabelle(val setup: Setup, build: Boolean = true) {
    * This function is not portable.
    * To make the library run with Windows (and maybe OS/X), this function needs to be rewritten.
    * */
-  private def startProcess() : java.lang.Process = {
+  private def startProcessSlave(setup: SetupSlave) : java.lang.Process = {
     def wd = setup.workingDirectory
     /** Path to absolute string, interpreted relative to wd */
     def str(path: Path) = wd.resolve(path).toAbsolutePath.toString
@@ -325,8 +325,33 @@ class Isabelle(val setup: Setup, build: Boolean = true) {
     }
   }
 
-  if (build) buildSession(setup)
-  private val process: lang.Process = startProcess()
+  private def startProcessRunning(setup: SetupRunning) : java.lang.Process = {
+    val inputPipe = setup.inputPipe
+    val outputPipe = setup.inputPipe
+
+    if (!Files.exists(inputPipe))
+      throw IsabelleProtocolException(s"Input pipe $inputPipe does not exist")
+    if (!Files.exists(outputPipe))
+      throw IsabelleProtocolException(s"Output pipe $outputPipe does not exist")
+
+    val processQueueThread = new Thread("Send to Isabelle") {
+      override def run(): Unit = processQueue(inputPipe) }
+    processQueueThread.setDaemon(true)
+    processQueueThread.start()
+
+    val parseIsabelleThread = new Thread("Read from Isabelle") {
+      override def run(): Unit = parseIsabelle(outputPipe) }
+    parseIsabelleThread.setDaemon(true)
+    parseIsabelleThread.start()
+
+    return null; // No process
+  }
+
+  if (build && setup.isInstanceOf[SetupSlave]) buildSession(setup.asInstanceOf[SetupSlave])
+  private val process: lang.Process = setup match {
+    case setup : SetupSlave => startProcessSlave(setup)
+    case setup : SetupRunning => startProcessRunning(setup)
+  }
 
   /** Returns whether the Isabelle process has been destroyed (via [[destroy]]) */
   def isDestroyed: Boolean = destroyed != null
@@ -536,6 +561,8 @@ object Isabelle {
     def run(): Unit = isabelle.garbageQueue.add(id)
   }
 
+  sealed trait Setup
+
   /** Configuration for initializing an [[Isabelle]] instance.
     *
     * (The fields of this class are documents in the source code. I am not sure why they do not occur in the
@@ -554,12 +581,14 @@ object Isabelle {
     *                Here Isabelle stores user configuration and heap images (unless
     *                the location of the heap images is configured differently, see the Isabelle system manual)
     */
-  case class Setup(isabelleHome : Path,
-                   logic : String = "HOL",
-                   userDir : Option[Path] = None,
-                   workingDirectory : Path = Paths.get(""),
-                   sessionRoots : Seq[Path] = Nil)
+  case class SetupSlave(isabelleHome : Path,
+                        logic : String = "HOL",
+                        userDir : Option[Path] = None,
+                        workingDirectory : Path = Paths.get(""),
+                        sessionRoots : Seq[Path] = Nil) extends Setup
 
+  // DOCUMENT
+  case class SetupRunning(inputPipe : Path, outputPipe : Path) extends Setup
 
   //noinspection UnstableApiUsage
   private val buildLocks = Striped.lazyWeakReadWriteLock(10)
@@ -570,7 +599,7 @@ object Isabelle {
     *
     * @param setup Configuration of Isabelle.
     */
-  def buildSession(setup: Setup) : Unit = {
+  def buildSession(setup: SetupSlave) : Unit = {
     def wd = setup.workingDirectory
     /** Path to absolute string, interpreted relative to wd */
     def str(path: Path) = wd.resolve(path).toAbsolutePath.toString
@@ -611,7 +640,7 @@ object Isabelle {
     * @param files Files to open in jEdit
     * @throws IsabelleJEditException if jEdit fails (returns return code ≠0)
     */
-  def jedit(setup: Setup, files: Seq[Path]) : Unit = {
+  def jedit(setup: SetupSlave, files: Seq[Path]) : Unit = {
     def wd = setup.workingDirectory
     /** Path to absolute string, interpreted relative to wd */
     def str(path: Path) = wd.resolve(path).toAbsolutePath.toString

@@ -4,7 +4,7 @@ import java.nio.file.{Files, Path}
 
 import de.unruh.isabelle.control.Isabelle
 import de.unruh.isabelle.control.Isabelle.{DInt, DList, DString}
-import de.unruh.isabelle.control.IsabelleTest.isabelleHome
+import de.unruh.isabelle.control.IsabelleTest.{isabelleHome, setup}
 import de.unruh.isabelle.experiments.ExecuteIsar.ScalaCommand.{Code, Empty, Preamble}
 import de.unruh.isabelle.experiments.ExecuteIsar._
 import de.unruh.isabelle.experiments.ScalaTransition.Info
@@ -81,7 +81,7 @@ object ExecuteIsar {
     }
   }
 
-  Theory.registerSessionDirectoriesNow("ScalaKeywords" -> isabelle.setup.workingDirectory)
+  Theory.registerSessionDirectoriesNow("ScalaKeywords" -> setup.workingDirectory)
 
   //  val masterDir = isabelle.setup.workingDirectory
   //  val masterDir = Paths.get("/tmp/fsdfasdfasdofji/sdfasdf")
@@ -94,7 +94,7 @@ object ExecuteIsar {
       |
       |end
       |""".stripMargin,
-    isabelle.setup.workingDirectory.resolve("Test.thy"))
+    setup.workingDirectory.resolve("Test.thy"))
 
   Context.init()
   Theory.init()

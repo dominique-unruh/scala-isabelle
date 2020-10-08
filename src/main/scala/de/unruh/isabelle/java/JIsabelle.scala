@@ -16,5 +16,5 @@ object JIsabelle {
   /** Invokes [[control.Isabelle.Setup Isabelle.Setup]]`(isabelleHome=isabelleHome)`. All other arguments to
    * [[control.Isabelle.Setup Isabelle.Setup]] take default values.
    **/
-  def setup(isabelleHome: Path): Isabelle.Setup = Isabelle.Setup(isabelleHome = isabelleHome)
+  def setup(isabelleHome: Path): Isabelle.Setup = Isabelle.SetupSlave(isabelleHome = isabelleHome)
 }

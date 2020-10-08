@@ -3,7 +3,7 @@ package de.unruh.isabelle.control
 import java.io.{BufferedReader, FileInputStream, FileReader}
 import java.nio.file.{Files, Path, Paths}
 
-import de.unruh.isabelle.control.Isabelle.{DInt, DList, DString, Data, Setup}
+import de.unruh.isabelle.control.Isabelle.{DInt, DList, DString, Data, Setup, SetupSlave}
 import de.unruh.isabelle.control.IsabelleTest.isabelle
 import de.unruh.isabelle.mlvalue.MLValue
 import org.scalatest.concurrent.{Signaler, ThreadSignaler}
@@ -116,7 +116,7 @@ object IsabelleTest {
     Paths.get(path)
   }
 
-  val setup: Setup = Setup(
+  val setup: SetupSlave = SetupSlave(
     isabelleHome = isabelleHome,
     sessionRoots = Nil,
     userDir = None,
