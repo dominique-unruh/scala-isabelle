@@ -1,7 +1,22 @@
 structure Control_Isabelle : sig
   val handleLines : unit -> unit
   datatype data = DString of string | DInt of int | DList of data list | DObject of exn
+  
   exception E_Function of data -> data
+  exception E_Context of Proof.context
+  exception E_List of exn list
+  exception E_Bool of bool
+  exception E_Option of exn option
+  exception E_Int of int
+  exception E_String of string
+  exception E_Pair of exn * exn
+  exception E_Term of term
+  exception E_Cterm of cterm
+  exception E_Theory of theory
+  exception E_Thm of thm
+  exception E_Typ of typ
+  exception E_Ctyp of ctyp
+
   val store : int -> exn -> unit
   (* For diagnostics. Linear time *)
   val numObjects : unit -> int
@@ -14,6 +29,19 @@ struct
 datatype data = DString of string | DInt of int | DList of data list | DObject of exn
 
 exception E_Function of data -> data
+exception E_Context of Proof.context
+exception E_List of exn list
+exception E_Bool of bool
+exception E_Option of exn option
+exception E_Int of int
+exception E_String of string
+exception E_Pair of exn * exn
+exception E_Term of term
+exception E_Cterm of cterm
+exception E_Theory of theory
+exception E_Thm of thm
+exception E_Typ of typ
+exception E_Ctyp of ctyp
 
 val inStream = BinIO.openIn inputPipeName
 val outStream = BinIO.openOut outputPipeName

@@ -51,8 +51,8 @@ object Context extends OperationCollection {
   override protected def newOps(implicit isabelle: Isabelle, ec: ExecutionContext): Ops = new Ops()
   protected[isabelle] class Ops(implicit val isabelle: Isabelle, ec: ExecutionContext) {
     import MLValue.compileFunction
-    Theory.init()
-    isabelle.executeMLCodeNow("exception E_Context of Proof.context")
+//    Theory.init()
+//    isabelle.executeMLCodeNow("exception E_Context of Proof.context")
     val contextFromTheory : MLFunction[Theory, Context] =
       compileFunction[Theory, Context]("Proof_Context.init_global")
   }

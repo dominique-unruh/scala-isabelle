@@ -203,9 +203,6 @@ object Cterm {
    *  - ML type: `cterm`
    *  - Representation of term `t` as an exception: `E_Cterm t`
    *
-   * (`E_Cterm` is automatically declared when needed by the ML code in this package.
-   * If you need to ensure that it is defined for compiling own ML code, invoke [[Term.init]].)
-   *
    * Available as an implicit value by importing [[de.unruh.isabelle.pure.Implicits]]`._`
    **/
   object CtermConverter extends Converter[Cterm] {
@@ -513,8 +510,8 @@ object Term extends OperationCollection {
   override protected def newOps(implicit isabelle: Isabelle, ec: ExecutionContext): Ops = new Ops()
   protected[pure] class Ops(implicit val isabelle: Isabelle, ec: ExecutionContext) {
     import MLValue.compileFunction
-    Typ.init()
-    isabelle.executeMLCodeNow("exception E_Term of term;; exception E_Cterm of cterm")
+//    Typ.init()
+//    isabelle.executeMLCodeNow("exception E_Term of term;; exception E_Cterm of cterm")
 
     val readTerm: MLFunction2[Context, String, Term] =
       compileFunction("fn (ctxt, str) => Syntax.read_term ctxt str")

@@ -336,13 +336,13 @@ object MLValue extends OperationCollection {
 
   //noinspection TypeAnnotation
   protected[mlvalue] class Ops(implicit val isabelle: Isabelle, ec: ExecutionContext) {
-    isabelle.executeMLCodeNow(
+    /*isabelle.executeMLCodeNow(
       """exception E_List of exn list
          exception E_Bool of bool
          exception E_Option of exn option
          exception E_Int of int
          exception E_String of string
-         exception E_Pair of exn * exn""")
+         exception E_Pair of exn * exn""")*/
 
     val retrieveData = MLRetrieveFunction[Data]("I")
     val storeData = MLStoreFunction[Data]("I")
@@ -458,8 +458,7 @@ object MLValue extends OperationCollection {
     * }}}
     * This should be done globally (once per Isabelle instance). Declaring two (even identical) exceptions with the
     * same name `E_Int` must be avoided! See [[control.OperationCollection OperationCollection]]
-    * for utilities how to manage this. (`E_Int`
-    * specifically is declared in [[MLValue]] when calling [[MLValue.init]].)
+    * for utilities how to manage this. (`E_Int` specifically does not need to be declared since it is predeclared.)
     *
     * We define the method [[valueToExn]] that returns the ML source code to convert an ML value of type `int` to an exception:
     * {{{

@@ -96,8 +96,8 @@ object ExecuteIsar {
       |""".stripMargin,
     setup.workingDirectory.resolve("Test.thy"))
 
-  Context.init()
-  Theory.init()
+//  Context.init()
+//  Theory.init()
 
 //  val addScalaKeyword = compileFunction[TheoryHeader, TheoryHeader](
 //    """fn {name,imports,keywords} => {name=name,imports=imports,keywords=(("scala", Position.none), (("diag", []), []))::(("preamble", Position.none), (("diag", []), []))::keywords}""")

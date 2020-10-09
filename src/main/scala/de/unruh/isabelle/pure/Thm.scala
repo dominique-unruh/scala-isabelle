@@ -40,8 +40,8 @@ object Thm extends OperationCollection {
   override protected def newOps(implicit isabelle: Isabelle, ec: ExecutionContext): Ops = new Ops()
   protected[isabelle] class Ops(implicit val isabelle: Isabelle, ec: ExecutionContext) {
     import MLValue.compileFunction
-    Term.init()
-    isabelle.executeMLCodeNow("exception E_Thm of thm")
+//    Term.init()
+//    isabelle.executeMLCodeNow("exception E_Thm of thm")
     val getThm: MLFunction2[Context, String, Thm] =
       compileFunction("fn (ctxt, name) => Proof_Context.get_thm ctxt name")
     val cpropOf: MLFunction[Thm, Cterm] =
@@ -64,8 +64,6 @@ object Thm extends OperationCollection {
    *  - ML type: `thm`
    *  - Representation of theorem `th` as an exception: `E_Thm th`
    *
-   * (`E_Thm` is automatically declared when needed by the ML code in this package.
-   * If you need to ensure that it is defined for compiling own ML code, invoke [[Thm.init]].)
    * Available as an implicit value by importing [[de.unruh.isabelle.pure.Implicits]]`._`
    * */
   object ThmConverter extends Converter[Thm] {

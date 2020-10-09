@@ -245,9 +245,6 @@ object Ctyp {
    *  - ML type: `ctyp`
    *  - Representation of term `t` as an exception: `E_Ctyp t`
    *
-   * (`E_Ctyp` is automatically declared when needed by the ML code in this package.
-   * If you need to ensure that it is defined for compiling own ML code, invoke [[Typ.init]].)
-   *
    * Available as an implicit value by importing [[de.unruh.isabelle.pure.Implicits]]`._`
    **/
   object CtypConverter extends Converter[Ctyp] {
@@ -398,8 +395,8 @@ object Typ extends OperationCollection {
   override protected def newOps(implicit isabelle: Isabelle, ec: ExecutionContext): Ops = new Ops()
   protected[pure] class Ops(implicit val isabelle: Isabelle, ec: ExecutionContext) {
     import MLValue.compileFunction
-    Context.init()
-    isabelle.executeMLCodeNow("exception E_Typ of typ;; exception E_Ctyp of ctyp") // ;; exception E_TypList of typ list
+//    Context.init()
+//    isabelle.executeMLCodeNow("exception E_Typ of typ;; exception E_Ctyp of ctyp") // ;; exception E_TypList of typ list
 
     val makeType: MLFunction2[String, List[Typ], Typ] =
       compileFunction("Term.Type")
@@ -443,9 +440,6 @@ object Typ extends OperationCollection {
    *
    *  - ML type: `typ`
    *  - Representation of typ `t` as an exception: `E_Typ t`
-   *
-   * (`E_Tyo` is automatically declared when needed by the ML code in this package.
-   * If you need to ensure that it is defined for compiling own ML code, invoke [[Typ.init]].)
    *
    * Available as an implicit value by importing [[de.unruh.isabelle.pure.Implicits]]`._`
    **/

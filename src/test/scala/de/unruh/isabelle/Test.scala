@@ -31,8 +31,8 @@ class Test extends AnyFunSuite {
   }
 
   test("temporary experiments") {
-    MLValue.init()
-    Theory.init()
+//    MLValue.init()
+//    Theory.init()
 
     val func = MLValue.compileFunction[Int, Int]("I")
     val numObj = MLValue.compileFunction0[Int]("Control_Isabelle.numObjects")

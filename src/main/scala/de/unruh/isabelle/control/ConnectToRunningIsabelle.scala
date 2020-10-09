@@ -45,7 +45,7 @@ $scala
     println("\n[STARTED]")
     var count = 1
 
-    MLValue.init()
+//    MLValue.init()
     val test = MLValue.compileValue[Int]("123")
     assert(test.retrieveNow == 123)
 

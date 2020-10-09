@@ -33,6 +33,7 @@ object PathConverter extends MLValue.Converter[Path] with OperationCollection {
   //noinspection TypeAnnotation
   protected class Ops(implicit isabelle: Isabelle, ec: ExecutionContext) {
     def exceptionName = _exceptionName
+    // TODO: Move to Control_Isabelle
     isabelle.executeMLCodeNow(s"exception ${_exceptionName} of Path.T")
     lazy val retrievePath = MLRetrieveFunction[Path]("DString o Path.implode")
     lazy val storePath = MLStoreFunction[Path]("fn DString path => Path.explode path")

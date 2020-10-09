@@ -8,7 +8,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import Implicits._
 
 class FunctionConverterTest extends AnyFunSuite {
-  MLValue.init()
+//  MLValue.init()
 
   test("compileFunction / retrieve") {
     val function = MLValue.compileFunction[Int,String]("string_of_int")

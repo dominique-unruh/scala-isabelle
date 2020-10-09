@@ -208,8 +208,8 @@ object Theory extends OperationCollection {
 
     import MLValue.compileFunction
 
-    MLValue.init()
-    isabelle.executeMLCodeNow("exception E_Theory of theory")
+//    MLValue.init()
+//    isabelle.executeMLCodeNow("exception E_Theory of theory")
 
     val sessionPaths = new ConcurrentHashMap[String, Path]()
 
@@ -282,9 +282,6 @@ object Theory extends OperationCollection {
    *
    *  - ML type: `theory`
    *  - Representation of theory `thy` as an exception: `E_Theory thy`
-   *
-   * (`E_Theory` is automatically declared when needed by the ML code in this package.
-   * If you need to ensure that it is defined for compiling own ML code, invoke [[Theory.init]].)
    *
    * Available as an implicit value by importing [[de.unruh.isabelle.pure.Implicits]]`._`
    **/

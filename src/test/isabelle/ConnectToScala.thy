@@ -2,7 +2,7 @@ theory ConnectToScala
   imports Main  
 begin
 
-ML \<open> 
+ML \<open>
 fun system string = if OS.Process.system string |> OS.Process.isSuccess then () else
   error ("Command " ^ string ^ " returned non-zero error code")
 val inputPipeName = "/tmp/input-pipe" ^ string_of_int (Random.random_range 0 100000000000)
@@ -26,10 +26,22 @@ val thread = Standard_Thread.fork params (fn () =>
 
 ML \<open>
 open Control_Isabelle
-val scala = \<open>println(data)\<close>
+val scala = \<open>
+import de.unruh.isabelle.pure._
+import de.unruh.isabelle.mlvalue._
+import de.unruh.isabelle.pure.Implicits._
+import de.unruh.isabelle.control.Isabelle._
+
+val DList(DObject(idThm),DObject(idCtxt)) = data
+val thm = MLValue.unsafeFromId[Thm](idThm).retrieveNow
+val ctxt = MLValue.unsafeFromId[Context](idCtxt).retrieveNow
+val str = thm.pretty(ctxt)
+println("Got theorem: " + str)
+\<close>
 val scala' = Input.source_content scala |> fst
-val arg = ERROR "xxx"
-val _ = Control_Isabelle.sendToScala (DList [DString scala', DObject arg])
+val thm = E_Thm @{thm refl}
+val ctxt = E_Context \<^context>
+val _ = Control_Isabelle.sendToScala (DList [DString scala', DList [DObject thm, DObject ctxt]])
 \<close>
 
 
