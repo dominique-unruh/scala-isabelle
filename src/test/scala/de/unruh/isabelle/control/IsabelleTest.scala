@@ -134,7 +134,7 @@ object IsabelleTest {
 }
 
 
-object Benchmark {
+object Benchmark1 {
   def main(args: Array[String]): Unit = {
     val id = await(isabelle.storeValue("E_Function I"))
     val count = 200000

@@ -25,10 +25,6 @@ fun withMutex f x = let
   val _ = Mutex.unlock mutex
 in result end
 
-(* TODO: Catch errors *)
-fun runAsync f x = (Future.fork (fn () => f x); ())
-(* fun runAsync f x = (f x; ()) *)
-
 val objectsMax = Unsynchronized.ref 0
 val objects : exn Inttab.table Unsynchronized.ref = Unsynchronized.ref Inttab.empty
 
@@ -164,6 +160,27 @@ fun sendReply1 seq int = let
   val _ = BinIO.flushOut outStream
   in () end
 
+
+(* Takes mutex *)
+fun reportException seq = withMutex (fn exn => let
+  val msg = Runtime.exn_message exn
+  val _ = sendInt64 seq
+  val _ = sendByte 0w2
+  val _ = sendString msg
+  val _ = BinIO.flushOut outStream
+  in () end)
+
+fun withErrorReporting seq f = 
+  f () handle e => reportException seq e
+
+val asyncMode = true
+
+fun runAsync seq f x = 
+  if asyncMode then
+    (Future.fork (fn () => withErrorReporting seq (fn () => f x)); ())
+  else
+    (f x; ())
+
 fun executeML ml = let
   val _ = ML_Compiler.eval ML_Compiler.flags Position.none (ML_Lex.tokenize ml)
         handle ERROR msg => error (msg ^ ", when compiling " ^ ml)
@@ -173,7 +190,7 @@ fun executeML ml = let
 fun store seq = withMutex (fn exn => sendReply1 seq (addToObjects exn))
 
 (* Asynchronous *)
-fun storeMLValue seq = runAsync (fn ml =>
+fun storeMLValue seq = runAsync seq (fn ml =>
   executeML ("let open Control_Isabelle val result = ("^ml^") in store "^string_of_int seq^" result end"))
 
 fun string_of_exn exn = 
@@ -188,21 +205,20 @@ fun string_of_data (DInt i) = string_of_int i
   | string_of_data (DObject e) = string_of_exn e
 
 (* Asynchronous *)
-fun applyFunc seq f = runAsync (fn (x:data) => case Inttab.lookup (!objects) f of
+fun applyFunc seq f = runAsync seq (fn (x:data) => case Inttab.lookup (!objects) f of
   NONE => error ("no object " ^ string_of_int f)
   | SOME (E_Function f) => sendReplyData seq (f x)
   | SOME exn => error ("object " ^ string_of_int f ^ " is not an E_Function but: " ^ string_of_exn exn))
 
 (* Takes mutex *)
 (* TODO: This may remove objects that are still referenced in some running async computations! *)
-val removeObjects = runAsync (withMutex (fn (DList ids) => let
+fun removeObjects seq = runAsync seq (withMutex (fn (DList ids) => let
   val _ = objects := fold (fn DInt id => Inttab.delete id
                             | d => error ("remove_objects.fold: " ^ string_of_data d)) ids (!objects)
   in () end
   | d => error ("remove_objects: " ^ string_of_data d)))
 
-(* Note: handleLine' is without error handling, handeLine adds error handling *)
-fun handleLine' seq =
+fun handleLine seq = withErrorReporting seq (fn () =>
   case readByte () of
     (* 1b|string - executes ML code xxx *)
     (* TODO async *)
@@ -218,22 +234,13 @@ fun handleLine' seq =
       in applyFunc seq f x end
 
     (* 8b|data ... - data must be list of ints, removes objects with these IDs from objects *)
-  | 0w8 => removeObjects (readData ())
+  | 0w8 => removeObjects seq (readData ())
 
-  | cmd => error ("Unknown command " ^ string_of_int (Word8.toInt cmd))
+  | cmd => error ("Unknown command " ^ string_of_int (Word8.toInt cmd)))
 
-(* Takes mutex *)
-fun reportException seq = withMutex (fn exn => let
-  val msg = Runtime.exn_message exn
-  val _ = sendInt64 seq
-  val _ = sendByte 0w2
-  val _ = sendString msg
-  val _ = BinIO.flushOut outStream
-  in () end)
-
-fun handleLine seq =
+(* fun handleLine seq =
   handleLine' seq
-  handle exn => reportException seq exn
+  handle exn => reportException seq exn *)
 
 fun handleLines' seq = (handleLine seq; handleLines' (seq+1))
 

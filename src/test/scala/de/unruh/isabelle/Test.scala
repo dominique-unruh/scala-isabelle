@@ -34,30 +34,15 @@ class Test extends AnyFunSuite {
     MLValue.init()
     Theory.init()
 
-    if (!Version.from2020) cancel("Only works for Isabelle2020+")
+    val waitASec = MLValue.compileFunction0[Unit]("fn () => OS.Process.sleep (seconds 10.0)")
+    val quick = MLValue.compileFunction0[Int]("K 1")
 
-    val theoryName: MLFunction[Theory, String] =
-      MLValue.compileFunction("Context.theory_id #> Context.theory_id_long_name")
-    def thyName(thy: Theory) = theoryName(thy).retrieveNow
-    def printThyName(thy: Theory): Unit = println(thyName(thy))
-
-    Theory.registerSessionDirectoriesNow("HOL-Library" -> setup.isabelleHome.resolve("src/HOL/Library"))
-
-    println(MLValue.compileValue[Option[String]]("Resources.find_theory_file \"HOL-Library.AList\" |> Option.map Path.implode").retrieveNow)
-
-//    isabelle.destroy()
-//    Thread.sleep(3000)
-
-    val thyMain = Theory("Main")
-    printThyName(thyMain)
-
-    val thyHolSet = Theory("HOL.Set")
-    printThyName(thyHolSet)
-
-    val thyAList = Theory("HOL-Library.AList")
-    printThyName(thyAList)
-
-    val thyBigO = Theory("HOL-Library.BigO")
-    printThyName(thyBigO)
+    println("Starting waitASec")
+    val w = waitASec()
+    println("Starting/retrieving quick")
+    quick().retrieveNow
+    println("Retrieving waitASec")
+    w.retrieveNow
+    println("Done")
   }
 }
