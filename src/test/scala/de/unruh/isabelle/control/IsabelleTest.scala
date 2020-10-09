@@ -6,6 +6,7 @@ import java.nio.file.{Files, Path, Paths}
 import de.unruh.isabelle.control.Isabelle.{DInt, DList, DString, Data, Setup, SetupSlave}
 import de.unruh.isabelle.control.IsabelleTest.isabelle
 import de.unruh.isabelle.mlvalue.MLValue
+import de.unruh.isabelle.mlvalue.MLValueTest.await
 import org.scalatest.concurrent.{Signaler, ThreadSignaler}
 import org.scalatest.concurrent.TimeLimits.failAfter
 import org.scalatest.funsuite.AnyFunSuite
@@ -129,5 +130,20 @@ object IsabelleTest {
     println("Started. Initializing Term/Typ/Context")
     println("Initialized.")
     isa
+  }
+}
+
+
+object Benchmark {
+  def main(args: Array[String]): Unit = {
+    val id = await(isabelle.storeValue("E_Function I"))
+    val count = 100000
+    val time1 = System.currentTimeMillis()
+    for (i <- 1 to count) {
+      await(isabelle.applyFunction(id, DInt(0)))
+    }
+    val time2 = System.currentTimeMillis()
+    val perOp = (time2-time1)*1.0/count
+    println(s"Time per op: ${perOp}ms")
   }
 }
