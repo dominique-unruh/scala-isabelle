@@ -240,12 +240,13 @@ class Isabelle(val setup: Setup, build: Boolean = true) {
           if (seq != 0) IsabelleProtocolException(s"Received a protocol response from Isabelle with seq# $seq and " +
             s"answerType $answerType. Seq should be 0. Probably the communication is out of sync now.")
           val payload = readData(output)
-          try {
-            // TODO: do in a worker thread (or future)
-            setup.isabelleCommandHandler(payload)
-          } catch {
-            case e : Throwable =>
-              logger.error(e)("Exception in Isabelle command handler")
+          ExecutionContext.global.execute { () =>
+            try {
+              setup.isabelleCommandHandler(payload)
+            } catch {
+              case e: Throwable =>
+                logger.error(e)("Exception in Isabelle command handler")
+            }
           }
         case _ =>
           throw IsabelleProtocolException(s"Received a protocol response from Isabelle with seq# $seq and invalid" +
