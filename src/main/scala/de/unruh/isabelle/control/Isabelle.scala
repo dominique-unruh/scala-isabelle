@@ -327,7 +327,7 @@ class Isabelle(val setup: Setup, build: Boolean = true) {
 
   private def startProcessRunning(setup: SetupRunning) : java.lang.Process = {
     val inputPipe = setup.inputPipe
-    val outputPipe = setup.inputPipe
+    val outputPipe = setup.outputPipe
 
     if (!Files.exists(inputPipe))
       throw IsabelleProtocolException(s"Input pipe $inputPipe does not exist")
@@ -367,7 +367,8 @@ class Isabelle(val setup: Setup, build: Boolean = true) {
   private def destroy(cause: Throwable): Unit = {
     destroyed = cause
     garbageQueue.clear()
-    process.destroy()
+    if (process != null)
+      process.destroy()
 
     def callCallback(cb: Try[Data] => Unit): Unit =
       cb(Failure(cause))

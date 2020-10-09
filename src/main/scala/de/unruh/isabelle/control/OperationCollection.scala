@@ -121,9 +121,9 @@ trait OperationCollection {
   private def addInstance(isabelle: Isabelle, ec: ExecutionContext): Ops = synchronized {
     def add() = {
       logger.debug(s"Adding Ops instance in ${getClass.getName} for $isabelle")
-      assert(isabelle != null)
-      assert(ec != null)
-      assert(!isabelle.isDestroyed)
+      assert(isabelle != null, "Isabelle is null")
+      assert(ec != null, "Execution context is null")
+      assert(!isabelle.isDestroyed, "Isabelle was destroyed")
       val ops = newOps(isabelle, ec)
       opsInstances = (isabelle, ops) :: opsInstances.filterNot(_._1.isDestroyed)
       ops
