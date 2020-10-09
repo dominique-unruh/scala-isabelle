@@ -206,9 +206,23 @@ class Isabelle(val setup: Setup, build: Boolean = true) {
       val seq = output.readLong()
       val answerType = output.readByte()
       val callback = callbacks.remove(seq)
-      if (callback==null)
-        throw IsabelleProtocolException(s"Received a protocol response from Isabelle with seq# $seq, answerType $answerType, " +
-          s"but no callback is registered for that seq#. Probably the communication is out of sync now")
+      if (callback==null) {
+        var exn : IsabelleProtocolException = null
+        //noinspection DangerousCatchAll
+        try {
+          if (answerType == 2) {
+            import ExecutionContext.Implicits.global
+            val msg = Await.result(Future { readString(output) }, Duration(5, scala.concurrent.duration.SECONDS))
+            exn = IsabelleProtocolException(s"Received a protocol response from Isabelle with seq# $seq " +
+              s"but no callback is registered for that seq#. Probably the communication is out of sync now. " +
+              s"The response indicated the following exception: $msg")
+          }
+        } catch { case _ => }
+        if (exn == null)
+          exn = IsabelleProtocolException(s"Received a protocol response from Isabelle with seq# $seq, answerType $answerType, " +
+            s"but no callback is registered for that seq#. Probably the communication is out of sync now")
+        throw exn
+      }
 //      logger.debug(s"Seq: $seq, type: $answerType, callback: $callback")
       answerType match {
         case 1 =>

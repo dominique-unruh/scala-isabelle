@@ -175,11 +175,20 @@ fun withErrorReporting seq f =
 
 val asyncMode = true
 
-fun runAsync seq f x = 
+val asyncGroup = Future.new_group NONE
+val asyncParams = {name = "scala-isabelle", group = SOME asyncGroup, deps = [], pri = 0, interrupts = false}
+
+fun runAsync seq f = 
   if asyncMode then
-    (Future.fork (fn () => withErrorReporting seq (fn () => f x)); ())
+    (Future.forks asyncParams [(fn () => withErrorReporting seq f)]; ())
   else
-    (f x; ())
+    f ()
+
+fun runAsyncDep deps seq f = 
+  if asyncMode then
+    (Future.forks {name = "scala-isabelle", group = SOME asyncGroup, deps = deps, pri = 0, interrupts = false} [(fn () => withErrorReporting seq f)]; ())
+  else
+    f ()
 
 fun executeML ml = let
   val _ = ML_Compiler.eval ML_Compiler.flags Position.none (ML_Lex.tokenize ml)
@@ -190,7 +199,7 @@ fun executeML ml = let
 fun store seq = withMutex (fn exn => sendReply1 seq (addToObjects exn))
 
 (* Asynchronous *)
-fun storeMLValue seq = runAsync seq (fn ml =>
+fun storeMLValue seq ml = runAsync seq (fn () =>
   executeML ("let open Control_Isabelle val result = ("^ml^") in store "^string_of_int seq^" result end"))
 
 fun string_of_exn exn = 
@@ -205,24 +214,26 @@ fun string_of_data (DInt i) = string_of_int i
   | string_of_data (DObject e) = string_of_exn e
 
 (* Asynchronous *)
-fun applyFunc seq f = runAsync seq (fn (x:data) => case Inttab.lookup (!objects) f of
+fun applyFunc seq f (x:data) = runAsync seq (fn () => case Inttab.lookup (!objects) f of
   NONE => error ("no object " ^ string_of_int f)
   | SOME (E_Function f) => sendReplyData seq (f x)
   | SOME exn => error ("object " ^ string_of_int f ^ " is not an E_Function but: " ^ string_of_exn exn))
 
 (* Takes mutex *)
-(* TODO: This may remove objects that are still referenced in some running async computations! *)
-fun removeObjects seq = runAsync seq (withMutex (fn (DList ids) => let
+fun removeObjects seq (DList ids) = let
+  val tasks = Future.snapshot [asyncGroup]
+  in runAsyncDep tasks seq (withMutex (fn () => let
   val _ = objects := fold (fn DInt id => Inttab.delete id
                             | d => error ("remove_objects.fold: " ^ string_of_data d)) ids (!objects)
-  in () end
-  | d => error ("remove_objects: " ^ string_of_data d)))
+  in () end)) end
+  | removeObjects _ d = error ("remove_objects: " ^ string_of_data d)
 
 fun handleLine seq = withErrorReporting seq (fn () =>
   case readByte () of
     (* 1b|string - executes ML code xxx *)
-    (* TODO async *)
-    0w1 => (executeML (readString ()); sendReplyData seq (DList []))
+    0w1 => let val ml = readString () in 
+           runAsync seq (fn () => (executeML ml; sendReplyData seq (DList []))) end
+    (* 0w1 => (executeML (readString ()); sendReplyData seq (DList [])) *)
 
     (* 4b|string - Compiles string as ML code of type exn, stores result as object #seq *)
   | 0w4 => storeMLValue seq (readString ())
