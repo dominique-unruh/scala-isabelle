@@ -26,6 +26,8 @@ fun withMutex f x = let
 in result end
 
 val objectsMax = Unsynchronized.ref 0
+
+(* To write: use mutex. To read: be on the main thread *)
 val objects : exn Inttab.table Unsynchronized.ref = Unsynchronized.ref Inttab.empty
 
 fun numObjects () : int = Inttab.fold (fn _ => fn i => i+1) (!objects) 0
@@ -108,6 +110,7 @@ fun readString () = let
   val str = Byte.bytesToString bytes
   in str end
 
+(* Only with mutex *)
 fun addToObjects exn = let
   val idx = !objectsMax
   val _ = objects := Inttab.update_new (idx, exn) (!objects)
@@ -127,7 +130,7 @@ fun sendData (DInt i) = (sendByte 0w1; sendInt64 i)
       val _ = sendByte 0w4
       val _ = sendInt64 id
     in () end
-      
+
 fun readData () : data = case readByte () of
     0w1 => readInt64 () |> DInt
   | 0w2 => readString () |> DString
@@ -184,11 +187,11 @@ fun runAsync seq f =
   else
     f ()
 
-fun runAsyncDep deps seq f = 
+(* fun runAsyncDep deps seq f = 
   if asyncMode then
     (Future.forks {name = "scala-isabelle", group = SOME asyncGroup, deps = deps, pri = 0, interrupts = false} [(fn () => withErrorReporting seq f)]; ())
   else
-    f ()
+    f () *)
 
 fun executeML ml = let
   val _ = ML_Compiler.eval ML_Compiler.flags Position.none (ML_Lex.tokenize ml)
@@ -214,18 +217,17 @@ fun string_of_data (DInt i) = string_of_int i
   | string_of_data (DObject e) = string_of_exn e
 
 (* Asynchronous *)
-fun applyFunc seq f (x:data) = runAsync seq (fn () => case Inttab.lookup (!objects) f of
-  NONE => error ("no object " ^ string_of_int f)
-  | SOME (E_Function f) => sendReplyData seq (f x)
-  | SOME exn => error ("object " ^ string_of_int f ^ " is not an E_Function but: " ^ string_of_exn exn))
+fun applyFunc seq f (x:data) = 
+  case Inttab.lookup (!objects) f of (* Must be on main thread otherwise f might be GC'd before we fetch it *)
+    NONE => error ("no object " ^ string_of_int f)
+  | SOME (E_Function f) => runAsync seq (fn () => sendReplyData seq (f x))
+  | SOME exn => error ("object " ^ string_of_int f ^ " is not an E_Function but: " ^ string_of_exn exn)
 
 (* Takes mutex *)
-fun removeObjects seq (DList ids) = let
-  val tasks = Future.snapshot [asyncGroup]
-  in runAsyncDep tasks seq (withMutex (fn () => let
+fun removeObjects seq (DList ids) = runAsync seq (withMutex (fn () => let
   val _ = objects := fold (fn DInt id => Inttab.delete id
                             | d => error ("remove_objects.fold: " ^ string_of_data d)) ids (!objects)
-  in () end)) end
+  in () end))
   | removeObjects _ d = error ("remove_objects: " ^ string_of_data d)
 
 fun handleLine seq = withErrorReporting seq (fn () =>
