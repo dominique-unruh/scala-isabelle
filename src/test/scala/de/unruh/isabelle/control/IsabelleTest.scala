@@ -137,7 +137,7 @@ object IsabelleTest {
 object Benchmark {
   def main(args: Array[String]): Unit = {
     val id = await(isabelle.storeValue("E_Function I"))
-    val count = 100000
+    val count = 200000
     val time1 = System.currentTimeMillis()
     for (i <- 1 to count) {
       await(isabelle.applyFunction(id, DInt(0)))
