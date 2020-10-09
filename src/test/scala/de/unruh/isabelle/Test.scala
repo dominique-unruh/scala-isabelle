@@ -34,15 +34,30 @@ class Test extends AnyFunSuite {
     MLValue.init()
     Theory.init()
 
+    val func = MLValue.compileFunction[Int, Int]("I")
+    val numObj = MLValue.compileFunction0[Int]("Control_Isabelle.numObjects")
+
+//    for (i <- 1 to 1000) {
+//      val buffer = ListBuffer[MLValue[Int]]()
+//      for (i <- 1 to 10000) {
+//        buffer += func(123)
+//      }
+//      for (v <- buffer) {
+//        v.retrieveNow
+//      }
+//      println(s"numObjects: ${numObj().retrieveNow}")
+//      System.gc()
+//    }
+
     val waitASec = MLValue.compileFunction0[Unit]("fn () => OS.Process.sleep (seconds 10.0)")
     val quick = MLValue.compileFunction0[Int]("K 1")
 
-    println("Starting waitASec")
-    val w = waitASec()
-    println("Starting/retrieving quick")
-    quick().retrieveNow
-    println("Retrieving waitASec")
-    w.retrieveNow
-    println("Done")
+//    println("Starting waitASec")
+//    val w = waitASec()
+//    println("Starting/retrieving quick")
+//    quick().retrieveNow
+//    println("Retrieving waitASec")
+//    w.retrieveNow
+//    println("Done")
   }
 }

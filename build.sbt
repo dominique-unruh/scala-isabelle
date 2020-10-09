@@ -35,9 +35,9 @@ libraryDependencies += "org.apache.commons" % "commons-text" % "1.9"
 libraryDependencies += "com.google.guava" % "guava" % "29.0-jre"
 libraryDependencies += "org.jetbrains" % "annotations" % "20.1.0"
 
-// TODO: remove if not needed
-libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value % "test"
-libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value % "test"
+// TODO: remove or hide from POM
+libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value
+libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value
 
 lazy val travisRandomize = taskKey[Unit]("Randomize which test is run on Travis next time")
 travisRandomize := {

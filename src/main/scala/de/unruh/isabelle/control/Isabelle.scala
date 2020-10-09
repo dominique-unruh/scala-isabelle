@@ -74,6 +74,8 @@ import scala.util.{Failure, Success, Try}
   *              the heap was already built.
   */
 
+// TODO: build should be a flag in SetupSlave
+
 class Isabelle(val setup: Setup, build: Boolean = true) {
   import Isabelle._
 
@@ -198,39 +200,53 @@ class Isabelle(val setup: Setup, build: Boolean = true) {
     *
     * string: int32|bytes
     *
-    * */
+    **/
   private def parseIsabelle(outFifo: Path) : Unit = {
     val output = new DataInputStream(new FileInputStream(outFifo.toFile))
+
+    def missingCallback(seq: Long, answerType: Int): Unit = {
+      var exn : IsabelleProtocolException = null
+      try {
+        if (answerType == 2) {
+          import ExecutionContext.Implicits.global
+          val msg = Await.result(Future { readString(output) }, Duration(5, scala.concurrent.duration.SECONDS))
+          exn = IsabelleProtocolException(s"Received a protocol response from Isabelle with seq# $seq " +
+            s"but no callback is registered for that seq#. Probably the communication is out of sync now. " +
+            s"The response indicated the following exception: $msg")
+        }
+      } catch { case _ : Throwable => }
+      if (exn == null)
+        exn = IsabelleProtocolException(s"Received a protocol response from Isabelle with seq# $seq, answerType $answerType, " +
+          s"but no callback is registered for that seq#. Probably the communication is out of sync now")
+      throw exn
+    }
+
     try
     while (true) {
       val seq = output.readLong()
       val answerType = output.readByte()
       val callback = callbacks.remove(seq)
-      if (callback==null) {
-        var exn : IsabelleProtocolException = null
-        //noinspection DangerousCatchAll
-        try {
-          if (answerType == 2) {
-            import ExecutionContext.Implicits.global
-            val msg = Await.result(Future { readString(output) }, Duration(5, scala.concurrent.duration.SECONDS))
-            exn = IsabelleProtocolException(s"Received a protocol response from Isabelle with seq# $seq " +
-              s"but no callback is registered for that seq#. Probably the communication is out of sync now. " +
-              s"The response indicated the following exception: $msg")
-          }
-        } catch { case _ => }
-        if (exn == null)
-          exn = IsabelleProtocolException(s"Received a protocol response from Isabelle with seq# $seq, answerType $answerType, " +
-            s"but no callback is registered for that seq#. Probably the communication is out of sync now")
-        throw exn
-      }
 //      logger.debug(s"Seq: $seq, type: $answerType, callback: $callback")
       answerType match {
         case 1 =>
+          if (callback==null) missingCallback(seq, answerType)
           val payload = readData(output)
           callback(Success(payload))
         case 2 =>
+          if (callback==null) missingCallback(seq, answerType)
           val msg = readString(output)
           callback(Failure(IsabelleException(msg)))
+        case 3 =>
+          if (seq != 0) IsabelleProtocolException(s"Received a protocol response from Isabelle with seq# $seq and " +
+            s"answerType $answerType. Seq should be 0. Probably the communication is out of sync now.")
+          val payload = readData(output)
+          try {
+            // TODO: do in a worker thread (or future)
+            setup.isabelleCommandHandler(payload)
+          } catch {
+            case e : Throwable =>
+              logger.error(e)("Exception in Isabelle command handler")
+          }
         case _ =>
           throw IsabelleProtocolException(s"Received a protocol response from Isabelle with seq# $seq and invalid" +
             s"answerType $answerType. Probably the communication is out of sync now")
@@ -541,6 +557,9 @@ class Isabelle(val setup: Setup, build: Boolean = true) {
 }
 
 object Isabelle {
+  def defaultCommandHandler(data: Data): Unit =
+    throw new RuntimeException(s"Command $data received from Isabelle, but default command handler is installed")
+
   private val logger = log4s.getLogger
 
   private var lastMessage : String = _
@@ -576,7 +595,11 @@ object Isabelle {
     def run(): Unit = isabelle.garbageQueue.add(id)
   }
 
-  sealed trait Setup
+  // DOCUMENT
+  sealed trait Setup {
+    // DOCUMENT
+    val isabelleCommandHandler : Data => Unit
+  }
 
   /** Configuration for initializing an [[Isabelle]] instance.
     *
@@ -600,10 +623,12 @@ object Isabelle {
                         logic : String = "HOL",
                         userDir : Option[Path] = None,
                         workingDirectory : Path = Paths.get(""),
-                        sessionRoots : Seq[Path] = Nil) extends Setup
+                        sessionRoots : Seq[Path] = Nil,
+                        isabelleCommandHandler: Data => Unit = Isabelle.defaultCommandHandler) extends Setup
 
   // DOCUMENT
-  case class SetupRunning(inputPipe : Path, outputPipe : Path) extends Setup
+  case class SetupRunning(inputPipe : Path, outputPipe : Path,
+                          isabelleCommandHandler: Data => Unit = Isabelle.defaultCommandHandler) extends Setup
 
   //noinspection UnstableApiUsage
   private val buildLocks = Striped.lazyWeakReadWriteLock(10)

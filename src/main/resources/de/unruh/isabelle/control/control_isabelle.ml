@@ -7,6 +7,7 @@ structure Control_Isabelle : sig
   val numObjects : unit -> int
   val string_of_exn : exn -> string
   val string_of_data : data -> string
+  val sendToScala : data -> unit
 end
 =
 struct
@@ -163,6 +164,13 @@ fun sendReply1 seq int = let
   val _ = BinIO.flushOut outStream
   in () end
 
+(* Takes mutex *)
+val sendToScala = withMutex (fn data => let
+  val _ = sendInt64 0
+  val _ = sendByte 0w3
+  val _ = sendData data
+  val _ = BinIO.flushOut outStream
+  in () end)
 
 (* Takes mutex *)
 fun reportException seq = withMutex (fn exn => let

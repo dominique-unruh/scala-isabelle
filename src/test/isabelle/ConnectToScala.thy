@@ -2,7 +2,7 @@ theory ConnectToScala
   imports Main  
 begin
 
-ML \<open>
+ML \<open> 
 fun system string = if OS.Process.system string |> OS.Process.isSuccess then () else
   error ("Command " ^ string ^ " returned non-zero error code")
 val inputPipeName = "/tmp/input-pipe" ^ string_of_int (Random.random_range 0 100000000000)
@@ -22,6 +22,14 @@ val params : Standard_Thread.params = {name="scala-isabelle protocol", stack_lim
 val thread = Standard_Thread.fork params (fn () =>
   (#enterStruct ML_Env.name_space ("Control_Isabelle", control_isabelle_struct);
    Control_Isabelle.handleLines ()))
+\<close>
+
+ML \<open>
+open Control_Isabelle
+val scala = \<open>println(data)\<close>
+val scala' = Input.source_content scala |> fst
+val arg = ERROR "xxx"
+val _ = Control_Isabelle.sendToScala (DList [DString scala', DObject arg])
 \<close>
 
 
