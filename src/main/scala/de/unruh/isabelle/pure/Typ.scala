@@ -251,8 +251,7 @@ object Ctyp {
     override def store(value: Ctyp)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[Ctyp] =
       value.ctypMlValue
     override def retrieve(value: MLValue[Ctyp])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Ctyp] =
-      for (_ <- value.id)
-        yield new Ctyp(ctypMlValue = value)
+      Future.successful(new Ctyp(ctypMlValue = value))
     override def exnToValue(implicit isabelle: Isabelle, ec: ExecutionContext): String = "fn (E_Ctyp t) => t"
     override def valueToExn(implicit isabelle: Isabelle, ec: ExecutionContext): String = "E_Ctyp"
 

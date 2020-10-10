@@ -209,8 +209,7 @@ object Cterm {
     override def store(value: Cterm)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[Cterm] =
       value.ctermMlValue
     override def retrieve(value: MLValue[Cterm])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Cterm] =
-      for (_ <- value.id)
-        yield new Cterm(ctermMlValue = value)
+        Future.successful(new Cterm(ctermMlValue = value))
     override def exnToValue(implicit isabelle: Isabelle, ec: ExecutionContext): String = "fn (E_Cterm t) => t"
     override def valueToExn(implicit isabelle: Isabelle, ec: ExecutionContext): String = "E_Cterm"
 
@@ -579,8 +578,7 @@ object Term extends OperationCollection {
     override def store(value: Term)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[Term] =
       value.mlValue
     override def retrieve(value: MLValue[Term])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Term] =
-      for (_ <- value.id)
-        yield new MLValueTerm(mlValue = value)
+        Future.successful(new MLValueTerm(mlValue = value))
     override def exnToValue(implicit isabelle: Isabelle, ec: ExecutionContext): String = "fn (E_Term t) => t"
     override def valueToExn(implicit isabelle: Isabelle, ec: ExecutionContext): String = "E_Term"
 

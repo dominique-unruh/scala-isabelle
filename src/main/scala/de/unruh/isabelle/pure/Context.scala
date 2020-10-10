@@ -80,8 +80,7 @@ object Context extends OperationCollection {
    **/
   object ContextConverter extends Converter[Context] {
     override def retrieve(value: MLValue[Context])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Context] = {
-      for (_ <- value.id)
-        yield new Context(mlValue = value)
+        Future.successful(new Context(mlValue = value))
     }
 
     override def store(value: Context)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[Context] =

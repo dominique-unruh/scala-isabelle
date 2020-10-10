@@ -287,8 +287,7 @@ object Theory extends OperationCollection {
    **/
   object TheoryConverter extends Converter[Theory] {
     override def retrieve(value: MLValue[Theory])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Theory] =
-      for (_ <- value.id)
-        yield new Theory(mlValue = value, name="‹theory›")
+      Future.successful(new Theory(mlValue = value, name="‹theory›"))
     override def store(value: Theory)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[Theory] =
       value.mlValue
     override def exnToValue(implicit isabelle: Isabelle, ec: ExecutionContext): String = "fn E_Theory thy => thy"
