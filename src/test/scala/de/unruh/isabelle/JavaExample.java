@@ -2,13 +2,11 @@ package de.unruh.isabelle;
 
 import de.unruh.isabelle.control.Isabelle;
 import de.unruh.isabelle.java.JIsabelle;
-import de.unruh.isabelle.java.JPatterns;
 import de.unruh.isabelle.mlvalue.MLFunction2;
 import de.unruh.isabelle.mlvalue.MLValue;
 import de.unruh.isabelle.pure.*;
 import de.unruh.javapatterns.Capture;
 import de.unruh.javapatterns.MatchException;
-import scala.concurrent.ExecutionContext;
 
 import java.nio.file.Path;
 
@@ -19,15 +17,16 @@ import static de.unruh.javapatterns.Patterns.Any;
 import static de.unruh.javapatterns.Patterns.Is;
 import static java.lang.System.out;
 import static de.unruh.isabelle.pure.Implicits.*;
-import static de.unruh.isabelle.mlvalue.Implicits.*;
 import static scala.concurrent.ExecutionContext.global;
 
 public class JavaExample {
     private Isabelle isabelle = null;
 
-    // TODO: the same with patterns
-
-    // A function to replace occurrences of X+1 by X (for all X)
+    /** A function to replace occurrences of X+1 by X (for all X).
+     *
+     * This version is written using only standard Java tools. See {@link #replace2} below for
+     * a version written using pattern matching.
+     * */
     @SuppressWarnings("InfiniteRecursion")
     Term replace(Term term) {
         term = term.concrete();
@@ -80,7 +79,10 @@ public class JavaExample {
         return term;
     }
 
-    // A function to replace occurrences of X+1 by X (for all X)
+    /** A function to replace occurrences of X+1 by X (for all X).
+     *
+     * Written using pattern matching, does the same as {@link #replace}.
+     */
     Term replace2(Term term) {
         Capture<Term> x = capture("x");
         Capture<Term> t1 = capture("t1");
@@ -119,7 +121,7 @@ public class JavaExample {
 
     void runExample(String isabelleHome) {
         // Initialize the Isabelle process with session HOL.
-        Isabelle.Setup setup = JIsabelle.setup(Path.of(isabelleHome));
+        Isabelle.SetupGeneral setup = JIsabelle.setup(Path.of(isabelleHome));
         // Differs from example in README: we skip building to make tests faster
         isabelle = new Isabelle(setup, false);
 

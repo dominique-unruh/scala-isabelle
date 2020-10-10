@@ -8,7 +8,7 @@ import java.nio.file.{FileSystemNotFoundException, Files, Path, Paths}
 import java.util.concurrent.{ArrayBlockingQueue, BlockingQueue, ConcurrentHashMap, ConcurrentLinkedQueue}
 
 import com.google.common.util.concurrent.Striped
-import de.unruh.isabelle.control.Isabelle.Setup
+import de.unruh.isabelle.control.Isabelle.SetupGeneral
 import de.unruh.isabelle.mlvalue.MLValue
 import de.unruh.isabelle.pure.Term
 import org.apache.commons.io.FileUtils
@@ -65,7 +65,7 @@ import scala.util.{Failure, Success, Try}
   *
   * New exceptions for storing other types can be defined at runtime using [[executeMLCode]].
   *
-  * @param setup Configuration object that specifies the path of the Isabelle binary etc. See [[de.unruh.isabelle.control.Isabelle.Setup]]. This also
+  * @param setup Configuration object that specifies the path of the Isabelle binary etc. See [[de.unruh.isabelle.control.Isabelle.SetupGeneral]]. This also
   *              specifies with Isabelle heap to load.
   * @param build Whether to build the Isabelle heap before running Isabelle. If false, the heap will never be
   *              built. (This means changes in the Isabelle theories will not be reflected. And if the heap was never
@@ -76,7 +76,7 @@ import scala.util.{Failure, Success, Try}
 
 // TODO: build should be a flag in SetupSlave
 
-class Isabelle(val setup: Setup, build: Boolean = true) {
+class Isabelle(val setup: SetupGeneral, build: Boolean = true) {
   import Isabelle._
 
   private val sendQueue : BlockingQueue[(DataOutputStream => Unit, Try[Data] => Unit)] = new ArrayBlockingQueue(1000)
@@ -280,7 +280,7 @@ class Isabelle(val setup: Setup, build: Boolean = true) {
    * This function is not portable.
    * To make the library run with Windows (and maybe OS/X), this function needs to be rewritten.
    * */
-  private def startProcessSlave(setup: SetupSlave) : java.lang.Process = {
+  private def startProcessSlave(setup: Setup) : java.lang.Process = {
     def wd = setup.workingDirectory
     /** Path to absolute string, interpreted relative to wd */
     def str(path: Path) = wd.resolve(path).toAbsolutePath.toString
@@ -378,9 +378,9 @@ class Isabelle(val setup: Setup, build: Boolean = true) {
     return null; // No process
   }
 
-  if (build && setup.isInstanceOf[SetupSlave]) buildSession(setup.asInstanceOf[SetupSlave])
+  if (build && setup.isInstanceOf[Setup]) buildSession(setup.asInstanceOf[Setup])
   private val process: lang.Process = setup match {
-    case setup : SetupSlave => startProcessSlave(setup)
+    case setup : Setup => startProcessSlave(setup)
     case setup : SetupRunning => startProcessRunning(setup)
   }
 
@@ -597,7 +597,7 @@ object Isabelle {
   }
 
   // DOCUMENT
-  sealed trait Setup {
+  sealed trait SetupGeneral {
     // DOCUMENT
     val isabelleCommandHandler : Data => Unit
   }
@@ -619,17 +619,18 @@ object Isabelle {
     *                None (default) means to let Isabelle chose the default location.
     *                Here Isabelle stores user configuration and heap images (unless
     *                the location of the heap images is configured differently, see the Isabelle system manual)
+    * @param isabelleCommandHandler see {@link SetupGeneral}
     */
-  case class SetupSlave(isabelleHome : Path,
-                        logic : String = "HOL",
-                        userDir : Option[Path] = None,
-                        workingDirectory : Path = Paths.get(""),
-                        sessionRoots : Seq[Path] = Nil,
-                        isabelleCommandHandler: Data => Unit = Isabelle.defaultCommandHandler) extends Setup
+  case class Setup(isabelleHome : Path,
+                   logic : String = "HOL",
+                   userDir : Option[Path] = None,
+                   workingDirectory : Path = Paths.get(""),
+                   sessionRoots : Seq[Path] = Nil,
+                   isabelleCommandHandler: Data => Unit = Isabelle.defaultCommandHandler) extends SetupGeneral
 
   // DOCUMENT
   case class SetupRunning(inputPipe : Path, outputPipe : Path,
-                          isabelleCommandHandler: Data => Unit = Isabelle.defaultCommandHandler) extends Setup
+                          isabelleCommandHandler: Data => Unit = Isabelle.defaultCommandHandler) extends SetupGeneral
 
   //noinspection UnstableApiUsage
   private val buildLocks = Striped.lazyWeakReadWriteLock(10)
@@ -640,7 +641,7 @@ object Isabelle {
     *
     * @param setup Configuration of Isabelle.
     */
-  def buildSession(setup: SetupSlave) : Unit = {
+  def buildSession(setup: Setup) : Unit = {
     def wd = setup.workingDirectory
     /** Path to absolute string, interpreted relative to wd */
     def str(path: Path) = wd.resolve(path).toAbsolutePath.toString
@@ -681,7 +682,7 @@ object Isabelle {
     * @param files Files to open in jEdit
     * @throws IsabelleJEditException if jEdit fails (returns return code ≠0)
     */
-  def jedit(setup: SetupSlave, files: Seq[Path]) : Unit = {
+  def jedit(setup: Setup, files: Seq[Path]) : Unit = {
     def wd = setup.workingDirectory
     /** Path to absolute string, interpreted relative to wd */
     def str(path: Path) = wd.resolve(path).toAbsolutePath.toString

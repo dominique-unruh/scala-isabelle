@@ -13,8 +13,8 @@ import de.unruh.isabelle.control.Isabelle
  * [[https://github.com/dominique-unruh/scala-isabelle/issues/new?labels=java file an issue]].
  */
 object JIsabelle {
-  /** Invokes [[control.Isabelle.Setup Isabelle.Setup]]`(isabelleHome=isabelleHome)`. All other arguments to
-   * [[control.Isabelle.Setup Isabelle.Setup]] take default values.
+  /** Invokes [[control.Isabelle.SetupGeneral Isabelle.Setup]]`(isabelleHome=isabelleHome)`. All other arguments to
+   * [[control.Isabelle.SetupGeneral Isabelle.Setup]] take default values.
    **/
-  def setup(isabelleHome: Path): Isabelle.Setup = Isabelle.SetupSlave(isabelleHome = isabelleHome)
+  def setup(isabelleHome: Path): Isabelle.SetupGeneral = Isabelle.Setup(isabelleHome = isabelleHome)
 }

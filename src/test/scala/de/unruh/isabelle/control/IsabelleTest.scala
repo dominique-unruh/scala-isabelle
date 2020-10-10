@@ -3,7 +3,7 @@ package de.unruh.isabelle.control
 import java.io.{BufferedReader, FileInputStream, FileReader}
 import java.nio.file.{Files, Path, Paths}
 
-import de.unruh.isabelle.control.Isabelle.{DInt, DList, DString, Data, Setup, SetupSlave}
+import de.unruh.isabelle.control.Isabelle.{DInt, DList, DString, Data, SetupGeneral, Setup}
 import de.unruh.isabelle.control.IsabelleTest.isabelle
 import de.unruh.isabelle.mlvalue.MLValue
 import de.unruh.isabelle.mlvalue.MLValueTest.await
@@ -117,7 +117,7 @@ object IsabelleTest {
     Paths.get(path)
   }
 
-  val setup: SetupSlave = SetupSlave(
+  val setup: Setup = Setup(
     isabelleHome = isabelleHome,
     sessionRoots = Nil,
     userDir = None,
