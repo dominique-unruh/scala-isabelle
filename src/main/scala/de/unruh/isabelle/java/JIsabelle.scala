@@ -16,5 +16,8 @@ object JIsabelle {
   /** Invokes [[control.Isabelle.SetupGeneral Isabelle.Setup]]`(isabelleHome=isabelleHome)`. All other arguments to
    * [[control.Isabelle.SetupGeneral Isabelle.Setup]] take default values.
    **/
-  def setup(isabelleHome: Path): Isabelle.SetupGeneral = Isabelle.Setup(isabelleHome = isabelleHome)
+  def setup(isabelleHome: Path): Isabelle.Setup = Isabelle.Setup(isabelleHome = isabelleHome)
+
+  // DOCUMENT
+  def setupSetBuild(build : Boolean, setup : Isabelle.Setup): Isabelle.Setup = setup.copy(build = build)
 }

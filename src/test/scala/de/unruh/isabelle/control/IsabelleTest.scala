@@ -86,7 +86,7 @@ class IsabelleTest extends AnyFunSuite {
   }
 
   test("destroy & wait for a future") {
-    implicit val isabelle: Isabelle = new Isabelle(IsabelleTest.setup, build=false)
+    implicit val isabelle: Isabelle = new Isabelle(IsabelleTest.setup)
     // Basically never finishes
     val slowComputation = isabelle.storeValue("OS.Process.sleep (Time.fromSeconds 1000000000); Match")
     isabelle.destroy()
@@ -97,7 +97,7 @@ class IsabelleTest extends AnyFunSuite {
 
   test("Isabelle fails to start") {
     val setup = IsabelleTest.setup.copy(logic="NonexistingLogic")
-    val isabelle = new Isabelle(setup, build=false)
+    val isabelle = new Isabelle(setup)
     val id = isabelle.storeValue("Match")
     val exn = intercept[IsabelleDestroyedException] {
       await(id)
@@ -121,12 +121,13 @@ object IsabelleTest {
     isabelleHome = isabelleHome,
     sessionRoots = Nil,
     userDir = None,
-    workingDirectory = Path.of("src/test/isabelle")
+    workingDirectory = Path.of("src/test/isabelle"),
+    build=false
   )
 
   implicit lazy val isabelle: Isabelle = {
     println("Starting Isabelle")
-    val isa = new Isabelle(setup, build=false)
+    val isa = new Isabelle(setup)
     println("Started. Initializing Term/Typ/Context")
     println("Initialized.")
     isa

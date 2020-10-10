@@ -67,16 +67,9 @@ import scala.util.{Failure, Success, Try}
   *
   * @param setup Configuration object that specifies the path of the Isabelle binary etc. See [[de.unruh.isabelle.control.Isabelle.SetupGeneral]]. This also
   *              specifies with Isabelle heap to load.
-  * @param build Whether to build the Isabelle heap before running Isabelle. If false, the heap will never be
-  *              built. (This means changes in the Isabelle theories will not be reflected. And if the heap was never
-  *              built, the Isabelle process fails.) If true, the Isabelle build command will be invoked. That
-  *              command automatically checks for changed dependencies but may add a noticable delay even if
-  *              the heap was already built.
   */
 
-// TODO: build should be a flag in SetupSlave
-
-class Isabelle(val setup: SetupGeneral, build: Boolean = true) {
+class Isabelle(val setup: SetupGeneral) {
   import Isabelle._
 
   private val sendQueue : BlockingQueue[(DataOutputStream => Unit, Try[Data] => Unit)] = new ArrayBlockingQueue(1000)
@@ -378,7 +371,9 @@ class Isabelle(val setup: SetupGeneral, build: Boolean = true) {
     return null; // No process
   }
 
-  if (build && setup.isInstanceOf[Setup]) buildSession(setup.asInstanceOf[Setup])
+  setup match {
+    case setup : Setup => if (setup.build) buildSession(setup)
+    case _ => }
   private val process: lang.Process = setup match {
     case setup : Setup => startProcessSlave(setup)
     case setup : SetupRunning => startProcessRunning(setup)
@@ -619,6 +614,11 @@ object Isabelle {
     *                None (default) means to let Isabelle chose the default location.
     *                Here Isabelle stores user configuration and heap images (unless
     *                the location of the heap images is configured differently, see the Isabelle system manual)
+    * @param build Whether to build the Isabelle heap before running Isabelle. If false, the heap will never be
+    *              built. (This means changes in the Isabelle theories will not be reflected. And if the heap was never
+    *              built, the Isabelle process fails.) If true, the Isabelle build command will be invoked. That
+    *              command automatically checks for changed dependencies but may add a noticable delay even if
+    *              the heap was already built.
     * @param isabelleCommandHandler see {@link SetupGeneral}
     */
   case class Setup(isabelleHome : Path,
@@ -626,6 +626,7 @@ object Isabelle {
                    userDir : Option[Path] = None,
                    workingDirectory : Path = Paths.get(""),
                    sessionRoots : Seq[Path] = Nil,
+                   build : Boolean = true,
                    isabelleCommandHandler: Data => Unit = Isabelle.defaultCommandHandler) extends SetupGeneral
 
   // DOCUMENT

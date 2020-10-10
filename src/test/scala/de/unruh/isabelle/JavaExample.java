@@ -121,9 +121,9 @@ public class JavaExample {
 
     void runExample(String isabelleHome) {
         // Initialize the Isabelle process with session HOL.
-        Isabelle.SetupGeneral setup = JIsabelle.setup(Path.of(isabelleHome));
         // Differs from example in README: we skip building to make tests faster
-        isabelle = new Isabelle(setup, false);
+        Isabelle.SetupGeneral setup = JIsabelle.setupSetBuild(false, JIsabelle.setup(Path.of(isabelleHome)));
+        isabelle = new Isabelle(setup);
 
         // Load the Isabelle/HOL theory "Main" and create a context object
         Context ctxt = Context.apply("Main", isabelle, global());

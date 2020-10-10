@@ -18,9 +18,9 @@ object Example {
     // Initialize the Isabelle process with session HOL.
     // The first command line argument must be the Isabelle installation directory
     val isabelleHome = args(0)
-    val setup = Isabelle.Setup(isabelleHome = Path.of(isabelleHome), logic = "HOL")
     // Differs from example in README: we skip building to make tests faster
-    implicit val isabelle: Isabelle = new Isabelle(setup, build=false)
+    val setup = Isabelle.Setup(isabelleHome = Path.of(isabelleHome), logic = "HOL", build=false)
+    implicit val isabelle: Isabelle = new Isabelle(setup)
 
     // Load the Isabelle/HOL theory "Main" and create a context object
     val ctxt = Context("Main")
