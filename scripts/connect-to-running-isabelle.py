@@ -7,10 +7,14 @@ os.chdir(distribution_directory)
 
 inputPipe = sys.argv[1]
 outputPipe = sys.argv[2]
+logfile = sys.argv[3]
 
-# TODO use a logfile provided on the command line
+log = open(logfile, "wt")
+sys.stdout = log
+sys.stderr = log
 
-log = open("/tmp/scala-isabelle.log", "wt")
+subprocess.check_call(["mkfifo", inputPipe], stdout=log, stderr=log)
+subprocess.check_call(["mkfifo", outputPipe], stdout=log, stderr=log)
 
 process = subprocess.Popen(["sbt", f"runMain de.unruh.isabelle.control.ConnectToRunningIsabelle {inputPipe} {outputPipe}"],
                            stdin=subprocess.DEVNULL, stderr=subprocess.STDOUT, stdout=subprocess.PIPE, encoding='utf8')

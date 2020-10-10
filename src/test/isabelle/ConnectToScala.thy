@@ -6,12 +6,11 @@ begin
 ML \<open>
 fun system string = if OS.Process.system string |> OS.Process.isSuccess then () else
   error ("Command " ^ string ^ " returned non-zero error code")
-val inputPipeName = "/tmp/input-pipe" ^ string_of_int (Random.random_range 0 100000000000)
-val outputPipeName = "/tmp/output-pipe" ^ string_of_int (Random.random_range 0 100000000000)
-val _ = system ("mkfifo " ^ inputPipeName)
-val _ = system ("mkfifo " ^ outputPipeName)
+val random = string_of_int (Random.random_range 0 100000000000) ^ serial_string ()
+val inputPipeName = "/tmp/input-pipe" ^ random
+val outputPipeName = "/tmp/output-pipe" ^ random
 val _ = system ("/home/unruh/svn/qrhl-tool/scala-isabelle/scripts/connect-to-running-isabelle.py "
-          ^ inputPipeName ^ " " ^ outputPipeName)
+          ^ inputPipeName ^ " " ^ outputPipeName ^ " " ^ "/tmp/scala-isabelle.log")
 \<close>
 
 ML_file "../../main/resources/de/unruh/isabelle/control/control_isabelle.ml"
