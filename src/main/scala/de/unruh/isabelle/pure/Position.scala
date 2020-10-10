@@ -16,6 +16,7 @@ final class Position private [Position](val mlValue : MLValue[Position]) extends
 
 object Position extends MLValueWrapper.Companion[Position] {
   override protected val mlType = "Position.T"
+  override protected val predefinedException: String = "E_Position"
 
   override protected def instantiate(mlValue: MLValue[Position]): Position = new Position(mlValue)
 

@@ -19,6 +19,7 @@ final class TheoryHeader private[TheoryHeader] (val mlValue: MLValue[TheoryHeade
 
 object TheoryHeader extends MLValueWrapper.Companion[TheoryHeader] {
   override protected val mlType: String = "Thy_Header.header"
+  override protected val predefinedException: String = "E_TheoryHeader"
   //noinspection TypeAnnotation
   protected final class Ops(implicit isabelle: Isabelle, ec: ExecutionContext) extends super.Ops {
     import MLValue.compileFunction

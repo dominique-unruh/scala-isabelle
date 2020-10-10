@@ -16,7 +16,12 @@ object MLValueWrapper {
 
   trait Companion[A <: MLValueWrapper[A]] extends OperationCollection {
     protected val mlType: String
-    protected val _exceptionName: String = Utils.freshName("E_" + mlType)
+    protected val predefinedException: String = null
+    private lazy val _exceptionName: String =
+      if (predefinedException==null)
+        Utils.freshName("E_" + mlType)
+      else
+        predefinedException
     protected def instantiate(mlValue: MLValue[A]) : A
 
     def exceptionName(implicit isabelle: Isabelle, ec: ExecutionContext): String = {
@@ -24,7 +29,8 @@ object MLValueWrapper {
     }
 
     protected class Ops(implicit isabelle: Isabelle, ec: ExecutionContext) {
-      isabelle.executeMLCodeNow(s"exception ${_exceptionName} of ($mlType)")
+      if (predefinedException==null)
+        isabelle.executeMLCodeNow(s"exception ${_exceptionName} of ($mlType)")
     }
 
     override protected def newOps(implicit isabelle: Isabelle, ec: ExecutionContext): Ops = new Ops

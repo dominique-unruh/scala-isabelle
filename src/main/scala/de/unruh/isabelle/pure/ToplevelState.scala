@@ -13,5 +13,6 @@ final class ToplevelState private (val mlValue: MLValue[ToplevelState]) extends 
 
 object ToplevelState extends MLValueWrapper.Companion[ToplevelState] {
   override protected val mlType: String = "Toplevel.state"
+  override protected val predefinedException: String = "E_ToplevelState"
   override protected def instantiate(mlValue: MLValue[ToplevelState]): ToplevelState = new ToplevelState(mlValue)
 }

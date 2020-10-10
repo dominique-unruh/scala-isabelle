@@ -35,7 +35,7 @@ import de.unruh.isabelle.pure.Implicits._
  * To make sure a [[Context]] actually contains a value, use, e.g., [[Context.force]].
  *
  * */
-final class Context private [Context](val mlValue : MLValue[Context]) extends FutureValue {
+final class Context private [Context](val mlValue : MLValue[Context]) extends MLValueWrapper[Context] {
   /**
    * Returns "context", "context (computing)", or "context (failed)" depending on
    * whether this context is ready, still being computed, or computation has thrown an exception.
@@ -43,17 +43,15 @@ final class Context private [Context](val mlValue : MLValue[Context]) extends Fu
    */
 
   override def toString: String = "context" + mlValue.stateString
-  override def await: Unit = mlValue.await
-  override def someFuture: Future[Any] = mlValue.someFuture
+//  override def await: Unit = mlValue.await
+//  override def someFuture: Future[Any] = mlValue.someFuture
 }
 
-object Context extends OperationCollection {
+object Context extends MLValueWrapper.Companion[Context] {
   override protected def newOps(implicit isabelle: Isabelle, ec: ExecutionContext): Ops = new Ops()
-  protected[isabelle] class Ops(implicit val isabelle: Isabelle, ec: ExecutionContext) {
+  protected[isabelle] class Ops(implicit val isabelle: Isabelle, ec: ExecutionContext) extends super.Ops {
     import MLValue.compileFunction
-//    Theory.init()
-//    isabelle.executeMLCodeNow("exception E_Context of Proof.context")
-    val contextFromTheory : MLFunction[Theory, Context] =
+    lazy val contextFromTheory : MLFunction[Theory, Context] =
       compileFunction[Theory, Context]("Proof_Context.init_global")
   }
 
@@ -69,25 +67,8 @@ object Context extends OperationCollection {
   def apply(name: String)(implicit isabelle: Isabelle, ec: ExecutionContext) : Context =
     Context(Theory(name))
 
-  /** Representation of contexts in the Isabelle process. (See the general [[Context]] discussion.)
-   * The ML type is `Proof.context`. A context `context : Proof.context` is represented as an exception
-   * `E_Context context`.
-   *
-   * (`E_Context` is automatically declared when needed by the ML code in this package.
-   * If you need to ensure that it is defined for compiling own ML code, invoke [[Context.init]].)
-   *
-   * Available as an implicit value by importing [[de.unruh.isabelle.pure.Implicits]]`._`
-   **/
-  object ContextConverter extends Converter[Context] {
-    override def retrieve(value: MLValue[Context])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Context] = {
-        Future.successful(new Context(mlValue = value))
-    }
+  override protected val mlType: String = "Proof.context"
+  override protected val predefinedException: String = "E_Context"
 
-    override def store(value: Context)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[Context] =
-      value.mlValue
-    override def exnToValue(implicit isabelle: Isabelle, ec: ExecutionContext): String = "fn E_Context ctxt => ctxt"
-    override def valueToExn(implicit isabelle: Isabelle, ec: ExecutionContext): String = "E_Context"
-
-    override def mlType(implicit isabelle: Isabelle, ec: ExecutionContext): String = "Proof.context"
-  }
+  override protected def instantiate(mlValue: MLValue[Context]): Context = new Context(mlValue)
 }

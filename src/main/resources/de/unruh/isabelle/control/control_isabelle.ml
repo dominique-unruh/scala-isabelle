@@ -16,6 +16,11 @@ structure Control_Isabelle : sig
   exception E_Thm of thm
   exception E_Typ of typ
   exception E_Ctyp of ctyp
+  exception E_Path of Path.T
+  exception E_TheoryHeader of Thy_Header.header
+  exception E_Position of Position.T
+  exception E_ToplevelState of Toplevel.state
+  exception E_Keywords of Thy_Header.keywords
 
   val store : int -> exn -> unit
   (* For diagnostics. Linear time *)
@@ -42,6 +47,11 @@ exception E_Theory of theory
 exception E_Thm of thm
 exception E_Typ of typ
 exception E_Ctyp of ctyp
+exception E_Path of Path.T
+exception E_TheoryHeader of Thy_Header.header
+exception E_Position of Position.T
+exception E_ToplevelState of Toplevel.state
+exception E_Keywords of Thy_Header.keywords
 
 val inStream = BinIO.openIn inputPipeName
 val outStream = BinIO.openOut outputPipeName

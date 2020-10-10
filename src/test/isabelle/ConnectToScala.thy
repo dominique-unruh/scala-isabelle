@@ -64,8 +64,8 @@ fun scala_diag_command (scala:string) (args:(string*string*(Proof.context->exn))
   val data = DList (map (fn (_,_,exn) => DObject (exn ctxt)) args)
 
   val scala' = String.concat scala'
-  val _ = tracing scala'
-  val _ = \<^print> data
+  (* val _ = tracing scala' *)
+  (* val _ = \<^print> data *)
   val _ = Control_Isabelle.sendToScala (DList [DString scala', data])
   in () end)
 in
