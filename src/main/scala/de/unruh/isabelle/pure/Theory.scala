@@ -4,6 +4,7 @@ import java.nio.file.{Files, Path}
 import java.util.concurrent.ConcurrentHashMap
 
 import de.unruh.isabelle.control.{Isabelle, OperationCollection}
+import de.unruh.isabelle.misc.Utils
 import de.unruh.isabelle.mlvalue.MLValue.Converter
 import de.unruh.isabelle.mlvalue.{FutureValue, MLFunction, MLFunction3, MLValue, Version}
 import de.unruh.isabelle.pure.Theory.Ops
@@ -130,12 +131,7 @@ final class Theory private [Theory](val name: String, val mlValue : MLValue[Theo
   /** Like [[importMLStructureNow]] but returns a future containing the name of the imported structure without delay. */
   def importMLStructure(name: String)(implicit isabelle: Isabelle, executionContext: ExecutionContext) : Future[String] = {
     import scalaz.syntax.id._
-    // TODO: Use Utils.randomName
-    val newName = name
-      .map { c => if (c<128 && c.isLetterOrDigit) c else '_' }
-      .into { n:String => if (n.head.isLetter) n else "X"+n }
-      .capitalize
-      .into { _ + '_' + Random.alphanumeric.take(12).mkString }
+    val newName = Utils.freshName(name).capitalize
     for (_ <- Ops.importMLStructure(this, name, newName).retrieve)
       yield newName
   }

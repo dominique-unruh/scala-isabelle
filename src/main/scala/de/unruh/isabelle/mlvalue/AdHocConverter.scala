@@ -16,9 +16,6 @@ abstract class AdHocConverter protected(val mlType: String) extends OperationCol
     override def toString: String = tString
   }
 
-  import scalaz.syntax.id._
-
-  // TODO: Use Utils.randomName
   private val _exceptionName: String = Utils.freshName("E_" + mlType)
 
   def exceptionName(implicit isabelle: Isabelle, ec: ExecutionContext): String = {
