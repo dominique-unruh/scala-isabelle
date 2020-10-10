@@ -24,7 +24,6 @@ object Version extends OperationCollection {
   /** Value for [[year]] that indicates that the version could not be determined.
    * Guaranteed to be larger than any correct year value */
   final val INVALID_YEAR = 99998
-  final val INVALID_YEAR = 99998
 
   override protected def newOps(implicit isabelle: Isabelle, ec:  ExecutionContext): Ops = new Ops
   protected class Ops(implicit isabelle: Isabelle, ec:  ExecutionContext) {

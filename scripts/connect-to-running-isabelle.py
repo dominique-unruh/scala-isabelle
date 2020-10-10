@@ -22,6 +22,10 @@ while line:
     log.flush()
     line = process.stdout.readline()
 
+if not line:
+    log.write(f"Isabelle failed to start. Return code: {process.wait(10)}\n")
+    sys.exit(1)
+
 log.write("Scala-isaballe started, forking.\n")
 log.flush()
 
