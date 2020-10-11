@@ -12,8 +12,17 @@ import scala.language.postfixOps
 import de.unruh.isabelle.mlvalue.Implicits._
 import de.unruh.isabelle.pure.Implicits._
 
-// DOCUMENT
+/** Represents a theory header (ML type `Thy_Header.header`) in the Isabelle process.
+ *
+ * An instance of this class is merely a thin wrapper around an [[mlvalue.MLValue MLValue]],
+ * all explanations and examples given for [[Context]] also apply here.
+ *
+ * An implict [[MLValue.Converter]] can be imported from [[Implicits]]`._`. The representation
+ * of a header `header` as an ML exception is `E_TheoryHeader header`.
+ */
 final class TheoryHeader private[TheoryHeader] (val mlValue: MLValue[TheoryHeader]) extends MLValueWrapper[TheoryHeader] {
+  /** The list of theory imports by the theory with this header.
+   * (Corresponds to the `imports` field of the header in ML.) */
   def imports(implicit isabelle: Isabelle, ec: ExecutionContext) : List[String] = Ops.getImports(this).retrieveNow
 }
 

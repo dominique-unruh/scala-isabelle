@@ -12,8 +12,8 @@ trait MLValueWrapper[A <: MLValueWrapper[A]] extends FutureValue {
   override def await: Unit = mlValue.await
   override def someFuture: Future[Any] = mlValue.someFuture
 }
-object MLValueWrapper {
 
+object MLValueWrapper {
   trait Companion[A <: MLValueWrapper[A]] extends OperationCollection {
     protected val mlType: String
     protected val predefinedException: String = null

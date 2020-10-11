@@ -20,7 +20,6 @@ class TheoryManager {
   def getTheory(source: Source)(implicit isabelle: Isabelle, ec: ExecutionContext): Theory = source match {
     case Heap(name) => Theory(name)
     case Text(text, path, position) =>
-      // TODO Uses stuff from ExecuteIsar!
       var toplevel = init_toplevel().force.retrieveNow
       var thy0 = beginTheory(source)
       for ((transition, text) <- parse_text(thy0, text).force.retrieveNow) {
@@ -43,12 +42,11 @@ object TheoryManager extends OperationCollection {
 
   trait Source { def path : Path }
   case class Heap(name: String) extends Source {
-    override def path: Path = Paths.get("INVALID") // TODO
+    override def path: Path = Paths.get("INVALID")
   }
   case class File(path: Path) extends Source
   case class Text(text: String, path: Path, position: Position) extends Source
   object Text {
-    // TODO: default position should come from path
     def apply(text: String, path: Path)(implicit isabelle: Isabelle, ec: ExecutionContext): Text = new Text(text, path, Position.none)
   }
 

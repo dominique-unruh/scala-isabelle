@@ -9,7 +9,14 @@ import scala.concurrent.ExecutionContext
 // Implicits
 import Implicits._
 
-// DOCUMENT
+/** Represents a position (ML type `Position.T`) in the Isabelle process.
+ *
+ * An instance of this class is merely a thin wrapper around an [[mlvalue.MLValue MLValue]],
+ * all explanations and examples given for [[Context]] also apply here.
+ *
+ * An implict [[MLValue.Converter]] can be imported from [[Implicits]]`._`. The representation
+ * of a position `pos` as an ML exception is `E_Position pos`.
+ */
 final class Position private [Position](val mlValue : MLValue[Position]) extends MLValueWrapper[Position] {
   override def toString: String = "position" + mlValue.stateString
 }
@@ -24,6 +31,7 @@ object Position extends MLValueWrapper.Companion[Position] {
     lazy val none: Position = compileValue[Position]("Position.none").retrieveNow
   }
 
+  /** Represents an unspecified position (`Position.none` in ML). */
   def none(implicit isabelle: Isabelle, ec: ExecutionContext): Position = Ops.none
 
   override protected def newOps(implicit isabelle: Isabelle, ec: ExecutionContext): Ops = new Ops

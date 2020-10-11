@@ -28,6 +28,9 @@ import de.unruh.isabelle.pure.Implicits._
  *
  * The name of the theory can be retrieved via the member [[name]] if the theory was created
  * by [[Theory.apply(name:* Theory]]`(name)`. Otherwise, [[name]] returns a placeholder.
+ *
+ * An implict [[MLValue.Converter]] can be imported from [[Implicits]]`._`. The representation
+ * of a theory `thy` as an ML exception is `E_Theory thy`.
  */
 final class Theory private [Theory](val name: String, val mlValue : MLValue[Theory]) extends FutureValue {
   override def toString: String = s"theory $name${mlValue.stateString}"

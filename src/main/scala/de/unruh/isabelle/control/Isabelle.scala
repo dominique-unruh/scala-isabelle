@@ -619,7 +619,7 @@ object Isabelle {
     *              built, the Isabelle process fails.) If true, the Isabelle build command will be invoked. That
     *              command automatically checks for changed dependencies but may add a noticable delay even if
     *              the heap was already built.
-    * @param isabelleCommandHandler see {@link SetupGeneral}
+    * @param isabelleCommandHandler see [[SetupGeneral]]
     */
   case class Setup(isabelleHome : Path,
                    logic : String = "HOL",

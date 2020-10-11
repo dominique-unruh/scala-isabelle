@@ -18,6 +18,10 @@ object JIsabelle {
    **/
   def setup(isabelleHome: Path): Isabelle.Setup = Isabelle.Setup(isabelleHome = isabelleHome)
 
-  // DOCUMENT
+  /** Sets the [[de.unruh.isabelle.control.Isabelle.Setup.build build]] flag in the setup `setup`.
+   *
+   * @return `setup` with [[de.unruh.isabelle.control.Isabelle.Setup.build build]] set to `build`
+   * @param build the new value for `setup.`[[de.unruh.isabelle.control.Isabelle.Setup.build build]]
+   **/
   def setupSetBuild(build : Boolean, setup : Isabelle.Setup): Isabelle.Setup = setup.copy(build = build)
 }
