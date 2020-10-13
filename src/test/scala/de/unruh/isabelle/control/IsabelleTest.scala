@@ -7,6 +7,7 @@ import de.unruh.isabelle.control.Isabelle.{DInt, DList, DString, Data, SetupGene
 import de.unruh.isabelle.control.IsabelleTest.isabelle
 import de.unruh.isabelle.mlvalue.MLValue
 import de.unruh.isabelle.mlvalue.MLValueTest.await
+import org.apache.commons.lang3.SystemUtils
 import org.scalatest.concurrent.{Signaler, ThreadSignaler}
 import org.scalatest.concurrent.TimeLimits.failAfter
 import org.scalatest.funsuite.AnyFunSuite
@@ -112,6 +113,8 @@ object IsabelleTest {
     val config = Paths.get(".isabelle-home") // For setting the Isabelle home in Travis CI etc.
     val path = if (Files.exists(config))
       new BufferedReader(new FileReader(config.toFile)).readLine()
+    else if (SystemUtils.IS_OS_WINDOWS)
+      """c:\Program Files\Isabelle2020"""
     else
       "/opt/Isabelle2020"
     Paths.get(path)

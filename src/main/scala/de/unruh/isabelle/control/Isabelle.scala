@@ -8,11 +8,15 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.{FileSystemNotFoundException, Files, Path, Paths}
 import java.util.concurrent.{ArrayBlockingQueue, BlockingQueue, ConcurrentHashMap, ConcurrentLinkedQueue}
 
+import com.google.common.escape.Escaper
 import com.google.common.util.concurrent.Striped
 import de.unruh.isabelle.control.Isabelle.SetupGeneral
+import de.unruh.isabelle.misc.Utils
 import de.unruh.isabelle.mlvalue.MLValue
 import de.unruh.isabelle.pure.Term
 import org.apache.commons.io.FileUtils
+import org.apache.commons.lang3.SystemUtils
+import org.apache.commons.text.StringEscapeUtils
 import org.log4s
 import org.log4s.{Debug, LogLevel, Logger, Warn}
 
@@ -276,16 +280,19 @@ class Isabelle(val setup: SetupGeneral) {
    * */
   private def startProcessSlave(setup: Setup) : java.lang.Process = {
     def wd = setup.workingDirectory
+    // TODO do the same in buildSession
+    def cygwinIfWin(path: Path) =
+      if (SystemUtils.IS_OS_WINDOWS) Utils.cygwinPath(path) else path.toString
+    def abs(path: Path) = wd.resolve(path).toAbsolutePath
     /** Path to absolute string, interpreted relative to wd */
-    def str(path: Path) = wd.resolve(path).toAbsolutePath.toString
+    def str(path: Path) = cygwinIfWin(abs(path))
 
-    val useSockets = false
+    val useSockets = SystemUtils.IS_OS_WINDOWS
 
     val tempDir = Files.createTempDirectory("isabellecontrol").toAbsolutePath
     tempDir.toFile.deleteOnExit()
     logger.debug(s"Temp directory: $tempDir")
 
-    val isabelleBinary = setup.isabelleHome.resolve("bin").resolve("isabelle")
     val mlFile = filePathFromResource("control_isabelle.ml", tempDir)
 
     assert(setup.userDir.forall(_.endsWith(".isabelle")))
@@ -318,31 +325,33 @@ class Isabelle(val setup: SetupGeneral) {
         (new FileOutputStream(inputPipe.toFile), new FileInputStream(outputPipe.toFile))
       }
 
-    val cmd = ListBuffer[String]()
+    val isabelleArguments = ListBuffer[String]()
 
-    cmd += str(isabelleBinary) += "process"
-    cmd += "-l" += setup.logic
+    isabelleArguments += "process"
+    isabelleArguments += "-l" += setup.logic
 
     if (useSockets) {
       val address = s"${serverSocket.getInetAddress.getHostAddress}:${serverSocket.getLocalPort}"
-      cmd += "-e" += s"""val (controlIsabelleInStream, controlIsabelleOutStream) = Socket_IO.open_streams ("$address")"""
+      isabelleArguments += "-e" += s"""val (controlIsabelleInStream, controlIsabelleOutStream) = Socket_IO.open_streams ("$address")"""
     } else {
       import de.unruh.isabelle.misc.SMLCodeUtils.escapeSml
       val inFile = escapeSml(inputPipe.toString)
       val outFile = escapeSml(outputPipe.toString)
-      cmd += "-e" += s"""val (controlIsabelleInStream, controlIsabelleOutStream) = (BinIO.openIn "$inFile", BinIO.openOut "$outFile")"""
+      isabelleArguments += "-e" += s"""val (controlIsabelleInStream, controlIsabelleOutStream) = (BinIO.openIn "$inFile", BinIO.openOut "$outFile")"""
     }
 
-    cmd += "-f" += mlFile.toAbsolutePath.toString
+    isabelleArguments += "-f" += mlFile.toAbsolutePath.toString.replace('\\', '/')
 
-    cmd += "-e" += "Control_Isabelle.handleLines()"
+    isabelleArguments += "-e" += "Control_Isabelle.handleLines()"
 
     for (root <- setup.sessionRoots)
-      cmd += "-d" += str(root)
+      isabelleArguments += "-d" += str(root)
+
+    val cmd = makeIsabelleCommandLine(abs(setup.isabelleHome), isabelleArguments.toSeq)
 
     logger.debug(s"Cmd line: ${cmd.mkString(" ")}")
 
-    val processBuilder = new java.lang.ProcessBuilder(cmd.toSeq :_*)
+    val processBuilder = new java.lang.ProcessBuilder(cmd :_*)
     processBuilder.directory(wd.toAbsolutePath.toFile)
     for (userDir <- setup.userDir)
       processBuilder.environment.put("USER_HOME", str(userDir.getParent))
@@ -357,7 +366,7 @@ class Isabelle(val setup: SetupGeneral) {
     parseIsabelleThread.setDaemon(true)
     parseIsabelleThread.start()
 
-    val lock = Isabelle.buildLocks.get(wd.resolve(setup.isabelleHome).toAbsolutePath.normalize).readLock
+    val lock = Isabelle.buildLocks.get(abs(setup.isabelleHome).normalize).readLock
 
     lock.lockInterruptibly()
     try {
@@ -673,18 +682,21 @@ object Isabelle {
     */
   def buildSession(setup: Setup) : Unit = {
     def wd = setup.workingDirectory
+    def abs(path: Path) = wd.resolve(path).toAbsolutePath
     /** Path to absolute string, interpreted relative to wd */
-    def str(path: Path) = wd.resolve(path).toAbsolutePath.toString
-    val isabelleBinary = setup.isabelleHome.resolve("bin").resolve("isabelle")
-    val cmd = ListBuffer[String]()
+    def str(path: Path) = abs(path).toString
 
-    cmd += str(isabelleBinary) += "build"
-    cmd += "-b" // Build heap image
+    val isabelleArguments = ListBuffer[String]()
+
+    isabelleArguments += "build"
+    isabelleArguments += "-b" // Build heap image
 
     for (root <- setup.sessionRoots)
-      cmd += "-d" += str(root)
+      isabelleArguments += "-d" += str(root)
 
-    cmd += setup.logic
+    isabelleArguments += setup.logic
+
+    val cmd = makeIsabelleCommandLine(abs(setup.isabelleHome), isabelleArguments.toSeq)
 
     logger.debug(s"Cmd line: ${cmd.mkString(" ")}")
 
@@ -692,10 +704,10 @@ object Isabelle {
       for (userDir <- setup.userDir.toList)
         yield ("USER_HOME", str(userDir.getParent))
 
-    val processBuilder = scala.sys.process.Process(cmd.toSeq, wd.toAbsolutePath.toFile, extraEnv :_*)
+    val processBuilder = scala.sys.process.Process(cmd, wd.toAbsolutePath.toFile, extraEnv :_*)
     val errors = ListBuffer[String]()
 
-    val lock = buildLocks.get(wd.resolve(setup.isabelleHome).toAbsolutePath.normalize).writeLock
+    val lock = buildLocks.get(abs(setup.isabelleHome).normalize).writeLock
     lock.lockInterruptibly()
     try {
       if (0 != processBuilder.!(ProcessLogger(line => logger.debug(s"Isabelle build: $line"),
@@ -745,6 +757,16 @@ object Isabelle {
         throw IsabelleJEditException("Could not start Isabelle/jEdit")
     } finally
       lock.unlock()
+  }
+
+  private def makeIsabelleCommandLine(isabelleHome: Path, arguments: Seq[String]) : Seq[String]= {
+    if (SystemUtils.IS_OS_WINDOWS) {
+      val bash = isabelleHome.resolve("contrib").resolve("cygwin").resolve("bin").resolve("bash").toString
+      val isabelle = Utils.cygwinPath(isabelleHome.resolve("bin").resolve("isabelle"))
+      List(bash, "--login", "-c",
+        (List(isabelle) ++ arguments).map(StringEscapeUtils.escapeXSI).mkString(" "))
+    } else
+      List(isabelleHome.resolve("bin").resolve("isabelle").toString) ++ arguments
   }
 
   /** An algebraic datatype that allows to encode trees of data containing integers ([[DInt]]), strings ([[DString]]), and IDs of
