@@ -8,8 +8,8 @@ theory Control_Isabelle
 begin
 
 ML \<open>
-val inputPipeName = "/dev/null"
-val outputPipeName = "/dev/null"
+val controlIsabelleInStream = BinIO.openIn "/dev/null"
+val controlIsabelleInStream = BinIO.openOut "/dev/null"
 \<close>
 
 ML_file "../../main/resources/de/unruh/isabelle/control/control_isabelle.ml"

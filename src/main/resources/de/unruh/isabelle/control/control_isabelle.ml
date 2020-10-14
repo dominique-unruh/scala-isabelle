@@ -53,8 +53,13 @@ exception E_Position of Position.T
 exception E_ToplevelState of Toplevel.state
 exception E_Keywords of Thy_Header.keywords
 
-val inStream = BinIO.openIn inputPipeName
-val outStream = BinIO.openOut outputPipeName
+val inStream = controlIsabelleInStream
+val outStream = controlIsabelleOutStream
+
+(* val (inStream, outStream) = Socket_IO.open_streams (host ^ ":" ^ string_of_int port) *)
+
+(* val inStream = BinIO.openIn inputPipeName *)
+(* val outStream = BinIO.openOut outputPipeName *)
 
 (* Any sending of data, and any adding of data to the object store must use this mutex *)
 val mutex = Mutex.mutex ()

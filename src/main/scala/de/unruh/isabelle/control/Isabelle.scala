@@ -1,8 +1,9 @@
 package de.unruh.isabelle.control
 
-import java.io.{BufferedReader, BufferedWriter, DataInputStream, DataOutputStream, EOFException, FileInputStream, FileOutputStream, IOException, InputStream, InputStreamReader, OutputStreamWriter}
+import java.io.{BufferedReader, BufferedWriter, DataInputStream, DataOutputStream, EOFException, FileInputStream, FileOutputStream, IOException, InputStream, InputStreamReader, OutputStream, OutputStreamWriter}
 import java.lang
 import java.lang.ref.Cleaner
+import java.net.{InetAddress, ServerSocket, Socket}
 import java.nio.charset.StandardCharsets
 import java.nio.file.{FileSystemNotFoundException, Files, Path, Paths}
 import java.util.concurrent.{ArrayBlockingQueue, BlockingQueue, ConcurrentHashMap, ConcurrentLinkedQueue}
@@ -101,9 +102,9 @@ class Isabelle(val setup: SetupGeneral) {
     }
   }
 
-  private def processQueue(inFifo: Path) : Unit = {
+  private def processQueue(isabelleInput: OutputStream) : Unit = {
     logger.debug("Process queue thread started")
-    val stream = new DataOutputStream(new FileOutputStream(inFifo.toFile))
+    val stream = new DataOutputStream(isabelleInput);
     var count = 0
 
     def sendLine(line: DataOutputStream => Unit, callback: Try[Data] => Unit): Unit = {
@@ -194,8 +195,8 @@ class Isabelle(val setup: SetupGeneral) {
     * string: int32|bytes
     *
     **/
-  private def parseIsabelle(outFifo: Path) : Unit = {
-    val output = new DataInputStream(new FileInputStream(outFifo.toFile))
+  private def parseIsabelle(isabelleOutput: InputStream) : Unit = {
+    val output = new DataInputStream(isabelleOutput)
 
     def missingCallback(seq: Long, answerType: Int): Unit = {
       var exn : IsabelleProtocolException = null
@@ -278,6 +279,8 @@ class Isabelle(val setup: SetupGeneral) {
     /** Path to absolute string, interpreted relative to wd */
     def str(path: Path) = wd.resolve(path).toAbsolutePath.toString
 
+    val useSockets = false
+
     val tempDir = Files.createTempDirectory("isabellecontrol").toAbsolutePath
     tempDir.toFile.deleteOnExit()
     logger.debug(s"Temp directory: $tempDir")
@@ -287,22 +290,48 @@ class Isabelle(val setup: SetupGeneral) {
 
     assert(setup.userDir.forall(_.endsWith(".isabelle")))
 
-    val inputPipe = tempDir.resolve("in-fifo").toAbsolutePath
-    inputPipe.toFile.deleteOnExit()
-    val outputPipe = tempDir.resolve("out-fifo").toAbsolutePath
-    outputPipe.toFile.deleteOnExit()
-    if (Process(List("mkfifo", inputPipe.toString)).! != 0)
-      throw new IOException(s"Cannot create fifo $inputPipe")
-    if (Process(List("mkfifo", outputPipe.toString)).! != 0)
-      throw new IOException(s"Cannot create fifo $outputPipe")
+    val (inputPipe, outputPipe) =
+      if (useSockets)
+        (null, null)
+      else {
+        val inputPipe = tempDir.resolve("in-fifo").toAbsolutePath
+        inputPipe.toFile.deleteOnExit()
+        val outputPipe = tempDir.resolve("out-fifo").toAbsolutePath
+        outputPipe.toFile.deleteOnExit()
+        if (Process(List("mkfifo", inputPipe.toString)).! != 0)
+          throw new IOException(s"Cannot create fifo $inputPipe")
+        if (Process(List("mkfifo", outputPipe.toString)).! != 0)
+          throw new IOException(s"Cannot create fifo $outputPipe")
+        (inputPipe, outputPipe)
+      }
+
+    // TODO: Add security so that wrong processes cannot connect
+    val serverSocket =
+      if (useSockets) new ServerSocket(0,0,InetAddress.getLoopbackAddress)
+      else null
+
+    lazy val (input,output) =
+      if (useSockets) {
+        val socket = serverSocket.accept();
+        (socket.getOutputStream, socket.getInputStream)
+      } else {
+        (new FileOutputStream(inputPipe.toFile), new FileInputStream(outputPipe.toFile))
+      }
 
     val cmd = ListBuffer[String]()
 
     cmd += str(isabelleBinary) += "process"
     cmd += "-l" += setup.logic
 
-    import de.unruh.isabelle.misc.SMLCodeUtils.escapeSml
-    cmd += "-e" += s"""val (inputPipeName,outputPipeName) = ("${escapeSml(inputPipe.toString)}","${escapeSml(outputPipe.toString)}")"""
+    if (useSockets) {
+      val address = s"${serverSocket.getInetAddress.getHostAddress}:${serverSocket.getLocalPort}"
+      cmd += "-e" += s"""val (controlIsabelleInStream, controlIsabelleOutStream) = Socket_IO.open_streams ("$address")"""
+    } else {
+      import de.unruh.isabelle.misc.SMLCodeUtils.escapeSml
+      val inFile = escapeSml(inputPipe.toString)
+      val outFile = escapeSml(outputPipe.toString)
+      cmd += "-e" += s"""val (controlIsabelleInStream, controlIsabelleOutStream) = (BinIO.openIn "$inFile", BinIO.openOut "$outFile")"""
+    }
 
     cmd += "-f" += mlFile.toAbsolutePath.toString
 
@@ -319,12 +348,12 @@ class Isabelle(val setup: SetupGeneral) {
       processBuilder.environment.put("USER_HOME", str(userDir.getParent))
 
     val processQueueThread = new Thread("Send to Isabelle") {
-      override def run(): Unit = processQueue(inputPipe) }
+      override def run(): Unit = processQueue(input) }
     processQueueThread.setDaemon(true)
     processQueueThread.start()
 
     val parseIsabelleThread = new Thread("Read from Isabelle") {
-      override def run(): Unit = parseIsabelle(outputPipe) }
+      override def run(): Unit = parseIsabelle(output) }
     parseIsabelleThread.setDaemon(true)
     parseIsabelleThread.start()
 
@@ -359,12 +388,12 @@ class Isabelle(val setup: SetupGeneral) {
       throw IsabelleProtocolException(s"Output pipe $outputPipe does not exist")
 
     val processQueueThread = new Thread("Send to Isabelle") {
-      override def run(): Unit = processQueue(inputPipe) }
+      override def run(): Unit = processQueue(new FileOutputStream(inputPipe.toFile)) }
     processQueueThread.setDaemon(true)
     processQueueThread.start()
 
     val parseIsabelleThread = new Thread("Read from Isabelle") {
-      override def run(): Unit = parseIsabelle(outputPipe) }
+      override def run(): Unit = parseIsabelle(new FileInputStream(outputPipe.toFile)) }
     parseIsabelleThread.setDaemon(true)
     parseIsabelleThread.start()
 
