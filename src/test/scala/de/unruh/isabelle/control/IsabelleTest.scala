@@ -134,10 +134,16 @@ object IsabelleTest {
   }
 }
 
-
+// With sockets:     1.58082ms
+// With named pipes: 0.03339ms
 object Benchmark1 {
   def main(args: Array[String]): Unit = {
     val id = await(isabelle.storeValue("E_Function I"))
+    println("Running warmup loop")
+    for (i <- 1 to 10000) {
+      await(isabelle.applyFunction(id, DInt(0)))
+    }
+    println("Warmup loop done")
     val count = 200000
     val time1 = System.currentTimeMillis()
     for (i <- 1 to count) {

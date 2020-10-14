@@ -274,6 +274,7 @@ object Theory extends OperationCollection {
       throw new IllegalArgumentException("Theory file must end in .thy")
     val thyName = filename.stripSuffix(".thy")
     val thyPath = path.toString.stripSuffix(".thy")
+    // TODO: use a Path as argument to loadTheory
     Ops.loadTheory(thyPath, s"Draft.$thyName").retrieveNow
   }
 
