@@ -3,8 +3,8 @@ package de.unruh.isabelle.control
 import java.io.{BufferedReader, FileInputStream, FileReader}
 import java.nio.file.{Files, Path, Paths}
 
-import de.unruh.isabelle.control.Isabelle.{DInt, DList, DString, Data, SetupGeneral, Setup}
-import de.unruh.isabelle.control.IsabelleTest.isabelle
+import de.unruh.isabelle.control.Isabelle.{DInt, DList, DString, Data, Setup, SetupGeneral}
+import de.unruh.isabelle.control.IsabelleTest.{isabelle, setup}
 import de.unruh.isabelle.mlvalue.MLValue
 import de.unruh.isabelle.mlvalue.MLValueTest.await
 import org.apache.commons.lang3.SystemUtils
@@ -105,6 +105,14 @@ class IsabelleTest extends AnyFunSuite {
     }
     println(exn)
     assert(exn.message.contains("Undefined session"))
+  }
+
+  test("correct working directory") {
+    val id = isabelle.storeValue("E_Function (fn _ => DString (OS.FileSys.getDir ()))")
+    val DString(dir) = await(isabelle.applyFunction(id, DList()))
+    println(dir)
+    assert(Paths.get(dir).normalize.toAbsolutePath
+      == setup.workingDirectory.normalize.toAbsolutePath)
   }
 }
 

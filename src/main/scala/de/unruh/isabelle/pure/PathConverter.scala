@@ -3,10 +3,13 @@ package de.unruh.isabelle.pure
 import java.nio.file.{Path, Paths}
 
 import de.unruh.isabelle.control.Isabelle.DString
-import de.unruh.isabelle.control.{Isabelle, OperationCollection}
+import de.unruh.isabelle.control.{Isabelle, IsabelleException, OperationCollection}
+import de.unruh.isabelle.misc.Utils
 import de.unruh.isabelle.mlvalue.{MLRetrieveFunction, MLStoreFunction, MLValue}
+import org.apache.commons.lang3.SystemUtils
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.matching.Regex
 
 // Implicits
 import Implicits._
@@ -16,12 +19,32 @@ object PathConverter extends MLValue.Converter[Path] with OperationCollection {
 
   override def mlType(implicit isabelle: Isabelle, ec: ExecutionContext): String = "Path.T"
 
-  override def retrieve(value: MLValue[Path])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Path] =
-    for (DString(path) <- Ops.retrievePath(value))
-      yield Paths.get(path)
+  val slashRegex: Regex = "/".r
 
-  override def store(value: Path)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[Path] =
-    Ops.storePath(DString(value.toString))
+  override def retrieve(value: MLValue[Path])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Path] =
+    for (DString(string) <- Ops.retrievePath(value))
+      yield /*if (SystemUtils.IS_OS_WINDOWS) {
+        slashRegex.split(string).toSeq match {
+          case Seq("", "cygdrive", root, rest @ _*) =>
+            Paths.get(root+":", rest :_*)
+          case Seq("", rest @ _*) =>
+            throw IsabelleException(s"Don't know how to translate $string to a Java path object. You may want to file a bug report for scala-isabelle if this is a valid path.")
+          case Seq(first, rest @ _*) =>
+            Paths.get(first, rest :_*)
+          case Seq() =>
+            throw IsabelleException(s"Don't know how to translate $string to a Java path object. You may want to file a bug report for scala-isabelle if this is a valid path.")
+        }
+      } else*/
+        Paths.get(string)
+
+  override def store(path: Path)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[Path] = {
+    val string =
+      if (SystemUtils.IS_OS_WINDOWS)
+        Utils.cygwinPath(path)
+      else
+        path.toString
+    Ops.storePath(DString(string))
+  }
 
   override def exnToValue(implicit isabelle: Isabelle, ec: ExecutionContext): String = s"fn $exceptionName path => path"
 
@@ -29,7 +52,8 @@ object PathConverter extends MLValue.Converter[Path] with OperationCollection {
 
   //noinspection TypeAnnotation
   protected class Ops(implicit isabelle: Isabelle, ec: ExecutionContext) {
-    lazy val retrievePath = MLRetrieveFunction[Path]("DString o Path.implode")
+//    lazy val retrievePath = MLRetrieveFunction[Path]("DString o Path.implode o Path.expand")
+    lazy val retrievePath = MLRetrieveFunction[Path]("DString o File.platform_path")
     lazy val storePath = MLStoreFunction[Path]("fn DString path => Path.explode path")
   }
   override protected def newOps(implicit isabelle: Isabelle, ec: ExecutionContext): Ops = new Ops

@@ -27,10 +27,16 @@ object Utils {
       .into { _ + '_' + Random.alphanumeric.take(12).mkString }
   }
 
-  def cygwinPath(path: Path): String = {
-    assert(SystemUtils.IS_OS_WINDOWS)
-    val root = path.getRoot.toString.stripSuffix(":\\")
-    val parts = for (i <- 0 until path.getNameCount) yield path.getName(i)
-    s"/cygdrive/$root/${parts.mkString("/")}"
-  }
+  // DOCUMENT
+  def cygwinPath(path: Path): String =
+    if (path.isAbsolute) {
+      assert(SystemUtils.IS_OS_WINDOWS)
+      val root = path.getRoot.toString.stripSuffix(":\\")
+      val parts = for (i <- 0 until path.getNameCount) yield path.getName(i)
+      s"/cygdrive/$root/${parts.mkString("/")}"
+    } else {
+      assert(SystemUtils.IS_OS_WINDOWS)
+      val parts = for (i <- 0 until path.getNameCount) yield path.getName(i)
+      parts.mkString("/")
+    }
 }
