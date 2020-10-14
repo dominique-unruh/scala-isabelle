@@ -456,9 +456,14 @@ class Isabelle(val setup: SetupGeneral) {
     }
   }
 
-  private def send(str: DataOutputStream => Unit, callback: Try[Data] => Unit) : Unit = {
+  // DOCUMENT
+  def checkDestroyed(): Unit = {
     if (destroyed!=null)
       throw destroyed
+  }
+
+  private def send(str: DataOutputStream => Unit, callback: Try[Data] => Unit) : Unit = {
+    checkDestroyed()
     sendQueue.put((str,callback))
   }
 

@@ -123,7 +123,7 @@ trait OperationCollection {
       logger.debug(s"Adding Ops instance in ${getClass.getName} for $isabelle")
       assert(isabelle != null, "Isabelle is null")
       assert(ec != null, "Execution context is null")
-      assert(!isabelle.isDestroyed, "Isabelle was destroyed")
+      isabelle.checkDestroyed()
       val ops = newOps(isabelle, ec)
       opsInstances = (isabelle, ops) :: opsInstances.filterNot(_._1.isDestroyed)
       ops
