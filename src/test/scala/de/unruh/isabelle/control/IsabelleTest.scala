@@ -139,6 +139,7 @@ object IsabelleTest {
 
 // With sockets:     1.58082ms
 // With named pipes: 0.03339ms
+// With sockets in Windows (VM): 0.56555ms
 object Benchmark1 {
   def main(args: Array[String]): Unit = {
     val id = await(isabelle.storeValue("E_Function I"))

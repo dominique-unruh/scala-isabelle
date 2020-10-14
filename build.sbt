@@ -1,5 +1,6 @@
 import java.io.PrintWriter
 
+import org.apache.commons.lang3.SystemUtils
 import sbt.io
 import sbt.io.Path.relativeTo
 
@@ -41,8 +42,9 @@ libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value
 
 lazy val travisRandomize = taskKey[Unit]("Randomize which test is run on Travis next time")
 travisRandomize := {
-  if (Process("git diff --quiet", cwd=baseDirectory.value).! != 0)
-    print(Process("scripts/travis-randomize.py", cwd=baseDirectory.value).!!)
+    if (!SystemUtils.IS_OS_WINDOWS) // On my machine, Windows doesn't have enough tools installed.
+        if (Process("git diff --quiet", cwd=baseDirectory.value).! != 0)
+            print(Process("scripts/travis-randomize.py", cwd=baseDirectory.value).!!)
 }
 compile in Compile := (compile in Compile).dependsOn(travisRandomize).value
 doc in Compile := (doc in Compile).dependsOn(travisRandomize).value
@@ -52,7 +54,11 @@ Compile / resourceGenerators += makeGitrevision.map(Seq(_))
 makeGitrevision := {
     val file = (Compile / resourceManaged).value / "de" / "unruh" / "isabelle" / "gitrevision.txt"
     file.getParentFile.mkdirs()
-    if ((baseDirectory.value / ".git").exists())
+    if (SystemUtils.IS_OS_WINDOWS) {
+        val pr = new PrintWriter(file)
+        pr.println("Built under windows, not adding gitrevision.txt") // On my machine, Windows doesn't have enough tools installed.
+        pr.close()
+    } else if ((baseDirectory.value / ".git").exists())
         Process(List("bash","-c",s"( date && git describe --tags --long --always --dirty --broken && git describe --always --all ) > ${file}")).!!
     else {
         val pr = new PrintWriter(file)
