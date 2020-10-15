@@ -1,0 +1,2 @@
+session ScalaIsabelleTestSession = HOL +
+  theories Empty

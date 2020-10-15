@@ -8,6 +8,7 @@ import de.unruh.isabelle.control.IsabelleTest.{isabelle, setup}
 import de.unruh.isabelle.mlvalue.MLValue
 import de.unruh.isabelle.mlvalue.MLValueTest.await
 import org.apache.commons.lang3.SystemUtils
+import org.apache.commons.text.StringEscapeUtils
 import org.scalatest.concurrent.{Signaler, ThreadSignaler}
 import org.scalatest.concurrent.TimeLimits.failAfter
 import org.scalatest.funsuite.AnyFunSuite
@@ -16,6 +17,7 @@ import org.scalatest.time.{Seconds, Span}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Await, Awaitable, Future}
 import scala.concurrent.duration.Duration
+import scala.sys.process.Process
 
 class IsabelleTest extends AnyFunSuite {
   private def await[A](f: Awaitable[A]) : A = Await.result(f, Duration.Inf)
@@ -113,6 +115,33 @@ class IsabelleTest extends AnyFunSuite {
     println(dir)
     assert(Paths.get(dir).normalize.toAbsolutePath
       == setup.workingDirectory.normalize.toAbsolutePath)
+  }
+
+  test("build") {
+    import StringEscapeUtils.escapeXSI
+    import scala.collection.JavaConverters._
+
+    // Deleting all existing heaps called ScalaIsabelleTestSession
+    for (dir <- List(setup.isabelleHomeAbsolute, setup.userDirAbsolute);
+         if Files.isDirectory(dir);
+         dir2 <- Seq(dir) ++ Files.list(dir).iterator().asScala; // "", "*/"
+         dir3 = dir2.resolve("heaps");
+         if Files.isDirectory(dir3);
+         dir4 <- Files.list(dir3).iterator().asScala; // "", "*/"
+         file = dir4.resolve("ScalaIsabelleTestSession");
+         if Files.exists(file)) {
+      println(s"Deleting $file")
+      Files.delete(file)
+    }
+
+//    assert(Process(List("bash","-c",s"rm -vf ${escapeXSI(setup.isabelleHomeAbsolute.toString)}/heaps/*/ScalaIsabelleTestSession")).! == 0)
+//    assert(Process(List("bash","-c",s"rm -vf ${escapeXSI(setup.userDirAbsolute.toString)}/*/heaps/*/ScalaIsabelleTestSession")).! == 0)
+
+    // Building ScalaIsabelleTestSession again
+    val isabelle = new Isabelle(setup.copy(logic = "ScalaIsabelleTestSession", build = true, sessionRoots = List(Path.of("."))))
+
+    // To check if some exception is thrown
+    isabelle.executeMLCodeNow("1")
   }
 }
 

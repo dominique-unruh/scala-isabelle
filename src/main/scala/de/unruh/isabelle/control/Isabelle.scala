@@ -670,7 +670,19 @@ object Isabelle {
                    workingDirectory : Path = Paths.get(""),
                    sessionRoots : Seq[Path] = Nil,
                    build : Boolean = true,
-                   isabelleCommandHandler: Data => Unit = Isabelle.defaultCommandHandler) extends SetupGeneral
+                   isabelleCommandHandler: Data => Unit = Isabelle.defaultCommandHandler) extends SetupGeneral {
+    // DOCUMENT
+    def isabelleHomeAbsolute: Path = workingDirectory.resolve(isabelleHome)
+    // DOCUMENT
+    def userDirAbsolute: Path = userDir match {
+      case Some(dir) => workingDirectory.resolve(dir)
+      case None =>
+        if (SystemUtils.IS_OS_WINDOWS)
+          ???
+        else
+          SystemUtils.getUserHome.toPath
+    }
+  }
 
   // DOCUMENT
   case class SetupRunning(inputPipe : Path, outputPipe : Path,
