@@ -1,6 +1,6 @@
 package de.unruh.isabelle.pure
 
-import java.nio.file.{Files, Path}
+import java.nio.file.{Files, Path, Paths}
 import java.util.concurrent.ConcurrentHashMap
 
 import de.unruh.isabelle.control.{Isabelle, OperationCollection}
@@ -230,8 +230,10 @@ object Theory extends OperationCollection {
         """)
     }
 
-    val loadTheory =
-      MLValue.compileFunction[String, String, Theory]("fn (name1,name2) => (Thy_Info.use_thy name1; Thy_Info.get_theory name2)")
+    val loadTheoryInternal =
+      MLValue.compileFunction[String, Theory]("fn name => (Thy_Info.use_thy name; Thy_Info.get_theory name)")
+    val loadTheoryPath =
+      MLValue.compileFunction[Path, String, Theory]("fn (path,name) => (Thy_Info.use_thy (Path.implode path); Thy_Info.get_theory name)")
     val importMLStructure : MLFunction3[Theory, String, String, Unit] = compileFunction(
       """fn (thy,theirName,hereStruct) => let
                   val theirAllStruct = Context.setmp_generic_context (SOME (Context.Theory thy))
@@ -256,7 +258,7 @@ object Theory extends OperationCollection {
    * theories.
    **/
   def apply(name: String)(implicit isabelle: Isabelle, ec: ExecutionContext): Theory =
-    Ops.loadTheory(name, name).retrieveNow
+    Ops.loadTheoryInternal(name).retrieveNow
 
   /** Retrieves a theory located at the path `path`.
    *
@@ -273,9 +275,8 @@ object Theory extends OperationCollection {
     if (!filename.endsWith(".thy"))
       throw new IllegalArgumentException("Theory file must end in .thy")
     val thyName = filename.stripSuffix(".thy")
-    val thyPath = path.toString.stripSuffix(".thy")
-    // TODO: use a Path as argument to loadTheory
-    Ops.loadTheory(thyPath, s"Draft.$thyName").retrieveNow
+    val thyPath = path.getParent match { case null => Paths.get(thyName); case p => p.resolve(thyName) }
+    Ops.loadTheoryPath(thyPath, s"Draft.$thyName").retrieveNow
   }
 
   /** Representation of theories in ML. (See the general discussion of [[Context]], the same things apply to [[Theory]].)
