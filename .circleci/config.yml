@@ -1,0 +1,79 @@
+version: 2.1
+
+general:
+  branches:
+    only:
+      - circleci-project-setup
+
+orbs:
+  windows: circleci/windows@2.4.0
+
+jobs:
+  build:
+
+    executor:
+      name: windows/default # executor type
+
+    environment:
+      # Customize the JVM maximum heap limit
+      JVM_OPTS: -Xmx3200m
+      TERM: dumb
+      ISA: 2020
+
+    steps:
+      - checkout
+
+      # Download and cache Isabelle
+      - restore_cache:
+          keys:
+            - v2-isabelle-2020
+            - v2-isabelle-{{ .Environment.ISA }}
+      - run:
+          shell: bash
+          command: |
+            if ! [ -e "$HOME/install/Isabelle${ISA}" ]; then
+              mkdir -p ~/install
+              curl "https://isabelle.in.tum.de/website-Isabelle$ISA/dist/Isabelle${ISA}.exe" -o /tmp/isabelle.exe
+              7z x -y -o"$HOME/install" /tmp/isabelle.exe
+            fi
+      - save_cache:
+          paths:
+            - ~/install/Isabelle2020
+          key: v2-isabelle-2020
+
+      # Download and cache dependencies
+      - restore_cache:
+          keys:
+            - v2-dependencies-{{ checksum "build.sbt" }}-{{ checksum "publish.sbt" }}
+            - v2-dependencies-
+            - dependencies-{{ checksum "build.sbt" }}-{{ checksum "publish.sbt" }}
+            - dependencies-
+      - run:
+          shell: bash
+          command: |
+            mkdir -p ~/install
+            if ! sha1sum -c ~/dependencies-sha1sum; then
+              curl -Ls https://git.io/sbt > ~/install/sbt
+              chmod +x ~/install/sbt
+              ~/install/sbt update </dev/null
+            fi
+            sha1sum build.sbt publish.sbt > ~/dependencies-sha1sum
+      - save_cache:
+          paths:
+            - ~/install/sbt
+            - ~/.m2
+            - ~/.sbt
+            - ~/.ivy2
+            - $LOCALAPPDATA\Coursier\Cache
+            - ~/dependencies-sha1sum
+          key: v2-dependencies-{{ checksum "build.sbt" }}-{{ checksum "publish.sbt" }}
+
+      - run:
+          shell: bash
+          command: |
+            cygpath -w ~/install/Isabelle$ISA > .isabelle-home
+            cat .isabelle-home
+            cat /dev/null | ~/install/sbt "testOnly -- -u scalatest-reports"
+
+      - store_test_results:
+          path: scalatest-reports
