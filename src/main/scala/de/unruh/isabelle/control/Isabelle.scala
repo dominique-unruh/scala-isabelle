@@ -22,6 +22,7 @@ import org.log4s.{Debug, LogLevel, Logger, Warn}
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters.collectionAsScalaIterableConverter
+import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future, Promise}
@@ -371,7 +372,7 @@ class Isabelle(val setup: SetupGeneral) {
     try {
       val process = processBuilder.start()
 
-      logStream(process.getErrorStream, Warn, storeLast = true) // stderr
+      logStream(process.getErrorStream, Warn) // stderr
       logStream(process.getInputStream, Debug) // stdout
 
       process.onExit.thenRun(() => processTerminated())
@@ -451,7 +452,9 @@ class Isabelle(val setup: SetupGeneral) {
       destroy(IsabelleDestroyedException(s"Isabelle process terminated normally"))
     else {
       Thread.sleep(500) // To ensure the error processing thread has time to store lastMessage
-      destroy(IsabelleDestroyedException(s"Isabelle process failed with exit value $exitValue: $lastMessage"))
+      destroy(IsabelleDestroyedException(
+        (s"Isabelle process failed with exit value $exitValue, last lines of output:" ::
+          lastMessages.toList.map("> "+_)).mkString("\n")))
     }
   }
 
@@ -592,6 +595,22 @@ class Isabelle(val setup: SetupGeneral) {
   /** Like [[applyFunction(f:de* applyFunction(ID,Data)]], except `f` is a future. */
   def applyFunction(f: Future[ID], x: Data)(implicit ec: ExecutionContext) : Future[Data] =
     for (f2 <- f; fx <- applyFunction(f2, x)) yield fx
+
+  private val lastMessages = new mutable.ArrayDeque[String](10)
+  private def logStream(stream: InputStream, level: LogLevel) : Unit = {
+    val log = logger(level)
+    val thread = new Thread(s"Isabelle output logger, $level") {
+      override def run(): Unit = {
+        new BufferedReader(new InputStreamReader(stream)).lines().forEach { line =>
+          if (lastMessages.size >= 10) lastMessages.removeHead()
+          lastMessages += line
+          log(line)
+        }
+      }
+    }
+    thread.setDaemon(true)
+    thread.start()
+  }
 }
 
 object Isabelle {
@@ -599,21 +618,6 @@ object Isabelle {
     throw new RuntimeException(s"Command $data received from Isabelle, but default command handler is installed")
 
   private val logger = log4s.getLogger
-
-  private var lastMessage : String = _
-  private def logStream(stream: InputStream, level: LogLevel, storeLast: Boolean = false) : Unit = {
-    val log = logger(level)
-    val thread = new Thread(s"Isabelle output logger, $level") {
-      override def run(): Unit = {
-        new BufferedReader(new InputStreamReader(stream)).lines().forEach { line =>
-          if (storeLast) lastMessage = line
-          logger.debug(line)
-        }
-      }
-    }
-    thread.setDaemon(true)
-    thread.start()
-  }
 
   /** An ID referencing an object in the object store (see the description of [[Isabelle]]).
     * If this ID is not referenced any more, the referenced object will be garbage collected
