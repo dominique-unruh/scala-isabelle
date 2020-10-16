@@ -1,6 +1,6 @@
 package de.unruh.isabelle.control
 
-import java.io.{BufferedReader, BufferedWriter, DataInputStream, DataOutputStream, EOFException, FileInputStream, FileOutputStream, IOException, InputStream, InputStreamReader, OutputStream, OutputStreamWriter}
+import java.io.{BufferedReader, BufferedWriter, DataInputStream, DataOutputStream, EOFException, FileInputStream, FileOutputStream, FileWriter, IOException, InputStream, InputStreamReader, OutputStream, OutputStreamWriter}
 import java.lang
 import java.lang.ref.Cleaner
 import java.net.{InetAddress, ServerSocket, Socket}
@@ -278,19 +278,18 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
   }
 
   //noinspection SameParameterValue
-  private def filePathFromResource(name: String, tmpDir: Path): Path = {
+  private def filePathFromResource(name: String, tmpDir: Path, replace: String => String): Path = {
     val url = getClass.getResource(name)
-    assert(url != null, name)
-    try
-      Path.of(url.toURI)
-    catch {
-      case _ : FileSystemNotFoundException =>
-        val tmpPath = tmpDir.resolve(name.split('/').last)
-        val tmpFile = tmpPath.toFile
-        tmpFile.deleteOnExit()
-        FileUtils.copyURLToFile(url, tmpFile)
-        tmpPath
-    }
+    val tmpPath = tmpDir.resolve(name.split('/').last)
+    val tmpFile = tmpPath.toFile
+    tmpFile.deleteOnExit()
+    val source = Source.fromURL(url)
+    val writer = new FileWriter(tmpFile)
+    for (line <- source.getLines())
+      writer.write(replace(line)+"\n")
+    writer.close()
+    source.close()
+    tmpPath
   }
 
   /** Invokes the Isabelle process.
@@ -310,8 +309,6 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
     val tempDir = Files.createTempDirectory("isabellecontrol").toAbsolutePath
     tempDir.toFile.deleteOnExit()
     logger.debug(s"Temp directory: $tempDir")
-
-    val mlFile = filePathFromResource("control_isabelle.ml", tempDir)
 
     assert(setup.userDir.forall(_.endsWith(".isabelle")))
 
@@ -347,20 +344,19 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
     isabelleArguments += "process"
     isabelleArguments += "-l" += setup.logic
 
-    if (useSockets) {
+    val communicationStreams = if (useSockets) {
       val address = s"${serverSocket.getInetAddress.getHostAddress}:${serverSocket.getLocalPort}"
-      // TODO put into file
-      isabelleArguments += "-e" += s"""val COMMUNICATION_STREAMS = Socket_IO.open_streams ("$address")"""
+      s"""Socket_IO.open_streams ("$address")"""
     } else {
       import de.unruh.isabelle.misc.SMLCodeUtils.escapeSml
       val inFile = escapeSml(inputPipe.toString)
       val outFile = escapeSml(outputPipe.toString)
-      // TODO put into file
-      isabelleArguments += "-e" += s"""val COMMUNICATION_STREAMS = (BinIO.openIn "$inFile", BinIO.openOut "$outFile")"""
+      s"""(BinIO.openIn "$inFile", BinIO.openOut "$outFile")"""
     }
 
-    // TODO put into file
-    isabelleArguments += "-e" += s"""val SECRETS = (${mlInteger(inSecret)}, ${mlInteger(outSecret)})"""
+    val mlFile = filePathFromResource("control_isabelle.ml", tempDir,
+      _.replace("COMMUNICATION_STREAMS", communicationStreams)
+        .replace("SECRETS", s"(${mlInteger(inSecret)}, ${mlInteger(outSecret)})"))
 
     isabelleArguments += "-f" += mlFile.toAbsolutePath.toString.replace('\\', '/')
 
@@ -442,7 +438,7 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
   /** Returns whether the Isabelle process has been destroyed (via [[destroy]]) */
   def isDestroyed: Boolean = destroyed != null
 
-  @volatile private var destroyed : Throwable = null
+  @volatile private var destroyed : Throwable = _
 
   /** Kills the running Isabelle process.
     * After this, no more operations on values in the object store are possible.
