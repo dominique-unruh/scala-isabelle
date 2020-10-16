@@ -8,8 +8,8 @@ theory Control_Isabelle
 begin
 
 ML \<open>
-val controlIsabelleInStream = BinIO.openIn "/dev/null"
-val controlIsabelleInStream = BinIO.openOut "/dev/null"
+val COMMUNICATION_STREAMS = (BinIO.openIn "/dev/null", BinIO.openOut "/dev/null")
+val SECRETS = (0,0)
 \<close>
 
 ML_file "../../main/resources/de/unruh/isabelle/control/control_isabelle.ml"

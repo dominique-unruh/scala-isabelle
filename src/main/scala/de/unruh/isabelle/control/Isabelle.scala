@@ -11,8 +11,9 @@ import java.util.concurrent.{ArrayBlockingQueue, BlockingQueue, ConcurrentHashMa
 import com.google.common.escape.Escaper
 import com.google.common.util.concurrent.Striped
 import de.unruh.isabelle.control.Isabelle.SetupGeneral
-import de.unruh.isabelle.misc.Utils
-import de.unruh.isabelle.mlvalue.MLValue
+import de.unruh.isabelle.misc.SMLCodeUtils.mlInteger
+import de.unruh.isabelle.misc.{SMLCodeUtils, Utils}
+import de.unruh.isabelle.mlvalue.{FutureValue, MLValue}
 import de.unruh.isabelle.pure.Term
 import org.apache.commons.io.FileUtils
 import org.apache.commons.lang3.SystemUtils
@@ -28,7 +29,7 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future, Promise}
 import scala.io.Source
 import scala.sys.process.{Process, ProcessLogger}
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Random, Success, Try}
 
 /**
   * A running instance of Isabelle.
@@ -74,13 +75,21 @@ import scala.util.{Failure, Success, Try}
   * @param setup Configuration object that specifies the path of the Isabelle binary etc. See [[de.unruh.isabelle.control.Isabelle.SetupGeneral]]. This also
   *              specifies with Isabelle heap to load.
   */
-
-class Isabelle(val setup: SetupGeneral) {
+// DOCUMENT: await and friends: wait for successful initialization
+// DOCUMENT: before await, do not send secrets
+class Isabelle(val setup: SetupGeneral) extends FutureValue {
   import Isabelle._
 
   private val sendQueue : BlockingQueue[(DataOutputStream => Unit, Try[Data] => Unit)] = new ArrayBlockingQueue(1000)
   private val callbacks : ConcurrentHashMap[Long, Try[Data] => Unit] = new ConcurrentHashMap()
   private val cleaner = Cleaner.create()
+
+  private val inSecret = Random.nextLong()
+  private val outSecret = Random.nextLong()
+
+  private val initializedPromise : Promise[Unit] = Promise()
+  def someFuture: Future[Unit] = initializedPromise.future
+  def await: Unit = Await.result(initializedPromise.future, Duration.Inf)
 
   // Must be Integer, not Int, because ConcurrentLinkedList uses null to indicate that it is empty
   private val garbageQueue = new ConcurrentLinkedQueue[java.lang.Long]()
@@ -109,8 +118,13 @@ class Isabelle(val setup: SetupGeneral) {
 
   private def processQueue(isabelleInput: OutputStream) : Unit = {
     logger.debug("Process queue thread started")
-    val stream = new DataOutputStream(isabelleInput);
+    val stream = new DataOutputStream(isabelleInput)
     var count = 0
+
+    stream.writeLong(inSecret)
+    stream.flush()
+
+    Await.result(initializedPromise.future, Duration.Inf)
 
     def sendLine(line: DataOutputStream => Unit, callback: Try[Data] => Unit): Unit = {
       if (callback != null)
@@ -202,6 +216,10 @@ class Isabelle(val setup: SetupGeneral) {
     **/
   private def parseIsabelle(isabelleOutput: InputStream) : Unit = {
     val output = new DataInputStream(isabelleOutput)
+
+    val outSecret2 = output.readLong()
+    if (outSecret != outSecret2) throw IsabelleProtocolException("Got incorrect secret value from Isabelle process")
+    initializedPromise.success(())
 
     def missingCallback(seq: Long, answerType: Int): Unit = {
       var exn : IsabelleProtocolException = null
@@ -312,7 +330,6 @@ class Isabelle(val setup: SetupGeneral) {
         (inputPipe, outputPipe)
       }
 
-    // TODO: Add security so that wrong processes cannot connect
     val serverSocket =
       if (useSockets) new ServerSocket(0,0,InetAddress.getLoopbackAddress)
       else null
@@ -332,13 +349,18 @@ class Isabelle(val setup: SetupGeneral) {
 
     if (useSockets) {
       val address = s"${serverSocket.getInetAddress.getHostAddress}:${serverSocket.getLocalPort}"
-      isabelleArguments += "-e" += s"""val (controlIsabelleInStream, controlIsabelleOutStream) = Socket_IO.open_streams ("$address")"""
+      // TODO put into file
+      isabelleArguments += "-e" += s"""val COMMUNICATION_STREAMS = Socket_IO.open_streams ("$address")"""
     } else {
       import de.unruh.isabelle.misc.SMLCodeUtils.escapeSml
       val inFile = escapeSml(inputPipe.toString)
       val outFile = escapeSml(outputPipe.toString)
-      isabelleArguments += "-e" += s"""val (controlIsabelleInStream, controlIsabelleOutStream) = (BinIO.openIn "$inFile", BinIO.openOut "$outFile")"""
+      // TODO put into file
+      isabelleArguments += "-e" += s"""val COMMUNICATION_STREAMS = (BinIO.openIn "$inFile", BinIO.openOut "$outFile")"""
     }
+
+    // TODO put into file
+    isabelleArguments += "-e" += s"""val SECRETS = (${mlInteger(inSecret)}, ${mlInteger(outSecret)})"""
 
     isabelleArguments += "-f" += mlFile.toAbsolutePath.toString.replace('\\', '/')
 
@@ -674,9 +696,9 @@ object Isabelle {
                    sessionRoots : Seq[Path] = Nil,
                    build : Boolean = true,
                    isabelleCommandHandler: Data => Unit = Isabelle.defaultCommandHandler) extends SetupGeneral {
-    // DOCUMENT
+    /** [[isabelleHome]] as an absolute path */
     def isabelleHomeAbsolute: Path = workingDirectory.resolve(isabelleHome)
-    // DOCUMENT
+    /** [[userDir]] as an absolute path. If [[userDir]] is [[None]], the Isabelle default user directory is returned. */
     def userDirAbsolute: Path = userDir match {
       case Some(dir) => workingDirectory.resolve(dir)
       case None => SystemUtils.getUserHome.toPath.resolve(".isabelle")

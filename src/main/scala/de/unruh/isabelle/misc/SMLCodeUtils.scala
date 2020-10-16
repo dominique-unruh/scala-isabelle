@@ -8,6 +8,9 @@ import org.apache.commons.text.translate.{CharSequenceTranslator, CodePointTrans
 
 // Escape rules are in Section 2.2, https://smlfamily.github.io/sml97-defn.pdf
 object SMLCodeUtils {
+  // DOCUMENT
+  def mlInteger(int: Long): String = if (int >= 0) int.toString else "~"+(-int).toString
+
   /** A [[org.apache.commons.text.translate.CharSequenceTranslator CharSequenceTranslator]] for escaping ML strings (for use as ML
    * string literals).
    * @see escapeSml

@@ -53,8 +53,8 @@ exception E_Position of Position.T
 exception E_ToplevelState of Toplevel.state
 exception E_Keywords of Thy_Header.keywords
 
-val inStream = controlIsabelleInStream
-val outStream = controlIsabelleOutStream
+val (inStream, outStream) = COMMUNICATION_STREAMS
+val (inSecret, outSecret) = SECRETS
 
 (* val (inStream, outStream) = Socket_IO.open_streams (host ^ ":" ^ string_of_int port) *)
 
@@ -306,9 +306,17 @@ fun handleLine seq = withErrorReporting seq (fn () =>
   handleLine' seq
   handle exn => reportException seq exn *)
 
+fun checkSecret () = let
+  val inSecret' = readInt64 ()
+  val _ = if inSecret' = inSecret then ()
+          else error "Input secret incorrect"
+  val _ = sendInt64 outSecret
+  val _ = BinIO.flushOut outStream
+  in () end
+
 fun handleLines' seq = (handleLine seq; handleLines' (seq+1))
 
-fun handleLines () = handleLines' 0
+fun handleLines () = (checkSecret (); handleLines' 0)
 
 val _ = TextIO.StreamIO.setBufferMode (TextIO.getOutstream TextIO.stdOut, IO.LINE_BUF)
 
