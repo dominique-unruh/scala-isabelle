@@ -596,14 +596,14 @@ class Isabelle(val setup: SetupGeneral) {
   def applyFunction(f: Future[ID], x: Data)(implicit ec: ExecutionContext) : Future[Data] =
     for (f2 <- f; fx <- applyFunction(f2, x)) yield fx
 
-  private val lastMessages = new mutable.ArrayDeque[String](10)
+  private val lastMessages = new mutable.Queue[String]()
   private def logStream(stream: InputStream, level: LogLevel) : Unit = {
     val log = logger(level)
     val thread = new Thread(s"Isabelle output logger, $level") {
       override def run(): Unit = {
         new BufferedReader(new InputStreamReader(stream)).lines().forEach { line =>
-          if (lastMessages.size >= 10) lastMessages.removeHead()
-          lastMessages += line
+          if (lastMessages.size >= 10) lastMessages.dequeue()
+          lastMessages.enqueue(line)
           log(line)
         }
       }
