@@ -280,7 +280,6 @@ class Isabelle(val setup: SetupGeneral) {
    * */
   private def startProcessSlave(setup: Setup) : java.lang.Process = {
     def wd = setup.workingDirectory
-    // TODO do the same in buildSession
     def cygwinIfWin(path: Path) =
       if (SystemUtils.IS_OS_WINDOWS) Utils.cygwinPath(path) else path.toString
     def abs(path: Path) = wd.resolve(path).toAbsolutePath
@@ -676,11 +675,7 @@ object Isabelle {
     // DOCUMENT
     def userDirAbsolute: Path = userDir match {
       case Some(dir) => workingDirectory.resolve(dir)
-      case None =>
-        if (SystemUtils.IS_OS_WINDOWS)
-          ???
-        else
-          SystemUtils.getUserHome.toPath
+      case None => SystemUtils.getUserHome.toPath.resolve(".isabelle")
     }
   }
 
@@ -699,9 +694,11 @@ object Isabelle {
     */
   def buildSession(setup: Setup) : Unit = {
     def wd = setup.workingDirectory
+    def cygwinIfWin(path: Path) =
+      if (SystemUtils.IS_OS_WINDOWS) Utils.cygwinPath(path) else path.toString
     def abs(path: Path) = wd.resolve(path).toAbsolutePath
     /** Path to absolute string, interpreted relative to wd */
-    def str(path: Path) = abs(path).toString
+    def str(path: Path) = cygwinIfWin(abs(path))
 
     val isabelleArguments = ListBuffer[String]()
 
