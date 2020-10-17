@@ -1,12 +1,17 @@
 version: 2.1
 
-general:
-  branches:
-    only:
-      - circleci-project-setup
-
 orbs:
   windows: circleci/windows@2.4.0
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - build:
+          filters:
+            branches:
+              only:
+                - circleci-project-setup
 
 jobs:
   build:
