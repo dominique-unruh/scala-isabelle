@@ -76,7 +76,6 @@ import scala.util.{Failure, Random, Success, Try}
   *              specifies with Isabelle heap to load.
   */
 // DOCUMENT: await and friends: wait for successful initialization
-// TODO explicitly destroy Isabelle process in test cases
 class Isabelle(val setup: SetupGeneral) extends FutureValue {
   import Isabelle._
 
