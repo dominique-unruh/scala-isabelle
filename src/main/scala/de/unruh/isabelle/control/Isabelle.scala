@@ -76,6 +76,7 @@ import scala.util.{Failure, Random, Success, Try}
   *              specifies with Isabelle heap to load.
   */
 // DOCUMENT: await and friends: wait for successful initialization
+// TODO explicitly destroy Isabelle process in test cases
 class Isabelle(val setup: SetupGeneral) extends FutureValue {
   import Isabelle._
 
@@ -396,6 +397,9 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
     lock.lockInterruptibly()
     try {
       val process = processBuilder.start()
+
+      // Ensures that process will be terminated if this object is garbage collected
+      cleaner.register(this, new Isabelle.ProcessCleaner(process))
 
       logStream(process.getErrorStream, Warn) // stderr
       logStream(process.getInputStream, Debug) // stdout
@@ -846,6 +850,10 @@ object Isabelle {
   final case class DString(string: String) extends Data
   final case class DList(list: Data*) extends Data
   final case class DObject(id: ID) extends Data
+
+  private final class ProcessCleaner(process: lang.Process) extends Runnable {
+    override def run(): Unit = process.destroy()
+  }
 }
 
 /** Ancestor of all exceptions specific to [[Isabelle]] */
