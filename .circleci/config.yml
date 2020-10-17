@@ -76,11 +76,12 @@ jobs:
       - run:
           shell: bash
           command: |
+            # Isabelle process calls rebaseall and then fails, unless we deactivate it
             > ~/install/Isabelle$ISA/contrib/cygwin/isabelle/rebaseall
             cygpath -w ~/install/Isabelle$ISA > .isabelle-home
             cat .isabelle-home
             export PATH=~/bin:"$PATH"
-            ~/install/sbt "testOnly *IsabelleTest -- -u scalatest-reports -z initialize" </dev/null
+            ~/install/sbt "testOnly -- -u scalatest-reports" </dev/null
 
       - store_test_results:
           path: scalatest-reports
