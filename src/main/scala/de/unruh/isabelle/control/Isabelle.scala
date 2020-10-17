@@ -376,6 +376,9 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
     for (userDir <- setup.userDir)
       processBuilder.environment.put("USER_HOME", str(userDir.getParent))
 
+    // Needed on Windows so that cygwin-bash does not cd to home
+    processBuilder.environment.put("CHERE_INVOKING", "true")
+
     val processQueueThread = new Thread("Send to Isabelle") {
       override def run(): Unit = processQueue(input) }
     processQueueThread.setDaemon(true)
