@@ -87,6 +87,7 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
   private val inSecret = Random.nextLong()
   private val outSecret = Random.nextLong()
 
+  // TODO: should get an exception if initialization fails. Same as destroyed
   private val initializedPromise : Promise[Unit] = Promise()
   def someFuture: Future[Unit] = initializedPromise.future
   def await: Unit = Await.result(initializedPromise.future, Duration.Inf)
@@ -218,6 +219,7 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
     val output = new DataInputStream(isabelleOutput)
 
     val outSecret2 = output.readLong()
+    // TODO: should put exception in destroyed and initializedPromise
     if (outSecret != outSecret2) throw IsabelleProtocolException("Got incorrect secret value from Isabelle process")
     initializedPromise.success(())
 
