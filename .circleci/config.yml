@@ -76,13 +76,7 @@ jobs:
       - run:
           shell: bash
           command: |
-            mkdir -p ~/bin
-            touch ~/bin/rebaseall
-            chmod +x ~/bin/rebaseall
-
-      - run:
-          shell: bash
-          command: |
+            > ~/install/Isabelle$ISA/contrib/cygwin/isabelle/rebaseall
             cygpath -w ~/install/Isabelle$ISA > .isabelle-home
             cat .isabelle-home
             export PATH=~/bin:"$PATH"
