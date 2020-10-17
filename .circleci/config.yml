@@ -76,9 +76,17 @@ jobs:
       - run:
           shell: bash
           command: |
+            mkdir -p ~/bin
+            touch ~/bin/rebaseall
+            chmod +x ~/bin/rebaseall
+
+      - run:
+          shell: bash
+          command: |
             cygpath -w ~/install/Isabelle$ISA > .isabelle-home
             cat .isabelle-home
-            cat /dev/null | ~/install/sbt "testOnly -- -u scalatest-reports"
+            export PATH=~/bin:"$PATH"
+            ~/install/sbt "testOnly *IsabelleTest -- -u scalatest-reports -z initialize" </dev/null
 
       - store_test_results:
           path: scalatest-reports
