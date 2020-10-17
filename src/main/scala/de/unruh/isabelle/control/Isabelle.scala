@@ -76,7 +76,6 @@ import scala.util.{Failure, Random, Success, Try}
   *              specifies with Isabelle heap to load.
   */
 // DOCUMENT: await and friends: wait for successful initialization
-// DOCUMENT: before await, do not send secrets
 class Isabelle(val setup: SetupGeneral) extends FutureValue {
   import Isabelle._
 
@@ -87,7 +86,8 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
   private val inSecret = Random.nextLong()
   private val outSecret = Random.nextLong()
 
-  // TODO: should get an exception if initialization fails. Same as destroyed
+  /** This promise will be completed when initializing the Isabelle process finished (first successful communication).
+   * Contains an exception if initilization fails. */
   private val initializedPromise : Promise[Unit] = Promise()
   def someFuture: Future[Unit] = initializedPromise.future
   def await: Unit = Await.result(initializedPromise.future, Duration.Inf)
@@ -117,7 +117,7 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
     }
   }
 
-  private def processQueue(isabelleInput: OutputStream) : Unit = {
+  private def processQueue(isabelleInput: OutputStream) : Unit = try {
     logger.debug("Process queue thread started")
     val stream = new DataOutputStream(isabelleInput)
     var count = 0
@@ -125,6 +125,7 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
     stream.writeLong(inSecret)
     stream.flush()
 
+    // Make sure we do not send any data before security check has finished (in case the data is secret)
     Await.result(initializedPromise.future, Duration.Inf)
 
     def sendLine(line: DataOutputStream => Unit, callback: Try[Data] => Unit): Unit = {
@@ -152,6 +153,10 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
         count += 1
       stream.flush()
     }
+  } catch {
+    case e : Throwable =>
+      destroy(e)
+      throw e
   }
 
   private def readString(stream: DataInputStream): String = {
@@ -215,11 +220,10 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
     * string: int32|bytes
     *
     **/
-  private def parseIsabelle(isabelleOutput: InputStream) : Unit = {
+  private def parseIsabelle(isabelleOutput: InputStream) : Unit = try {
     val output = new DataInputStream(isabelleOutput)
 
     val outSecret2 = output.readLong()
-    // TODO: should put exception in destroyed and initializedPromise
     if (outSecret != outSecret2) throw IsabelleProtocolException("Got incorrect secret value from Isabelle process")
     initializedPromise.success(())
 
@@ -240,12 +244,11 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
       throw exn
     }
 
-    try
     while (true) {
       val seq = output.readLong()
       val answerType = output.readByte()
       val callback = callbacks.remove(seq)
-//      logger.debug(s"Seq: $seq, type: $answerType, callback: $callback")
+      //      logger.debug(s"Seq: $seq, type: $answerType, callback: $callback")
       answerType match {
         case 1 =>
           if (callback==null) missingCallback(seq, answerType)
@@ -271,12 +274,11 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
           throw IsabelleProtocolException(s"Received a protocol response from Isabelle with seq# $seq and invalid" +
             s"answerType $answerType. Probably the communication is out of sync now")
       }
-    } catch {
-      case _ : EOFException =>
-      case e : Throwable =>
-        destroy(e)
-        throw e
     }
+  } catch {
+    case e : Throwable =>
+      destroy(e)
+      throw e
   }
 
   //noinspection SameParameterValue
@@ -453,6 +455,10 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
 
   private def destroy(cause: Throwable): Unit = {
     destroyed = cause
+
+    try initializedPromise.complete(Failure(cause))
+    catch { case _ : IllegalStateException => }
+
     garbageQueue.clear()
     if (process != null)
       process.destroy()
