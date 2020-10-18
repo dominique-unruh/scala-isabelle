@@ -73,10 +73,14 @@ import scala.util.{Failure, Random, Success, Try}
   *
   * New exceptions for storing other types can be defined at runtime using [[executeMLCode]].
   *
+  * @constructor The constructor initialize the Isabelle instance partly asynchronously. That is, when the
+  *              constructor returns successfully, it is not guaranteed that the Isabelle process was initialized
+  *              successfully. To check and wait for successful initialization, use the methods from [[FutureValue]]
+  *              (supertrait of this class), e.g., `new Isabelle(...).`[[FutureValue.force force]].
+  *
   * @param setup Configuration object that specifies the path of the Isabelle binary etc. See [[de.unruh.isabelle.control.Isabelle.SetupGeneral]]. This also
   *              specifies with Isabelle heap to load.
   */
-// DOCUMENT: await and friends: wait for successful initialization
 class Isabelle(val setup: SetupGeneral) extends FutureValue {
   import Isabelle._
 
@@ -458,7 +462,6 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
     * After this, no more operations on values in the object store are possible.
     * Futures corresponding to already running computations will throw an [[IsabelleDestroyedException]].
     */
-  @throws[IsabelleDestroyedException]("if the process was destroyed")
   def destroy(): Unit = destroy(IsabelleDestroyedException("Isabelle process has been destroyed"))
 
   private def destroy(cause: IsabelleDestroyedException): Unit = {
@@ -497,6 +500,7 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
 
   /** Throws an [[IsabelleDestroyedException]] if this Isabelle process has been destroyed.
    * Otherwise does nothing. */
+  @throws[IsabelleDestroyedException]("if the process was destroyed")
   def checkDestroyed(): Unit = {
     if (destroyed != null) {
       val exn = IsabelleDestroyedException(destroyed.message)
