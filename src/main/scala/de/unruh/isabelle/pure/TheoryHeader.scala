@@ -2,7 +2,7 @@ package de.unruh.isabelle.pure
 
 import de.unruh.isabelle.control.Isabelle
 import de.unruh.isabelle.mlvalue.Implicits.listConverter
-import de.unruh.isabelle.mlvalue.MLValue
+import de.unruh.isabelle.mlvalue.{MLValue, MLValueWrapper}
 import TheoryHeader.Ops
 
 import scala.concurrent.ExecutionContext

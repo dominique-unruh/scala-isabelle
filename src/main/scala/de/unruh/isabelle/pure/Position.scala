@@ -1,7 +1,7 @@
 package de.unruh.isabelle.pure
 
 import de.unruh.isabelle.control.Isabelle
-import de.unruh.isabelle.mlvalue.MLValue
+import de.unruh.isabelle.mlvalue.{MLValue, MLValueWrapper}
 import de.unruh.isabelle.mlvalue.MLValue.compileValue
 
 import scala.concurrent.ExecutionContext

@@ -1,6 +1,6 @@
 package de.unruh.isabelle.pure
 
-import de.unruh.isabelle.mlvalue.MLValue
+import de.unruh.isabelle.mlvalue.{MLValue, MLValueWrapper}
 
 /** Represents a specification of Isar keywords as given in a theory header (ML type `Thy_Header.keywords`)
  * in the Isabelle process.
