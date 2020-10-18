@@ -708,7 +708,7 @@ object Isabelle {
                    isabelleCommandHandler: Data => Unit = Isabelle.defaultCommandHandler) extends SetupGeneral {
     /** [[isabelleHome]] as an absolute path */
     def isabelleHomeAbsolute: Path = workingDirectory.resolve(isabelleHome)
-    /** [[userDir]] as an absolute path. If [[userDir]] is [[None]], the Isabelle default user directory is returned. */
+    /** [[userDir]] as an absolute path. If [[userDir]] is [[scala.None None]], the Isabelle default user directory is returned. */
     def userDirAbsolute: Path = userDir match {
       case Some(dir) => workingDirectory.resolve(dir)
       case None => SystemUtils.getUserHome.toPath.resolve(".isabelle")
