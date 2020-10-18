@@ -31,7 +31,7 @@ import scala.annotation.varargs
  * Patterns for terms are [[JPatterns.Const(name:d* Const]], [[JPatterns.App App]],
  * [[JPatterns.Free(name:d* Free]],
  * [[JPatterns.Var(name:d* Var]], [[JPatterns.Abs(name:d* Abs]], [[JPatterns.Bound(index:d* Bound]]. Patterns for types
- * are [[JPatterns.Type(name:d* Type]], [[JPatterns.TFree(name:d* TFree]], [[JPatterns.TVar(name:d* TVar]].
+ * are [[JPatterns.Type(name:de\.unruh\.javapatterns\.Pattern[_>:String],args:de\.unruh\.javapatterns\.Pattern[_>:de\.unruh\.isabelle\.pure\.Typ]* Type]], [[JPatterns.TFree(name:d* TFree]], [[JPatterns.TVar(name:d* TVar]].
  * */
 object JPatterns {
   /** Pattern matching a constant ([[pure.Const Const]]) `c`. Subpattern `name` will be applied to `c.`[[pure.Const.name name]],

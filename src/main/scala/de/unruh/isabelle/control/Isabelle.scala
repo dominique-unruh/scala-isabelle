@@ -155,8 +155,11 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
       stream.flush()
     }
   } catch {
-    case e : Throwable =>
+    case e : IsabelleDestroyedException =>
       destroy(e)
+      throw e
+    case e : Throwable =>
+      destroy(IsabelleDestroyedException(e))
       throw e
   }
 
@@ -278,7 +281,7 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
     }
   } catch {
     case e : Throwable =>
-      destroy(e)
+      destroy(IsabelleDestroyedException(e))
       throw e
   }
 
@@ -449,16 +452,16 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
   /** Returns whether the Isabelle process has been destroyed (via [[destroy]]) */
   def isDestroyed: Boolean = destroyed != null
 
-  // TODO: Should be an IsabelleDestroyedException (with "cause" attached to it)
-  @volatile private var destroyed : Throwable = _
+  @volatile private var destroyed : IsabelleDestroyedException = _
 
   /** Kills the running Isabelle process.
     * After this, no more operations on values in the object store are possible.
     * Futures corresponding to already running computations will throw an [[IsabelleDestroyedException]].
     */
+  @throws[IsabelleDestroyedException]("if the process was destroyed")
   def destroy(): Unit = destroy(IsabelleDestroyedException("Isabelle process has been destroyed"))
 
-  private def destroy(cause: Throwable): Unit = {
+  private def destroy(cause: IsabelleDestroyedException): Unit = {
     destroyed = cause
 
     try initializedPromise.complete(Failure(cause))
@@ -495,8 +498,11 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
   /** Throws an [[IsabelleDestroyedException]] if this Isabelle process has been destroyed.
    * Otherwise does nothing. */
   def checkDestroyed(): Unit = {
-    if (destroyed!=null)
-      throw destroyed
+    if (destroyed != null) {
+      val exn = IsabelleDestroyedException(destroyed.message)
+      if (destroyed.getCause != null) exn.initCause(destroyed.getCause)
+      throw exn
+    }
   }
 
   private def send(str: DataOutputStream => Unit, callback: Try[Data] => Unit) : Unit = {
@@ -884,6 +890,13 @@ abstract class IsabelleControllerException(message: String) extends IOException(
 
 /** Thrown if an operation cannot be executed because [[Isabelle.destroy]] has already been invoked. */
 case class IsabelleDestroyedException(message: String) extends IsabelleControllerException(message)
+object IsabelleDestroyedException {
+  def apply(cause: Throwable): IsabelleDestroyedException = {
+    val exn = IsabelleDestroyedException("Isabelle process was destroyed: " + cause.getMessage)
+    exn.initCause(cause)
+    exn
+  }
+}
 /** Thrown if running Isabelle/jEdit fails */
 case class IsabelleJEditException(message: String) extends IsabelleControllerException(message)
 /** Thrown if the build process of Isabelle fails */
