@@ -6,6 +6,7 @@ import de.unruh.isabelle.mlvalue.{FutureValue, MLValue}
 
 import scala.concurrent.{ExecutionContext, Future}
 
+// TODO move to isabelle.mlvalue
 // DOCUMENT
 trait MLValueWrapper[A <: MLValueWrapper[A]] extends FutureValue {
   val mlValue : MLValue[A]
