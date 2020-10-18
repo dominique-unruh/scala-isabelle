@@ -6,6 +6,8 @@ import sbt.io.Path.relativeTo
 
 import scala.sys.process._
 
+// TODO: Ensure everything works with Windows (incl. qrhl-tool, pq-fo-verify)
+
 name := "scala-isabelle"
 version := "master-SNAPSHOT"
 
