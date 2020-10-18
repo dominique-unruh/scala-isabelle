@@ -18,6 +18,7 @@ import de.unruh.isabelle.pure.Term
 import org.apache.commons.io.FileUtils
 import org.apache.commons.lang3.SystemUtils
 import org.apache.commons.text.StringEscapeUtils
+import org.jetbrains.annotations.ApiStatus.Experimental
 import org.log4s
 import org.log4s.{Debug, LogLevel, Logger, Warn}
 
@@ -448,6 +449,7 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
   /** Returns whether the Isabelle process has been destroyed (via [[destroy]]) */
   def isDestroyed: Boolean = destroyed != null
 
+  // TODO: Should be an IsabelleDestroyedException (with "cause" attached to it)
   @volatile private var destroyed : Throwable = _
 
   /** Kills the running Isabelle process.
@@ -490,7 +492,8 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
     }
   }
 
-  // DOCUMENT
+  /** Throws an [[IsabelleDestroyedException]] if this Isabelle process has been destroyed.
+   * Otherwise does nothing. */
   def checkDestroyed(): Unit = {
     if (destroyed!=null)
       throw destroyed
@@ -669,9 +672,13 @@ object Isabelle {
     def run(): Unit = isabelle.garbageQueue.add(id)
   }
 
-  // DOCUMENT
+  /** Parent trait for different kinds of configuration for [[Isabelle]]. See in particular [[Setup]]. */
   sealed trait SetupGeneral {
-    // DOCUMENT
+    /** Installs a handler for commands sent from the Isabelle process to the Scala process.
+     * When invoking `Control_Isabelle.sendToScala data` (for `data` of ML type `data`),
+     * then `isabelleCommandHandler` is invoked as `isabelleCommandHandler(data)`. (After transferring
+     * and converting `data` to type [[Data]].)
+     **/
     val isabelleCommandHandler : Data => Unit
   }
 
@@ -697,7 +704,7 @@ object Isabelle {
     *              built, the Isabelle process fails.) If true, the Isabelle build command will be invoked. That
     *              command automatically checks for changed dependencies but may add a noticable delay even if
     *              the heap was already built.
-    * @param isabelleCommandHandler see [[SetupGeneral]]
+    * @param isabelleCommandHandler see [[SetupGeneral.isabelleCommandHandler]]
     */
   case class Setup(isabelleHome : Path,
                    logic : String = "HOL",
@@ -715,7 +722,24 @@ object Isabelle {
     }
   }
 
-  // DOCUMENT
+  /**
+   * Configuration for connecting to an already running Isabelle process.
+   * The Isabelle process must load `control_isabelle.ml` (available as a resource in this package)
+   * and invoke `Control_Isabelle.handleLines ()`.
+   *
+   * Before loading `control_isabelle.ml`,
+   * the values `COMMUNICATION_STREAMS` and `SECRETS` need to be initialized in ML.
+   * `SECRETS` needs to be initialized with the secrets use in the communication with the Isabelle
+   * process. These values are currently chosen by the [[Isabelle]] class itself,
+   * '''making it currently impossible to use [[SetupRunning]]'''.
+   *
+   * @param inputPipe the path of a named pipe for the protocol messages sent to the Isabelle process
+   *                  (corresponding to first component of COMMUNICATION_STREAMS)
+   * @param outputPipe the path of a named pipe for the protocol messages sent by the Isabelle process
+   *                  (corresponding to second component of COMMUNICATION_STREAMS)
+   * @param isabelleCommandHandler see [[SetupGeneral.isabelleCommandHandler]]
+   */
+  @Experimental
   case class SetupRunning(inputPipe : Path, outputPipe : Path,
                           isabelleCommandHandler: Data => Unit = Isabelle.defaultCommandHandler) extends SetupGeneral
 

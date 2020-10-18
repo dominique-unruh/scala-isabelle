@@ -27,7 +27,8 @@ object Utils {
       .into { _ + '_' + Random.alphanumeric.take(12).mkString }
   }
 
-  // DOCUMENT
+  /** Converts `path` to a path understood by Cygwin.
+   * (Only available when running under Windows.) */
   def cygwinPath(path: Path): String =
     if (path.isAbsolute) {
       assert(SystemUtils.IS_OS_WINDOWS)

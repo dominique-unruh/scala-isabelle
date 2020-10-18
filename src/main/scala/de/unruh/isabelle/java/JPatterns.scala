@@ -160,11 +160,14 @@ object JPatterns {
     override def toString: String = s"Type($name,${args.mkString(",")})"
   }
 
-  /** Short for `Type(Is(name),args)`. That is, matches a type with type constructor `name`. */
+  /** Short for `Type(Is(name),args)`. That is, matches a type with type constructor `name` and
+   * exactly `args.length` type arguments. */
   @NotNull @varargs def Type(@NotNull name: String, @NotNull args: Pattern[_ >: Typ]*): Pattern[Typ] =
     Type(Is(name), args: _*)
 
-  // DOCUMENT
+  /** Pattern matching a type constructor ([[pure.Type Type]]) `t`. Subpattern `name` will be applied to
+   * `t.`[[pure.Type.name name]], and `args` will be applied to `t.`[[pure.Type.args args]].
+   **/
   @NotNull def Type(@NotNull name: Pattern[_ >: String], @NotNull args: Pattern[_ >: Array[Typ]]): Pattern[Typ] = new Pattern[Typ] {
     override def apply(@NotNull mgr: MatchManager, @Nullable typ: Typ): Unit = typ match {
       case Type(n, a@_*) =>
@@ -174,7 +177,6 @@ object JPatterns {
 
     override def toString: String = s"Type($name,$args*)"
   }
-
 
   /** Pattern matching a free type variable ([[pure.TFree TFree]]) `v`. Subpattern `name` will be applied to `v.`[[pure.TFree.name name]],
    * and `sort` will be applied to `v.`[[pure.TFree.sort sort]]
