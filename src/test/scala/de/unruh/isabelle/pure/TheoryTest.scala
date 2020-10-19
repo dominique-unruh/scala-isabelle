@@ -24,17 +24,11 @@ class TheoryTest extends AnyFunSuite {
 
   test("importMLStructureNow example") {
     val thy : Theory = Theory(Path.of("ImportMeThy.thy"))                         // load the theory TestThy
-    println("Step 1") // TODO remove
     val num1 : MLValue[Int] = MLValue.compileValue("ImportMe.num")     // fails
-    println("Step 2") // TODO remove
     assertThrows[IsabelleException] { num1.retrieveNow }
-    println("Step 3") // TODO remove
     val importMe : String = thy.importMLStructureNow("ImportMe")     // import the structure Test into the ML toplevel
-    println("Step 4") // TODO remove
     val num2 : MLValue[Int] = MLValue.compileValue(s"${importMe}.num") // access Test (under new name) in compiled ML code
-    println("Step 5") // TODO remove
     assert(num2.retrieveNow == 123)                                              // ==> 123
-    println("Step 6") // TODO remove
   }
 
   test("load theory outside heap") {

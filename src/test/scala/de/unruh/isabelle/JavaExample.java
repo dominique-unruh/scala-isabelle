@@ -152,5 +152,8 @@ public class JavaExample {
 
         out.println("term3: " + term3.pretty(ctxt, global()));
         // ==> term3: x = y
+
+        // Destroy to save resources. (Not needed if the application ends here anyway.)
+        isabelle.destroy();
     }
 }

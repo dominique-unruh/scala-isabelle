@@ -17,6 +17,7 @@ class MLValueTest extends AnyFunSuite {
   test ("two instances of Isabelle") {
     val isabelle1 = IsabelleTest.isabelle
     val isabelle2 = new Isabelle(IsabelleTest.setup)
+
     val ctxt1 = Context("Pure")(isabelle1, implicitly)
     val ctxt2 = Context("Main")(isabelle2, implicitly)
     val thm1 = Thm(ctxt1, "Pure.reflexive")(isabelle1, implicitly)
@@ -25,6 +26,8 @@ class MLValueTest extends AnyFunSuite {
     val str2 = thm2.pretty(ctxt2)
     assert(str1 == "?x \\<equiv> ?x")
     assert(str2 == "?t = ?t")
+
+    isabelle2.destroy()
   }
 
   test ("store/retrieve int") {

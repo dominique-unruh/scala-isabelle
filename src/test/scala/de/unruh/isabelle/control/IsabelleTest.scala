@@ -142,6 +142,8 @@ class IsabelleTest extends AnyFunSuite {
 
     // To check if some exception is thrown
     isabelle.executeMLCodeNow("1")
+
+    isabelle.destroy()
   }
 }
 

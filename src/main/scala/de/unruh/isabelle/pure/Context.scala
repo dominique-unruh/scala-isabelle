@@ -2,7 +2,7 @@ package de.unruh.isabelle.pure
 
 import de.unruh.isabelle.control.{Isabelle, OperationCollection}
 import de.unruh.isabelle.mlvalue.MLValue.Converter
-import de.unruh.isabelle.mlvalue.{FutureValue, MLFunction, MLValue}
+import de.unruh.isabelle.mlvalue.{FutureValue, MLFunction, MLValue, MLValueWrapper}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -34,7 +34,7 @@ import de.unruh.isabelle.pure.Implicits._
  * Not that contexts (being [[mlvalue.MLValue MLValue]]s), are internally futures and may still fail.
  * To make sure a [[Context]] actually contains a value, use, e.g., [[Context.force]].
  *
- * An implict [[MLValue.Converter]] can be imported from [[Implicits]]`._`. The ML type is `Proof.context`
+ * An implict [[mlvalue.MLValue.Converter MLValue.Converter]] can be imported from [[Implicits]]`._`. The ML type is `Proof.context`
  * and the representation of a context `ctxt` as an ML exception is `E_Context ctxt`.
  * */
 final class Context private [Context](val mlValue : MLValue[Context]) extends MLValueWrapper[Context] {

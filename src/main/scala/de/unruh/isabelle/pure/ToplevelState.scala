@@ -2,7 +2,7 @@ package de.unruh.isabelle.pure
 import java.nio.file.Path
 
 import de.unruh.isabelle.control.Isabelle
-import de.unruh.isabelle.mlvalue.MLValue
+import de.unruh.isabelle.mlvalue.{MLValue, MLValueWrapper}
 import de.unruh.isabelle.mlvalue.MLValue.compileFunction
 
 import scala.concurrent.ExecutionContext

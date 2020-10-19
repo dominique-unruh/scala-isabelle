@@ -1,8 +1,7 @@
-package de.unruh.isabelle.pure
+package de.unruh.isabelle.mlvalue
 
 import de.unruh.isabelle.control.{Isabelle, OperationCollection}
 import de.unruh.isabelle.misc.Utils
-import de.unruh.isabelle.mlvalue.{FutureValue, MLValue}
 
 import scala.concurrent.{ExecutionContext, Future}
 

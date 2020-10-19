@@ -18,6 +18,7 @@ import de.unruh.isabelle.pure.Term
 import org.apache.commons.io.FileUtils
 import org.apache.commons.lang3.SystemUtils
 import org.apache.commons.text.StringEscapeUtils
+import org.jetbrains.annotations.ApiStatus.Experimental
 import org.log4s
 import org.log4s.{Debug, LogLevel, Logger, Warn}
 
@@ -72,11 +73,15 @@ import scala.util.{Failure, Random, Success, Try}
   *
   * New exceptions for storing other types can be defined at runtime using [[executeMLCode]].
   *
+  * @constructor The constructor initialize the Isabelle instance partly asynchronously. That is, when the
+  *              constructor returns successfully, it is not guaranteed that the Isabelle process was initialized
+  *              successfully. To check and wait for successful initialization, use the methods from
+  *              [[mlvalue.FutureValue FutureValue]] (supertrait of this class), e.g.,
+  *              `new Isabelle(...).`[[mlvalue.FutureValue.force force]].
+  *
   * @param setup Configuration object that specifies the path of the Isabelle binary etc. See [[de.unruh.isabelle.control.Isabelle.SetupGeneral]]. This also
   *              specifies with Isabelle heap to load.
   */
-// DOCUMENT: await and friends: wait for successful initialization
-// DOCUMENT: before await, do not send secrets
 class Isabelle(val setup: SetupGeneral) extends FutureValue {
   import Isabelle._
 
@@ -87,6 +92,8 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
   private val inSecret = Random.nextLong()
   private val outSecret = Random.nextLong()
 
+  /** This promise will be completed when initializing the Isabelle process finished (first successful communication).
+   * Contains an exception if initilization fails. */
   private val initializedPromise : Promise[Unit] = Promise()
   def someFuture: Future[Unit] = initializedPromise.future
   def await: Unit = Await.result(initializedPromise.future, Duration.Inf)
@@ -116,7 +123,7 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
     }
   }
 
-  private def processQueue(isabelleInput: OutputStream) : Unit = {
+  private def processQueue(isabelleInput: OutputStream) : Unit = try {
     logger.debug("Process queue thread started")
     val stream = new DataOutputStream(isabelleInput)
     var count = 0
@@ -124,6 +131,7 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
     stream.writeLong(inSecret)
     stream.flush()
 
+    // Make sure we do not send any data before security check has finished (in case the data is secret)
     Await.result(initializedPromise.future, Duration.Inf)
 
     def sendLine(line: DataOutputStream => Unit, callback: Try[Data] => Unit): Unit = {
@@ -151,6 +159,13 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
         count += 1
       stream.flush()
     }
+  } catch {
+    case e : IsabelleDestroyedException =>
+      destroy(e)
+      throw e
+    case e : Throwable =>
+      destroy(IsabelleDestroyedException(e))
+      throw e
   }
 
   private def readString(stream: DataInputStream): String = {
@@ -214,7 +229,7 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
     * string: int32|bytes
     *
     **/
-  private def parseIsabelle(isabelleOutput: InputStream) : Unit = {
+  private def parseIsabelle(isabelleOutput: InputStream) : Unit = try {
     val output = new DataInputStream(isabelleOutput)
 
     val outSecret2 = output.readLong()
@@ -238,12 +253,11 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
       throw exn
     }
 
-    try
     while (true) {
       val seq = output.readLong()
       val answerType = output.readByte()
       val callback = callbacks.remove(seq)
-//      logger.debug(s"Seq: $seq, type: $answerType, callback: $callback")
+      //      logger.debug(s"Seq: $seq, type: $answerType, callback: $callback")
       answerType match {
         case 1 =>
           if (callback==null) missingCallback(seq, answerType)
@@ -269,12 +283,11 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
           throw IsabelleProtocolException(s"Received a protocol response from Isabelle with seq# $seq and invalid" +
             s"answerType $answerType. Probably the communication is out of sync now")
       }
-    } catch {
-      case _ : EOFException =>
-      case e : Throwable =>
-        destroy(e)
-        throw e
     }
+  } catch {
+    case e : Throwable =>
+      destroy(IsabelleDestroyedException(e))
+      throw e
   }
 
   //noinspection SameParameterValue
@@ -374,6 +387,9 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
     for (userDir <- setup.userDir)
       processBuilder.environment.put("USER_HOME", str(userDir.getParent))
 
+    // Needed on Windows so that cygwin-bash does not cd to home
+    processBuilder.environment.put("CHERE_INVOKING", "true")
+
     val processQueueThread = new Thread("Send to Isabelle") {
       override def run(): Unit = processQueue(input) }
     processQueueThread.setDaemon(true)
@@ -389,6 +405,9 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
     lock.lockInterruptibly()
     try {
       val process = processBuilder.start()
+
+      // Ensures that process will be terminated if this object is garbage collected
+      cleaner.register(this, new Isabelle.ProcessCleaner(process))
 
       logStream(process.getErrorStream, Warn) // stderr
       logStream(process.getInputStream, Debug) // stdout
@@ -438,7 +457,7 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
   /** Returns whether the Isabelle process has been destroyed (via [[destroy]]) */
   def isDestroyed: Boolean = destroyed != null
 
-  @volatile private var destroyed : Throwable = _
+  @volatile private var destroyed : IsabelleDestroyedException = _
 
   /** Kills the running Isabelle process.
     * After this, no more operations on values in the object store are possible.
@@ -446,8 +465,12 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
     */
   def destroy(): Unit = destroy(IsabelleDestroyedException("Isabelle process has been destroyed"))
 
-  private def destroy(cause: Throwable): Unit = {
+  private def destroy(cause: IsabelleDestroyedException): Unit = {
     destroyed = cause
+
+    try initializedPromise.complete(Failure(cause))
+    catch { case _ : IllegalStateException => }
+
     garbageQueue.clear()
     if (process != null)
       process.destroy()
@@ -476,10 +499,15 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
     }
   }
 
-  // DOCUMENT
+  /** Throws an [[IsabelleDestroyedException]] if this Isabelle process has been destroyed.
+   * Otherwise does nothing. */
+  @throws[IsabelleDestroyedException]("if the process was destroyed")
   def checkDestroyed(): Unit = {
-    if (destroyed!=null)
-      throw destroyed
+    if (destroyed != null) {
+      val exn = IsabelleDestroyedException(destroyed.message)
+      if (destroyed.getCause != null) exn.initCause(destroyed.getCause)
+      throw exn
+    }
   }
 
   private def send(str: DataOutputStream => Unit, callback: Try[Data] => Unit) : Unit = {
@@ -655,9 +683,13 @@ object Isabelle {
     def run(): Unit = isabelle.garbageQueue.add(id)
   }
 
-  // DOCUMENT
+  /** Parent trait for different kinds of configuration for [[Isabelle]]. See in particular [[Setup]]. */
   sealed trait SetupGeneral {
-    // DOCUMENT
+    /** Installs a handler for commands sent from the Isabelle process to the Scala process.
+     * When invoking `Control_Isabelle.sendToScala data` (for `data` of ML type `data`),
+     * then `isabelleCommandHandler` is invoked as `isabelleCommandHandler(data)`. (After transferring
+     * and converting `data` to type [[Data]].)
+     **/
     val isabelleCommandHandler : Data => Unit
   }
 
@@ -683,7 +715,7 @@ object Isabelle {
     *              built, the Isabelle process fails.) If true, the Isabelle build command will be invoked. That
     *              command automatically checks for changed dependencies but may add a noticable delay even if
     *              the heap was already built.
-    * @param isabelleCommandHandler see [[SetupGeneral]]
+    * @param isabelleCommandHandler see [[SetupGeneral.isabelleCommandHandler]]
     */
   case class Setup(isabelleHome : Path,
                    logic : String = "HOL",
@@ -694,14 +726,31 @@ object Isabelle {
                    isabelleCommandHandler: Data => Unit = Isabelle.defaultCommandHandler) extends SetupGeneral {
     /** [[isabelleHome]] as an absolute path */
     def isabelleHomeAbsolute: Path = workingDirectory.resolve(isabelleHome)
-    /** [[userDir]] as an absolute path. If [[userDir]] is [[None]], the Isabelle default user directory is returned. */
+    /** [[userDir]] as an absolute path. If [[userDir]] is [[scala.None None]], the Isabelle default user directory is returned. */
     def userDirAbsolute: Path = userDir match {
       case Some(dir) => workingDirectory.resolve(dir)
       case None => SystemUtils.getUserHome.toPath.resolve(".isabelle")
     }
   }
 
-  // DOCUMENT
+  /**
+   * Configuration for connecting to an already running Isabelle process.
+   * The Isabelle process must load `control_isabelle.ml` (available as a resource in this package)
+   * and invoke `Control_Isabelle.handleLines ()`.
+   *
+   * Before loading `control_isabelle.ml`,
+   * the values `COMMUNICATION_STREAMS` and `SECRETS` need to be initialized in ML.
+   * `SECRETS` needs to be initialized with the secrets use in the communication with the Isabelle
+   * process. These values are currently chosen by the [[Isabelle]] class itself,
+   * '''making it currently impossible to use [[SetupRunning]]'''.
+   *
+   * @param inputPipe the path of a named pipe for the protocol messages sent to the Isabelle process
+   *                  (corresponding to first component of COMMUNICATION_STREAMS)
+   * @param outputPipe the path of a named pipe for the protocol messages sent by the Isabelle process
+   *                  (corresponding to second component of COMMUNICATION_STREAMS)
+   * @param isabelleCommandHandler see [[SetupGeneral.isabelleCommandHandler]]
+   */
+  @Experimental
   case class SetupRunning(inputPipe : Path, outputPipe : Path,
                           isabelleCommandHandler: Data => Unit = Isabelle.defaultCommandHandler) extends SetupGeneral
 
@@ -835,6 +884,10 @@ object Isabelle {
   final case class DString(string: String) extends Data
   final case class DList(list: Data*) extends Data
   final case class DObject(id: ID) extends Data
+
+  private final class ProcessCleaner(process: lang.Process) extends Runnable {
+    override def run(): Unit = process.destroy()
+  }
 }
 
 /** Ancestor of all exceptions specific to [[Isabelle]] */
@@ -842,6 +895,13 @@ abstract class IsabelleControllerException(message: String) extends IOException(
 
 /** Thrown if an operation cannot be executed because [[Isabelle.destroy]] has already been invoked. */
 case class IsabelleDestroyedException(message: String) extends IsabelleControllerException(message)
+object IsabelleDestroyedException {
+  def apply(cause: Throwable): IsabelleDestroyedException = {
+    val exn = IsabelleDestroyedException("Isabelle process was destroyed: " + cause.getMessage)
+    exn.initCause(cause)
+    exn
+  }
+}
 /** Thrown if running Isabelle/jEdit fails */
 case class IsabelleJEditException(message: String) extends IsabelleControllerException(message)
 /** Thrown if the build process of Isabelle fails */

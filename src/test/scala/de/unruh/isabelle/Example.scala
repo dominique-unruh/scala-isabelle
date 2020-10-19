@@ -53,5 +53,8 @@ object Example {
 
     println("term3: " + term3.pretty(ctxt))
     // ==> term3: x = y
+
+    // Destroy to save resources. (Not needed if the application ends here anyway.)
+    isabelle.destroy()
   }
 }

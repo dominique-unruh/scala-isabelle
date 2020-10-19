@@ -1,30 +1,33 @@
 package de.unruh.isabelle.control
 
-import java.nio.file.{Path, Paths}
+import java.nio.file.Paths
 
 import de.unruh.isabelle.control.Isabelle.{DList, DString, Data}
 import de.unruh.isabelle.mlvalue.MLValue
-import de.unruh.isabelle.mlvalue.Implicits._
 
-import scala.reflect.runtime.currentMirror
-import scala.tools.reflect.ToolBox
 import scala.Console.err
-import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.reflect.runtime.currentMirror
 
-// TODO clean this up
-// DOCUMENT
+// Implicits
+import scala.tools.reflect.ToolBox
+import de.unruh.isabelle.mlvalue.Implicits._
+
 object ConnectToRunningIsabelle {
 
   def main(args: Array[String]): Unit = {
     if (args.length != 2) err.println("Expecting two arguments: inputPipe outputPipe")
 
-    val toolbox = Future { currentMirror.mkToolBox() }
+    val toolbox = Future {
+      currentMirror.mkToolBox()
+    }
 
     def commandHandler(data: Data): Unit = data match {
       case DList(DString(scala), args) =>
-        val scala2 = s"""{ (_isabelle: de.unruh.isabelle.control.Isabelle, _executionContext: scala.concurrent.ExecutionContext, data: de.unruh.isabelle.control.Isabelle.Data) =>
+        val scala2 =
+          s"""{ (_isabelle: de.unruh.isabelle.control.Isabelle, _executionContext: scala.concurrent.ExecutionContext, data: de.unruh.isabelle.control.Isabelle.Data) =>
 implicit val isabelle = _isabelle; implicit val executionContext = _executionContext; {
 $scala
 }; () }"""
@@ -45,7 +48,7 @@ $scala
     println("\n[STARTED]")
     var count = 1
 
-//    MLValue.init()
+    //    MLValue.init()
     val test = MLValue.compileValue[Int]("123")
     assert(test.retrieveNow == 123)
 

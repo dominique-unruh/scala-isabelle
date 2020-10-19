@@ -1,7 +1,7 @@
 package de.unruh.isabelle.pure
 
 import de.unruh.isabelle.control.Isabelle
-import de.unruh.isabelle.mlvalue.MLValue
+import de.unruh.isabelle.mlvalue.{MLValue, MLValueWrapper}
 import de.unruh.isabelle.mlvalue.MLValue.compileValue
 
 import scala.concurrent.ExecutionContext
@@ -14,7 +14,7 @@ import Implicits._
  * An instance of this class is merely a thin wrapper around an [[mlvalue.MLValue MLValue]],
  * all explanations and examples given for [[Context]] also apply here.
  *
- * An implict [[MLValue.Converter]] can be imported from [[Implicits]]`._`. The representation
+ * An implict [[mlvalue.MLValue.Converter MLValue.Converter]] can be imported from [[Implicits]]`._`. The representation
  * of a position `pos` as an ML exception is `E_Position pos`.
  */
 final class Position private [Position](val mlValue : MLValue[Position]) extends MLValueWrapper[Position] {

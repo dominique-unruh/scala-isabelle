@@ -29,7 +29,7 @@ import de.unruh.isabelle.pure.Implicits._
  * The name of the theory can be retrieved via the member [[name]] if the theory was created
  * by [[Theory.apply(name:* Theory]]`(name)`. Otherwise, [[name]] returns a placeholder.
  *
- * An implict [[MLValue.Converter]] can be imported from [[Implicits]]`._`. The representation
+ * An implict [[mlvalue.MLValue.Converter MLValue.Converter]] can be imported from [[Implicits]]`._`. The representation
  * of a theory `thy` as an ML exception is `E_Theory thy`.
  */
 final class Theory private [Theory](val name: String, val mlValue : MLValue[Theory]) extends FutureValue {
@@ -188,16 +188,16 @@ object Theory extends OperationCollection {
     logger.debug(Ops.sessionPaths.toString)
 
     if (Version.from2020) {
-      Ops.updateKnownTheories(Ops.sessionPaths.asScala.toList.map { case (n,p) => (p.toString,n) }).retrieve
+      Ops.updateKnownTheories2020(Ops.sessionPaths.asScala.toList.map { case (n,p) => (p,n) }).retrieve
     } else {
-      val thyPaths = ListBuffer[(String,String)]()
+      val thyPaths = ListBuffer[(String,Path)]()
       for ((session,path) <- Ops.sessionPaths.asScala;
            file <- Files.list(path).iterator().asScala;
            fileName = file.getFileName.toString;
            if fileName.endsWith(".thy");
            thyName = fileName.stripSuffix(".thy"))
-        thyPaths += s"$session.$thyName" -> path.resolve(file.toString).toString
-      Ops.updateKnownTheories(thyPaths.toList).retrieve
+        thyPaths += s"$session.$thyName" -> path.resolve(file.toString)
+      Ops.updateKnownTheories2019(thyPaths.toList).retrieve
     }
   }
 
@@ -212,23 +212,29 @@ object Theory extends OperationCollection {
 
     val sessionPaths = new ConcurrentHashMap[String, Path]()
 
-    /** Before Isabelle2020: Expects (theory-name, theory-file) pairs. From 2020: (session-name, directory) */
-    val updateKnownTheories = {
-      val initSession = if (Version.from2020)
-        "{session_directories=known, session_positions=[], docs=[], global_theories=global, loaded_theories=[]}"
-      else
-        "{sessions=[], docs=[], global_theories=global, loaded_theories=[], known_theories=known}"
-
-      compileFunction[List[(String, String)], Unit](
-        s"""fn known => let
+    /** Expects (directory, session-name) pairs. Works on Isabelle2020+ */
+    lazy val updateKnownTheories2020 = compileFunction[List[(Path, String)], Unit](
+      s"""fn known => let
+        val known = map (apfst Path.implode) known
         val names = Thy_Info.get_names ()
         val global = names |> List.mapPartial (fn n => case Resources.global_theory n of SOME session => SOME (n,session) | NONE => NONE)
         val loaded = names |> filter Resources.loaded_theory
         in
-          Resources.init_session_base $initSession
+          Resources.init_session_base {session_directories=known, session_positions=[], docs=[], global_theories=global, loaded_theories=[]}
         end
         """)
-    }
+
+    /** Expects (theory-name, theory-file) pairs. Works on Isabelle2019 */
+    lazy val updateKnownTheories2019 = compileFunction[List[(String, Path)], Unit](
+      s"""fn known => let
+        val known = map (apsnd Path.implode) known
+        val names = Thy_Info.get_names ()
+        val global = names |> List.mapPartial (fn n => case Resources.global_theory n of SOME session => SOME (n,session) | NONE => NONE)
+        val loaded = names |> filter Resources.loaded_theory
+        in
+          Resources.init_session_base {sessions=[], docs=[], global_theories=global, loaded_theories=[], known_theories=known}
+        end
+        """)
 
     val loadTheoryInternal =
       MLValue.compileFunction[String, Theory]("fn name => (Thy_Info.use_thy name; Thy_Info.get_theory name)")

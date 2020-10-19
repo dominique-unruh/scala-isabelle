@@ -2,7 +2,7 @@ package de.unruh.isabelle.pure
 
 import de.unruh.isabelle.control.Isabelle
 import de.unruh.isabelle.mlvalue.Implicits.listConverter
-import de.unruh.isabelle.mlvalue.MLValue
+import de.unruh.isabelle.mlvalue.{MLValue, MLValueWrapper}
 import TheoryHeader.Ops
 
 import scala.concurrent.ExecutionContext
@@ -17,7 +17,7 @@ import de.unruh.isabelle.pure.Implicits._
  * An instance of this class is merely a thin wrapper around an [[mlvalue.MLValue MLValue]],
  * all explanations and examples given for [[Context]] also apply here.
  *
- * An implict [[MLValue.Converter]] can be imported from [[Implicits]]`._`. The representation
+ * An implict [[mlvalue.MLValue.Converter MLValue.Converter]] can be imported from [[Implicits]]`._`. The representation
  * of a header `header` as an ML exception is `E_TheoryHeader header`.
  */
 final class TheoryHeader private[TheoryHeader] (val mlValue: MLValue[TheoryHeader]) extends MLValueWrapper[TheoryHeader] {
