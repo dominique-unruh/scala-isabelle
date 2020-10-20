@@ -809,6 +809,7 @@ object Isabelle {
    * @param files Files to open in jEdit
    * @throws IsabelleJEditException if jEdit fails (returns return code ≠0)
    */
+  // TODO support Windows
   def jedit(setup: Setup, files: Seq[Path]) : Unit = {
     def wd = setup.workingDirectory
     /** Path to absolute string, interpreted relative to wd */
