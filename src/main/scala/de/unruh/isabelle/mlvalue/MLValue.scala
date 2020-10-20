@@ -47,7 +47,8 @@ import scala.util.{Failure, Success}
   *  - If `m : MLValue[A]`, then `m.`[[retrieve]] (asynchronous) and `m.`[[retrieveNow]] (synchronous) decode the ML
   *    value in the object store and return a Scala value of type `A`.
   *  - ML code that operates on values in the Isabelle process can be specified using [[MLValue.compileValue]]
-  *    and [[MLValue.compileFunction[D,R]*]]. This ML code directly operates on the corresponding ML type `a` and
+  *    and [[MLValue.compileFunction[D,R]* MLValue.compileFunction]]. This ML code directly operates on the
+  *    corresponding ML type `a` and
   *    does not need to consider the encoding of ML values as exceptions or how ML types are serialized to be transferred
   *    to Scala (all this is handled automatically behind the scenes using the information provided by the implicit
   *    [[MLValue.Converter]]).
@@ -558,6 +559,8 @@ object MLValue extends OperationCollection {
     *    implicit argument! However, this cyclic dependency is not a problem because [[MLRetrieveFunction.apply]]
     *    and [[MLStoreFunction.apply]] never invoke [[store]] and [[retrieve]] from the converter, so we can call
     *    those `apply` functions from [[store]] and [[retrieve]].
+    *  - In simple cases (when `A` is simply supposed to be a wrapper around a reference to a value in the Isabelle
+    *    process, constructions of converters are simplified by using [[MLValueWrapper]] or [[AdHocConverter]].
     *
     * @tparam A the Scala type for which a corresponding ML type is declared
     */
