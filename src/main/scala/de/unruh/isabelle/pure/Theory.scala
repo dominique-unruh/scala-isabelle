@@ -5,7 +5,7 @@ import java.util.concurrent.ConcurrentHashMap
 
 import de.unruh.isabelle.control.{Isabelle, OperationCollection}
 import de.unruh.isabelle.misc.Utils
-import de.unruh.isabelle.mlvalue.MLValue.Converter
+import de.unruh.isabelle.mlvalue.MLValue.{Converter, compileFunction}
 import de.unruh.isabelle.mlvalue.{FutureValue, MLFunction, MLFunction3, MLValue, Version}
 import de.unruh.isabelle.pure.Theory.Ops
 import org.log4s
@@ -259,10 +259,14 @@ object Theory extends OperationCollection {
           |val thy = if endThy then Theory.end_theory thy else thy
           |in thy end""".stripMargin)
 
+    val theoryMutex = Mutex()
+
     val loadTheoryInternal =
-      MLValue.compileFunction[String, Theory]("fn name => (Thy_Info.use_thy name; Thy_Info.get_theory name)")
+      MLValue.compileFunction[Mutex, String, Theory](
+        s"fn (mutex,name) => (${Mutex.wrapWithMutex("mutex", "Thy_Info.use_thy name")}; Thy_Info.get_theory name)")
     val loadTheoryPath =
-      MLValue.compileFunction[Path, String, Theory]("fn (path,name) => (Thy_Info.use_thy (Path.implode path); Thy_Info.get_theory name)")
+      MLValue.compileFunction[Mutex, Path, String, Theory](
+        s"fn (mutex,path,name) => (${Mutex.wrapWithMutex("mutex", "Thy_Info.use_thy (Path.implode path)")}; Thy_Info.get_theory name)")
     val importMLStructure : MLFunction3[Theory, String, String, Unit] = compileFunction(
       """fn (thy,theirName,hereStruct) => let
                   val theirAllStruct = Context.setmp_generic_context (SOME (Context.Theory thy))
@@ -286,8 +290,9 @@ object Theory extends OperationCollection {
    * registered via [[registerSessionDirectoriesNow]].) `ROOT` and `ROOTS` are not taken into account for finding the
    * theories.
    **/
+  // DOCUMENT? not parallel
   def apply(name: String)(implicit isabelle: Isabelle, ec: ExecutionContext): Theory =
-    Ops.loadTheoryInternal(name).retrieveNow
+    Ops.loadTheoryInternal(Ops.theoryMutex, name).retrieveNow
 
   /** Retrieves a theory located at the path `path`.
    *
@@ -299,13 +304,14 @@ object Theory extends OperationCollection {
    * Unqualified imports of the theory `X` are searched for in the same directory. Qualified imports
    * must be findable according to the rules specified in [[apply(name* apply(String)]].
    **/
+    // DOCUMENT? not parallel
   def apply(path: Path)(implicit isabelle: Isabelle, ec: ExecutionContext): Theory = {
     val filename = path.getFileName.toString
     if (!filename.endsWith(".thy"))
       throw new IllegalArgumentException("Theory file must end in .thy")
     val thyName = filename.stripSuffix(".thy")
     val thyPath = path.getParent match { case null => Paths.get(thyName); case p => p.resolve(thyName) }
-    Ops.loadTheoryPath(thyPath, s"Draft.$thyName").retrieveNow
+    Ops.loadTheoryPath(Ops.theoryMutex, thyPath, s"Draft.$thyName").retrieveNow
   }
 
   /** Representation of theories in ML. (See the general discussion of [[Context]], the same things apply to [[Theory]].)
