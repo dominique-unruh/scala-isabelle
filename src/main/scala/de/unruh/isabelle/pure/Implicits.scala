@@ -21,6 +21,7 @@ object Implicits {
   implicit val ctypConverter = Ctyp.CtypConverter
   implicit val theoryHeaderConverter = TheoryHeader.converter
   implicit val positionConverter = Position.converter
+  implicit val mutexConverter = Mutex.converter
   implicit val keywordsConverter = Keywords.converter
   implicit val toplevelStateConverter = ToplevelState.converter
   implicit val pathConverter = PathConverter
