@@ -159,11 +159,20 @@ object IsabelleTest {
     Paths.get(path)
   }
 
+  val scalaIsabelleDir: Path = {
+    val cwd = Path.of("").toAbsolutePath
+    if (!cwd.endsWith("scala-isabelle") && Files.exists(cwd.resolve("scala-isabelle")))
+      // In this case, scala-isabelle is probably embedded as a subproject of some other project
+      Path.of("scala-isabelle")
+    else
+      Path.of("")
+  }
+
   val setup: Setup = Setup(
     isabelleHome = isabelleHome,
     sessionRoots = Nil,
     userDir = None,
-    workingDirectory = Path.of("src/test/isabelle"),
+    workingDirectory = scalaIsabelleDir.resolve("src/test/isabelle"),
     build=false
   )
 
