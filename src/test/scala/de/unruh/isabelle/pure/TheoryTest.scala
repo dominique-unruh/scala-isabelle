@@ -2,7 +2,7 @@ package de.unruh.isabelle.pure
 
 import java.nio.file.{Files, Path, Paths}
 
-import de.unruh.isabelle.control.IsabelleException
+import de.unruh.isabelle.control.{IsabelleException, IsabelleTest}
 import de.unruh.isabelle.control.IsabelleTest.setup
 import de.unruh.isabelle.mlvalue.MLValue
 import org.scalatest.funsuite.AnyFunSuite
@@ -58,7 +58,7 @@ class TheoryTest extends AnyFunSuite {
   }
 
   test("registerSessionDirectories loaded session, wrong session dir") {
-    val badHOL = Path.of("src/test/isabelle/Bad-HOL").toAbsolutePath
+    val badHOL = IsabelleTest.scalaIsabelleDir.resolve("src/test/isabelle/Bad-HOL").toAbsolutePath
     assert(Files.isDirectory(badHOL))
     Theory.registerSessionDirectoriesNow("HOL" -> badHOL)
     val thy = Theory("HOL.Filter").force

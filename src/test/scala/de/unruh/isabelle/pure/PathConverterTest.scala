@@ -23,6 +23,7 @@ class PathConverterTest extends AnyFunSuite {
 
   test("access file, absolute path") {
     val path = setup.workingDirectory.resolve("Empty.thy").toAbsolutePath
+    println(setup.workingDirectory, path)
     assert(Files.exists(path))
     assert(fileExists(path).retrieveNow)
   }

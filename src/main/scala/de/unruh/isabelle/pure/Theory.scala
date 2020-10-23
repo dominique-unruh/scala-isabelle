@@ -144,6 +144,23 @@ final class Theory private [Theory](val name: String, val mlValue : MLValue[Theo
 }
 
 object Theory extends OperationCollection {
+  // DOCUMENT
+  // TODO test case
+  def mergeTheories(mergedName: String = null,
+                    endTheory: Boolean = true,
+                    theories: Seq[Theory])
+                   (implicit isabelle: Isabelle, executionContext: ExecutionContext): Theory = {
+    val mergedName2 =
+      if (mergedName==null) Utils.freshName("Merged_Theory")
+      else mergedName
+
+    Ops.mergeTheories(mergedName2, endTheory, theories.toList).retrieveNow
+  }
+
+  // DOCUMENT
+  def mergeTheories(theories: Theory*)(implicit isabelle: Isabelle, executionContext: ExecutionContext): Theory =
+    mergeTheories(theories = theories)
+
   /** Registers session directories.
    *
    * Each Isabelle session (such as `HOL`, `HOL-Library`, `FOL`, ...) has one (or several) associated session directories
@@ -204,7 +221,6 @@ object Theory extends OperationCollection {
   override protected def newOps(implicit isabelle: Isabelle, ec: ExecutionContext): Ops = new Ops()
   //noinspection TypeAnnotation
   protected[isabelle] class Ops(implicit val isabelle: Isabelle, ec: ExecutionContext) {
-
     import MLValue.compileFunction
 
 //    MLValue.init()
@@ -235,6 +251,13 @@ object Theory extends OperationCollection {
           Resources.init_session_base {sessions=[], docs=[], global_theories=global, loaded_theories=[], known_theories=known}
         end
         """)
+
+    val mergeTheories =
+      MLValue.compileFunction[String, Boolean, List[Theory], Theory](
+        """fn (name, endThy, thys) => let
+          |val thy = Theory.begin_theory (name, Position.none) thys
+          |val thy = if endThy then Theory.end_theory thy else thy
+          |in thy end""".stripMargin)
 
     val loadTheoryInternal =
       MLValue.compileFunction[String, Theory]("fn name => (Thy_Info.use_thy name; Thy_Info.get_theory name)")

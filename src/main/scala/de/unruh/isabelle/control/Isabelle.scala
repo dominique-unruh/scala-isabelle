@@ -212,23 +212,23 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
 
 
   /** Message format:
-    *
-    * int|1b|data - success response for command #int
-    * int|2b|string - failure response for command #int
-    *
-    * 1b,2b,...: byte literals
-    *
-    * int64: 64 msb-first signed integer
-    *
-    * data: binary representation of [[Data]]:
-    *   1b|int64 - DInt
-    *   2b|string - DString (must be ASCII)
-    *   3b|int64|data|data|... - DTree (int64 = # of data)
-    *   4b|int64 - DObject (responsibility for GC is on Scala side)
-    *
-    * string: int32|bytes
-    *
-    **/
+   *
+   * int|1b|data - success response for command #int
+   * int|2b|string - failure response for command #int
+   *
+   * 1b,2b,...: byte literals
+   *
+   * int64: 64 msb-first signed integer
+   *
+   * data: binary representation of [[Data]]:
+   *   1b|int64 - DInt
+   *   2b|string - DString (must be ASCII)
+   *   3b|int64|data|data|... - DTree (int64 = # of data)
+   *   4b|int64 - DObject (responsibility for GC is on Scala side)
+   *
+   * string: int32|bytes
+   *
+   **/
   private def parseIsabelle(isabelleOutput: InputStream) : Unit = try {
     val output = new DataInputStream(isabelleOutput)
 
@@ -460,9 +460,9 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
   @volatile private var destroyed : IsabelleDestroyedException = _
 
   /** Kills the running Isabelle process.
-    * After this, no more operations on values in the object store are possible.
-    * Futures corresponding to already running computations will throw an [[IsabelleDestroyedException]].
-    */
+   * After this, no more operations on values in the object store are possible.
+   * Futures corresponding to already running computations will throw an [[IsabelleDestroyedException]].
+   */
   def destroy(): Unit = destroy(IsabelleDestroyedException("Isabelle process has been destroyed"))
 
   private def destroy(cause: IsabelleDestroyedException): Unit = {
@@ -516,19 +516,19 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
   }
 
   /** Executes the ML code `ml` in the Isabelle process.
-    *
-    * WARNING: This has a global effect on the Isabelle process because it modifies the ML name space.
-    *
-    * Definitions made in `ml` affect the global Isabelle name space.
-    * This is intended mostly for defining new types.
-    * To create values (e.g., if `ml` is the code of a function that should be executed),
-    * preferably use [[storeValue]] which creates anonymous values in the object store.
-    * The ML code is executed in a context where the structure `Control_Isabelle` is not opened
-    * (i.e., you have to write `Control_Isabelle.E_Int` instead of `E_Int`).
-    *
-    * @return A future that completes when the code was executed.
-    *         (Or throws an [[IsabelleControllerException]] if the ML code compilation/execution fails.)
-    */
+   *
+   * WARNING: This has a global effect on the Isabelle process because it modifies the ML name space.
+   *
+   * Definitions made in `ml` affect the global Isabelle name space.
+   * This is intended mostly for defining new types.
+   * To create values (e.g., if `ml` is the code of a function that should be executed),
+   * preferably use [[storeValue]] which creates anonymous values in the object store.
+   * The ML code is executed in a context where the structure `Control_Isabelle` is not opened
+   * (i.e., you have to write `Control_Isabelle.E_Int` instead of `E_Int`).
+   *
+   * @return A future that completes when the code was executed.
+   *         (Or throws an [[IsabelleControllerException]] if the ML code compilation/execution fails.)
+   */
   def executeMLCode(ml : String) : Future[Unit] = {
     val promise : Promise[Unit] = Promise()
     logger.debug(s"Executing ML code: $ml")
@@ -540,23 +540,23 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
   def executeMLCodeNow(ml : String): Unit = Await.result(executeMLCode(ml), Duration.Inf)
 
   /** Executes the ML expression `ml` in the Isabelle process.
-    *
-    * WARNING: This has a global effect on the Isabelle process because it modifies the ML name space.
-    *
-    * The expression must be of ML type `exn`.
-    * The result of evaluating the expression is added to the object store.
-    * The ML code is executed in a context where the structure `Control_Isabelle` is opened
-    * (i.e., you can write `E_Int` instead of `Control_Isabelle.E_Int`).
-    *
-    * Example: `storeValue("exception E_Term of term")` (this is actually done by [[de.unruh.isabelle.pure.Term]]).
-    *
-    * In code that is supposed to support multiple instances of Isabelle, it can be cumbersome to
-    * keep track in which instances a given ML code fragment was already executed. See [[OperationCollection]]
-    * for a helper class to facilitate that.
-    *
-    * @return Future that contains an ID referencing the result in the object store.
-    *         (Or throws an [[IsabelleControllerException]] if the ML code compilation/execution fails.)
-    */
+   *
+   * WARNING: This has a global effect on the Isabelle process because it modifies the ML name space.
+   *
+   * The expression must be of ML type `exn`.
+   * The result of evaluating the expression is added to the object store.
+   * The ML code is executed in a context where the structure `Control_Isabelle` is opened
+   * (i.e., you can write `E_Int` instead of `Control_Isabelle.E_Int`).
+   *
+   * Example: `storeValue("exception E_Term of term")` (this is actually done by [[de.unruh.isabelle.pure.Term]]).
+   *
+   * In code that is supposed to support multiple instances of Isabelle, it can be cumbersome to
+   * keep track in which instances a given ML code fragment was already executed. See [[OperationCollection]]
+   * for a helper class to facilitate that.
+   *
+   * @return Future that contains an ID referencing the result in the object store.
+   *         (Or throws an [[IsabelleControllerException]] if the ML code compilation/execution fails.)
+   */
   def storeValue(ml : String): Future[ID] = {
     val promise : Promise[ID] = Promise()
 //    logger.debug(s"Compiling ML value: $ml")
@@ -666,9 +666,9 @@ object Isabelle {
   private val logger = log4s.getLogger
 
   /** An ID referencing an object in the object store (see the description of [[Isabelle]]).
-    * If this ID is not referenced any more, the referenced object will be garbage collected
-    * in the Isabelle process, too.
-    */
+   * If this ID is not referenced any more, the referenced object will be garbage collected
+   * in the Isabelle process, too.
+   */
   final class ID private[control] (private[control] val id: Long, isabelle: Isabelle) {
     isabelle.cleaner.register(this, new IDCleaner(id, isabelle))
 
@@ -694,29 +694,29 @@ object Isabelle {
   }
 
   /** Configuration for initializing an [[Isabelle]] instance.
-    *
-    * (The fields of this class are documents in the source code. I am not sure why they do not occur in the
-    * generated API doc.)
-    *
-    * @param workingDirectory Working directory in which the Isabelle process should run. (Default:
-    *                         working directory of the Scala process.) All other paths described
-    *                         below are interpreted relative to `workingDirectory` (unless they are absolute).
-    * @param isabelleHome Path to the Isabelle distribution
-    * @param logic Heap image to load in Isabelle (e.g., `HOL`, `HOL-Analysis`, etc.)
-    * @param sessionRoots Additional session directories in which Isabelle will search for sessions
-    *                     (must contain `ROOT` files and optionally `ROOTS` files, see the Isabelle system manual).
-    *                     Default: no additional session directories
-    * @param userDir User configuration directory for Isabelle. Must end in `/.isabelle` if provided.
-    *                None (default) means to let Isabelle chose the default location.
-    *                Here Isabelle stores user configuration and heap images (unless
-    *                the location of the heap images is configured differently, see the Isabelle system manual)
-    * @param build Whether to build the Isabelle heap before running Isabelle. If false, the heap will never be
-    *              built. (This means changes in the Isabelle theories will not be reflected. And if the heap was never
-    *              built, the Isabelle process fails.) If true, the Isabelle build command will be invoked. That
-    *              command automatically checks for changed dependencies but may add a noticable delay even if
-    *              the heap was already built.
-    * @param isabelleCommandHandler see [[SetupGeneral.isabelleCommandHandler]]
-    */
+   *
+   * (The fields of this class are documents in the source code. I am not sure why they do not occur in the
+   * generated API doc.)
+   *
+   * @param workingDirectory Working directory in which the Isabelle process should run. (Default:
+   *                         working directory of the Scala process.) All other paths described
+   *                         below are interpreted relative to `workingDirectory` (unless they are absolute).
+   * @param isabelleHome Path to the Isabelle distribution
+   * @param logic Heap image to load in Isabelle (e.g., `HOL`, `HOL-Analysis`, etc.)
+   * @param sessionRoots Additional session directories in which Isabelle will search for sessions
+   *                     (must contain `ROOT` files and optionally `ROOTS` files, see the Isabelle system manual).
+   *                     Default: no additional session directories
+   * @param userDir User configuration directory for Isabelle. Must end in `/.isabelle` if provided.
+   *                None (default) means to let Isabelle chose the default location.
+   *                Here Isabelle stores user configuration and heap images (unless
+   *                the location of the heap images is configured differently, see the Isabelle system manual)
+   * @param build Whether to build the Isabelle heap before running Isabelle. If false, the heap will never be
+   *              built. (This means changes in the Isabelle theories will not be reflected. And if the heap was never
+   *              built, the Isabelle process fails.) If true, the Isabelle build command will be invoked. That
+   *              command automatically checks for changed dependencies but may add a noticable delay even if
+   *              the heap was already built.
+   * @param isabelleCommandHandler see [[SetupGeneral.isabelleCommandHandler]]
+   */
   case class Setup(isabelleHome : Path,
                    logic : String = "HOL",
                    userDir : Option[Path] = None,
@@ -758,11 +758,11 @@ object Isabelle {
   private val buildLocks = Striped.lazyWeakReadWriteLock(10)
 
   /** Runs the Isabelle build process to build the session heap image `setup.logic`
-    *
-    * This is done automatically by the constructors of [[Isabelle]] unless `build=false`.
-    *
-    * @param setup Configuration of Isabelle.
-    */
+   *
+   * This is done automatically by the constructors of [[Isabelle]] unless `build=false`.
+   *
+   * @param setup Configuration of Isabelle.
+   */
   def buildSession(setup: Setup) : Unit = {
     def wd = setup.workingDirectory
     def cygwinIfWin(path: Path) =
@@ -803,28 +803,36 @@ object Isabelle {
   }
 
   /**
-    * Starts Isabelle/jEdit (interactive editing of theories) with the given Isabelle configuration.
-    *
-    * @param setup Isabelle configuration
-    * @param files Files to open in jEdit
-    * @throws IsabelleJEditException if jEdit fails (returns return code ≠0)
-    */
+   * Starts Isabelle/jEdit (interactive editing of theories) with the given Isabelle configuration.
+   *
+   * @param setup Isabelle configuration
+   * @param files Files to open in jEdit
+   * @throws IsabelleJEditException if jEdit fails (returns return code ≠0)
+   */
+  // TODO try if this still works in Windows (e.g., try via qrhl-tool)
   def jedit(setup: Setup, files: Seq[Path]) : Unit = {
     def wd = setup.workingDirectory
     /** Path to absolute string, interpreted relative to wd */
-    def str(path: Path) = wd.resolve(path).toAbsolutePath.toString
-    val isabelleBinary = setup.isabelleHome.resolve("bin").resolve("isabelle")
-    val cmd = ListBuffer[String]()
+    def cygwinIfWin(path: Path) =
+      if (SystemUtils.IS_OS_WINDOWS) Utils.cygwinPath(path) else path.toString
+    def abs(path: Path) = wd.resolve(path).toAbsolutePath
+    /** Path to absolute string, interpreted relative to wd */
+    def str(path: Path) = cygwinIfWin(abs(path))
 
-    cmd += str(isabelleBinary) += "jedit"
+//    val isabelleBinary = setup.isabelleHome.resolve("bin").resolve("isabelle")
+    val isabelleArguments = ListBuffer[String]()
+
+    isabelleArguments += "jedit"
 
     for (root <- setup.sessionRoots)
-      cmd += "-d" += str(root)
+      isabelleArguments += "-d" += str(root)
 
-    cmd += "-l" += setup.logic
+    isabelleArguments += "-l" += setup.logic
 
-    cmd += "--"
-    cmd ++= files.map { _.toAbsolutePath.toString }
+    isabelleArguments += "--"
+    isabelleArguments ++= files.map { _.toAbsolutePath.toString }
+
+    val cmd = makeIsabelleCommandLine(abs(setup.isabelleHome), isabelleArguments.toSeq)
 
     logger.debug(s"Cmd line: ${cmd.mkString(" ")}")
 
@@ -855,30 +863,30 @@ object Isabelle {
   }
 
   /** An algebraic datatype that allows to encode trees of data containing integers ([[DInt]]), strings ([[DString]]), and IDs of
-    * objects ([[DObject]]) in the object store of the Isabelle process. A constructor [[DList]] is used to create a tree
-    * structure.
-    *
-    * No particular semantics is given to these trees, their purpose is to be a sufficiently flexible datatype to be able
-    * to encode arbitrary data types for transfer.
-    *
-    * A corresponding datatype is defined in the `Control_Isabelle` ML structure in the Isabelle process:
-    * {{{
-    * datatype data = DString of string | DInt of int | DList of data list | DObject of exn
-    * }}}
-    * Note that while [[DObject]] on the Scala side contains an ID of an object, on the ML side we instead
-    * directly have the object that is references (of type `exn`). Serialization and deserialization creates and
-    * dereferences object IDs as needed.
-    *
-    * The data that can be stored in these trees is subject to the following additional limitations:
-    *  - Strings must be ASCII (non-ASCII characters will be replaced by default characters).
-    *  - Integers must be 64bit signed integers (this is enforced in Scala due to the size of the type
-    *    [[scala.Long Long]] but ML integers have no size limit (like [[scala.BigInt BigInt]])). Larger integers will
-    *    be truncated to 64 bits.
-    *  - Strings must be at most 67.108.856 characters long (`String.maxSize` in ML). Otherwise there an exception is
-    *    raised in the Isabelle process
-    *
-    * @see [[Isabelle.applyFunction(f:de* applyFunction]] for details how to use this type to transfer data
-    * */
+   * objects ([[DObject]]) in the object store of the Isabelle process. A constructor [[DList]] is used to create a tree
+   * structure.
+   *
+   * No particular semantics is given to these trees, their purpose is to be a sufficiently flexible datatype to be able
+   * to encode arbitrary data types for transfer.
+   *
+   * A corresponding datatype is defined in the `Control_Isabelle` ML structure in the Isabelle process:
+   * {{{
+   * datatype data = DString of string | DInt of int | DList of data list | DObject of exn
+   * }}}
+   * Note that while [[DObject]] on the Scala side contains an ID of an object, on the ML side we instead
+   * directly have the object that is references (of type `exn`). Serialization and deserialization creates and
+   * dereferences object IDs as needed.
+   *
+   * The data that can be stored in these trees is subject to the following additional limitations:
+   *  - Strings must be ASCII (non-ASCII characters will be replaced by default characters).
+   *  - Integers must be 64bit signed integers (this is enforced in Scala due to the size of the type
+   *    [[scala.Long Long]] but ML integers have no size limit (like [[scala.BigInt BigInt]])). Larger integers will
+   *    be truncated to 64 bits.
+   *  - Strings must be at most 67.108.856 characters long (`String.maxSize` in ML). Otherwise there an exception is
+   *    raised in the Isabelle process
+   *
+   * @see [[Isabelle.applyFunction(f:de* applyFunction]] for details how to use this type to transfer data
+   * */
   sealed trait Data
   final case class DInt(int: Long) extends Data
   final case class DString(string: String) extends Data
