@@ -809,23 +809,30 @@ object Isabelle {
    * @param files Files to open in jEdit
    * @throws IsabelleJEditException if jEdit fails (returns return code ≠0)
    */
-  // TODO support Windows
+  // TODO try if this still works in Windows (e.g., try via qrhl-tool)
   def jedit(setup: Setup, files: Seq[Path]) : Unit = {
     def wd = setup.workingDirectory
     /** Path to absolute string, interpreted relative to wd */
-    def str(path: Path) = wd.resolve(path).toAbsolutePath.toString
-    val isabelleBinary = setup.isabelleHome.resolve("bin").resolve("isabelle")
-    val cmd = ListBuffer[String]()
+    def cygwinIfWin(path: Path) =
+      if (SystemUtils.IS_OS_WINDOWS) Utils.cygwinPath(path) else path.toString
+    def abs(path: Path) = wd.resolve(path).toAbsolutePath
+    /** Path to absolute string, interpreted relative to wd */
+    def str(path: Path) = cygwinIfWin(abs(path))
 
-    cmd += str(isabelleBinary) += "jedit"
+//    val isabelleBinary = setup.isabelleHome.resolve("bin").resolve("isabelle")
+    val isabelleArguments = ListBuffer[String]()
+
+    isabelleArguments += "jedit"
 
     for (root <- setup.sessionRoots)
-      cmd += "-d" += str(root)
+      isabelleArguments += "-d" += str(root)
 
-    cmd += "-l" += setup.logic
+    isabelleArguments += "-l" += setup.logic
 
-    cmd += "--"
-    cmd ++= files.map { _.toAbsolutePath.toString }
+    isabelleArguments += "--"
+    isabelleArguments ++= files.map { _.toAbsolutePath.toString }
+
+    val cmd = makeIsabelleCommandLine(abs(setup.isabelleHome), isabelleArguments.toSeq)
 
     logger.debug(s"Cmd line: ${cmd.mkString(" ")}")
 
