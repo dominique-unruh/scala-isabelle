@@ -1,0 +1,7 @@
+pick: random
+
+configs:
+  win2020:
+    isabelle: 2020
+  win2019:
+    isabelle: 2019
