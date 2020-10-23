@@ -7,16 +7,16 @@ orbs:
 
 workflows:
   version: 2
-  build:
+  win2020:
     jobs:
-      - build:
+      - test:
           filters:
             branches:
               only:
                 - circleci-project-setup
 
 jobs:
-  build:
+  test:
 
     executor:
       name: windows/default # executor type
@@ -32,19 +32,19 @@ jobs:
       # Download and cache Isabelle
       - restore_cache:
           keys:
-            - v2-isabelle-2019
+            - v2-isabelle-2020
       - run:
           shell: bash
           command: |
-            if ! [ -e "$HOME/install/Isabelle2019" ]; then
+            if ! [ -e "$HOME/install/Isabelle2020" ]; then
               mkdir -p ~/install
-              curl "https://isabelle.in.tum.de/website-Isabelle2019/dist/Isabelle2019.exe" -o /tmp/isabelle.exe
+              curl "https://isabelle.in.tum.de/website-Isabelle2020/dist/Isabelle2020.exe" -o /tmp/isabelle.exe
               7z x -y -o"$HOME/install" /tmp/isabelle.exe
             fi
       - save_cache:
           paths:
-            - ~/install/Isabelle2019
-          key: v2-isabelle-2019
+            - ~/install/Isabelle2020
+          key: v2-isabelle-2020
 
       # Download and cache dependencies
       - restore_cache:
@@ -77,10 +77,10 @@ jobs:
           shell: bash
           command: |
             # Isabelle process calls rebaseall and then fails, unless we deactivate it
-            > ~/install/Isabelle2019/contrib/cygwin/isabelle/rebaseall
-            cygpath -w ~/install/Isabelle2019 > .isabelle-home
-            cat .isabelle-home
-            export PATH=~/bin:"$PATH"
+            > ~/install/Isabelle2020/contrib/cygwin/isabelle/rebaseall
+
+            cygpath -w ~/install/Isabelle2020 > .isabelle-home
+            #export PATH=~/bin:"$PATH"
             ~/install/sbt "testOnly -- -u scalatest-reports" </dev/null
 
       - store_test_results:
