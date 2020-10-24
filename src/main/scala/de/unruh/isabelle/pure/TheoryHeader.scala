@@ -10,7 +10,6 @@ import scala.language.postfixOps
 
 // Implicits
 import de.unruh.isabelle.mlvalue.Implicits._
-import de.unruh.isabelle.pure.Implicits._
 
 /** Represents a theory header (ML type `Thy_Header.header`) in the Isabelle process.
  *

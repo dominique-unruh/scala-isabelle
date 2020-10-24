@@ -7,7 +7,7 @@ import de.unruh.isabelle.mlvalue.{FutureValue, MLFunction, MLValue, MLValueWrapp
 import scala.concurrent.{ExecutionContext, Future}
 
 // Implicits
-import de.unruh.isabelle.pure.Implicits._
+import de.unruh.isabelle.pure.Implicits.theoryConverter
 
 /** Represents a proof context (ML type `Proof.context`) in the Isabelle process.
  *

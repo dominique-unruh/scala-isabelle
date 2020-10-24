@@ -6,9 +6,6 @@ import de.unruh.isabelle.mlvalue.MLValue.compileValue
 
 import scala.concurrent.ExecutionContext
 
-// Implicits
-import Implicits._
-
 /** Represents a position (ML type `Position.T`) in the Isabelle process.
  *
  * An instance of this class is merely a thin wrapper around an [[mlvalue.MLValue MLValue]],
@@ -27,7 +24,7 @@ object Position extends MLValueWrapper.Companion[Position] {
 
   override protected def instantiate(mlValue: MLValue[Position]): Position = new Position(mlValue)
 
-  class Ops(implicit isabelle: Isabelle, ec: ExecutionContext) extends super.Ops {
+  protected class Ops(implicit isabelle: Isabelle, ec: ExecutionContext) extends super.Ops {
     lazy val none: Position = compileValue[Position]("Position.none").retrieveNow
   }
 

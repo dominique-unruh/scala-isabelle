@@ -6,9 +6,6 @@ import de.unruh.isabelle.mlvalue.MLValue.{compileFunction, compileFunction0, com
 
 import scala.concurrent.ExecutionContext
 
-// Implicits
-import Implicits._
-
 /** Represents a mutex (ML type `Mutex.mutex`) in the Isabelle process.
  *
  * An instance of this class is merely a thin wrapper around an [[mlvalue.MLValue MLValue]],
@@ -27,7 +24,8 @@ object Mutex extends MLValueWrapper.Companion[Mutex] {
 
   override protected def instantiate(mlValue: MLValue[Mutex]): Mutex = new Mutex(mlValue)
 
-  class Ops(implicit isabelle: Isabelle, ec: ExecutionContext) extends super.Ops {
+  //noinspection TypeAnnotation
+  protected class Ops(implicit isabelle: Isabelle, ec: ExecutionContext) extends super.Ops {
     lazy val createMutex = compileFunction0[Mutex]("Mutex.mutex")
   }
 

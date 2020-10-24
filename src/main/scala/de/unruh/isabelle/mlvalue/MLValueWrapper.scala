@@ -48,7 +48,7 @@ import scala.concurrent.{ExecutionContext, Future}
  *    Since the base trait [[MLValueWrapper.Companion]] already defines `Ops`, this needs to be done as follows:
  *    {{{
  *    override protected def newOps(implicit isabelle: Isabelle, ec: ExecutionContext): Ops = new Ops
- *    class Ops(implicit isabelle: Isabelle, ec: ExecutionContext) extends super.Ops {
+ *    protected class Ops(implicit isabelle: Isabelle, ec: ExecutionContext) extends super.Ops {
  *      // Example:
  *      lazy val test: MLFunction[Something,String] = compileFunction[Something,String]("... : something -> string")
  *    }
@@ -119,8 +119,7 @@ object MLValueWrapper {
 
     /** The [[MLValue.Converter]] for `A`. Import this as an implicit to support using objects of
      * type `A` in [[MLFunction]]s etc. */
-    // TODO make implicit
-    final object converter extends MLValue.Converter[A] {
+    final implicit object converter extends MLValue.Converter[A] {
       override def mlType(implicit isabelle: Isabelle, ec: ExecutionContext): String = Companion.this.mlType
 
       override def retrieve(value: MLValue[A])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[A] =
