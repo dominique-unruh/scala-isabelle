@@ -3,24 +3,18 @@ pick: random
 configs:
   win2020:
     os: windows
-#    machine: "executor: { name: windows/default }"
     isabelle: 2020
   win2019:
     os: windows
-#    machine: "executor: { name: windows/default }"
     isabelle: 2019
   linux2019:
     os: linux
-#    machine: "docker: [image: cimg/openjdk:15.0.0]"
     isabelle: 2019
   linux2020:
     os: linux
-#    machine: "docker: [image: cimg/openjdk:15.0.0]"
     isabelle: 2020
-
-# TODO add executor: docker in Linux case to make schema happy
 
 defaults:
   machine_config: |
     if os=="windows": return "executor: { name: windows/default }"
-    if os=="linux": return "docker: [image: cimg/openjdk:15.0.0]"
+    if os=="linux": return "machine: {image: ubuntu-2004:202010-01}"
