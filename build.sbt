@@ -46,8 +46,10 @@ libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value 
 lazy val travisRandomize = taskKey[Unit]("Randomize which test is run on Travis next time")
 travisRandomize := {
     if (!SystemUtils.IS_OS_WINDOWS) // On my machine, Windows doesn't have enough tools installed.
-        if (Process("git diff --quiet", cwd=baseDirectory.value).! != 0)
+        if (Process("git diff --quiet", cwd=baseDirectory.value).! != 0) {
             print(Process("scripts/travis-randomize.py", cwd=baseDirectory.value).!!)
+            print(Process("scripts/circleci-randomize.py", cwd=baseDirectory.value).!!)
+        }
 }
 compile in Compile := (compile in Compile).dependsOn(travisRandomize).value
 doc in Compile := (doc in Compile).dependsOn(travisRandomize).value

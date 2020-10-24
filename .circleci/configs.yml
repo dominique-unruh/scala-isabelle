@@ -1,0 +1,20 @@
+pick: random
+
+configs:
+  win2020:
+    os: windows
+    isabelle: 2020
+  win2019:
+    os: windows
+    isabelle: 2019
+  linux2019:
+    os: linux
+    isabelle: 2019
+  linux2020:
+    os: linux
+    isabelle: 2020
+
+defaults:
+  machine_config: |
+    if os=="windows": return "executor: { name: windows/default }"
+    if os=="linux": return "machine: {image: ubuntu-2004:202010-01}"
