@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-import yaml, random, re, sys
+import yaml, random, re, sys, textwrap
 
 config : dict = {}
 
@@ -10,9 +10,10 @@ def loadConfigs():
         configsfile = yaml.safe_load(f)
 
 def chooseConfig():
-    global config
+    global config, defaults
     pick = configsfile['pick']
     configs = configsfile['configs']
+    defaults = configsfile['defaults']
     configkeys = list(configs.keys())
     if pick == 'random':
         i = random.randrange(0, len(configkeys))
@@ -24,15 +25,26 @@ def chooseConfig():
     print(f"Picking configuration {configname} for Circle CI")
     config['name'] = configname
 
+def getKey(key: str) -> str:
+    if key in config:
+        return str(config[key])
+    if key in defaults:
+        code = defaults[key]
+        code = textwrap.indent(code, '  ')
+        code = f"def get_default_function():\n{code}\n"
+        locals = config.copy()
+        exec(code, config.copy(), locals)
+        result = locals['get_default_function']()
+        if result is None: sys.exit(f"Default key {key} returned no value")
+        return str(result)
+    sys.exit(f"Unknown substitution {key} in template. Configured keys: {config.keys()}. Default keys: {defaults.keys()}")
+
 def makeConfig():
     with open(".circleci/template.yml","rt") as f:
         template = f.read()
 
     def repl(m) -> str:
-        key = m[1]
-        if key not in config:
-            sys.exit(f"Unknown substitution {m[0]} in template. Allowed keys: {config.keys()}")
-        return str(config[key])
+        return getKey(m[1])
 
     result = re.sub(r"@{([a-zA-Z0-9_]+)}", repl, template)
 

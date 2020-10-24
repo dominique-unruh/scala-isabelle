@@ -16,13 +16,12 @@ workflows:
 jobs:
   test:
 
-    executor:
-      name: windows/default # executor type
+    @{machine_config}
 
-    environment:
-      # Customize the JVM maximum heap limit
-      JVM_OPTS: -Xmx3200m
-      TERM: dumb
+#    environment:
+#      # Customize the JVM maximum heap limit
+#      JVM_OPTS: -Xmx3200m
+#      TERM: dumb
 
     steps:
       - checkout
@@ -30,35 +29,38 @@ jobs:
       # Download and cache Isabelle
       - restore_cache:
           keys:
-            - v2-isabelle-@{isabelle}
+            - v2-isabelle-@{isabelle}-@{os}
       - run:
           shell: bash
           command: |
             if ! [ -e "$HOME/install/Isabelle@{isabelle}" ]; then
               mkdir -p ~/install
-              curl "https://isabelle.in.tum.de/website-Isabelle@{isabelle}/dist/Isabelle@{isabelle}.exe" -o /tmp/isabelle.exe
-              7z x -y -o"$HOME/install" /tmp/isabelle.exe
+              case @{os} in
+                windows)
+                  curl "https://isabelle.in.tum.de/website-Isabelle@{isabelle}/dist/Isabelle@{isabelle}.exe" -o /tmp/isabelle.exe
+                  7z x -y -o"$HOME/install" /tmp/isabelle.exe;;
+                linux)
+                  curl https://isabelle.in.tum.de/website-Isabelle@{isabelle}/dist/Isabelle@{isabelle}_linux.tar.gz | tar -x -z -C ~/install;;
+              esac
             fi
       - save_cache:
           paths:
             - ~/install/Isabelle@{isabelle}
-          key: v2-isabelle-@{isabelle}
+          key: v2-isabelle-@{isabelle}-@{os}
 
       # Download and cache dependencies
       - restore_cache:
           keys:
-            - v2-dependencies-{{ checksum "build.sbt" }}-{{ checksum "publish.sbt" }}
-            - v2-dependencies-
-            - dependencies-{{ checksum "build.sbt" }}-{{ checksum "publish.sbt" }}
-            - dependencies-
+            - v3-dependencies-@{os}-{{ checksum "build.sbt" }}-{{ checksum "publish.sbt" }}
+            - v3-dependencies-@{os}-
       - run:
           shell: bash
           command: |
-            mkdir -p ~/install
             if ! sha1sum -c ~/dependencies-sha1sum; then
+              mkdir -p ~/install
               curl -Ls https://git.io/sbt > ~/install/sbt
               chmod +x ~/install/sbt
-              ~/install/sbt update </dev/null
+              ~/install/sbt update test/update </dev/null
             fi
             sha1sum build.sbt publish.sbt > ~/dependencies-sha1sum
       - save_cache:
@@ -68,17 +70,22 @@ jobs:
             - ~/.sbt
             - ~/.ivy2
             - $LOCALAPPDATA\Coursier\Cache
+            - ~/.cache/coursier
             - ~/dependencies-sha1sum
-          key: v2-dependencies-{{ checksum "build.sbt" }}-{{ checksum "publish.sbt" }}
+          key: v3-dependencies-@{os}-{{ checksum "build.sbt" }}-{{ checksum "publish.sbt" }}
 
       - run:
           shell: bash
           command: |
-            # Isabelle process calls rebaseall and then fails, unless we deactivate it
-            > ~/install/Isabelle@{isabelle}/contrib/cygwin/isabelle/rebaseall
+            case @{os} of
+              windows)
+                # Isabelle process calls rebaseall and then fails, unless we deactivate it
+                > ~/install/Isabelle@{isabelle}/contrib/cygwin/isabelle/rebaseall
+                cygpath -w ~/install/Isabelle@{isabelle} > .isabelle-home;;
+              linux)
+                echo ~/install/Isabelle@{isabelle} > .isabelle-home;;
+            esac
 
-            cygpath -w ~/install/Isabelle@{isabelle} > .isabelle-home
-            #export PATH=~/bin:"$PATH"
             ~/install/sbt "testOnly -- -u scalatest-reports" </dev/null
 
       - store_test_results:
