@@ -18,6 +18,8 @@ configs:
 #    machine: "docker: [image: cimg/openjdk:15.0.0]"
     isabelle: 2020
 
+# TODO add executor: docker in Linux case to make schema happy
+
 defaults:
   machine_config: |
     if os=="windows": return "executor: { name: windows/default }"

@@ -31,6 +31,7 @@ jobs:
           keys:
             - v2-isabelle-@{isabelle}-@{os}
       - run:
+          name: Downloading Isabelle @{isabelle} (if needed)
           shell: bash
           command: |
             if ! [ -e "$HOME/install/Isabelle@{isabelle}" ]; then
@@ -54,6 +55,7 @@ jobs:
             - v3-dependencies-@{os}-{{ checksum "build.sbt" }}-{{ checksum "publish.sbt" }}
             - v3-dependencies-@{os}-
       - run:
+          name: Downloading build dependencies (if needed)
           shell: bash
           command: |
             if ! sha1sum -c ~/dependencies-sha1sum; then
@@ -75,9 +77,10 @@ jobs:
           key: v3-dependencies-@{os}-{{ checksum "build.sbt" }}-{{ checksum "publish.sbt" }}
 
       - run:
+          name: Running tests
           shell: bash
           command: |
-            case @{os} of
+            case @{os} in
               windows)
                 # Isabelle process calls rebaseall and then fails, unless we deactivate it
                 > ~/install/Isabelle@{isabelle}/contrib/cygwin/isabelle/rebaseall
