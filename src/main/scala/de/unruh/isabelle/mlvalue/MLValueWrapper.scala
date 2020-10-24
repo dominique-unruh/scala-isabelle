@@ -63,7 +63,6 @@ import scala.concurrent.{ExecutionContext, Future}
  * using [[AdHocConverter]] cannot be customized but only minimal boilerplate is needed.
  *
  **/
-// TODO can we extend AnyVal? (same in AdHocConverter)
 trait MLValueWrapper[A <: MLValueWrapper[A]] extends FutureValue {
   /** An [[MLValue]] referencing `this` (in the Isabelle process). Since `this` is just a thin
    * wrapper around an [[MLValue]], [[mlValue]] carries exactly the same data as `this` and can be converted back

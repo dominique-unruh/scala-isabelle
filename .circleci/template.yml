@@ -12,6 +12,7 @@ workflows:
             branches:
               only:
                 - circleci-project-setup
+                - master
 
 jobs:
   test:
