@@ -8,8 +8,6 @@ import scala.sys.process._
 
 // TODO: Ensure everything works with Windows (incl. qrhl-tool, pq-fo-verify)
 
-// TODO: in qrhl-tool.conf: Document to use \\ instead of \ (or fix that)
-
 name := "scala-isabelle"
 version := "master-SNAPSHOT"
 

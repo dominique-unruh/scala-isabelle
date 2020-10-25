@@ -2,6 +2,7 @@ package de.unruh.isabelle.pure
 
 import de.unruh.isabelle.control.Isabelle.{DInt, DList, DObject, DString}
 import de.unruh.isabelle.control.{Isabelle, OperationCollection}
+import de.unruh.isabelle.misc.{Symbols, Utils}
 import de.unruh.isabelle.mlvalue.MLValue.Converter
 import de.unruh.isabelle.mlvalue.Implicits._
 import de.unruh.isabelle.mlvalue.{FutureValue, MLFunction, MLFunction2, MLFunction3, MLRetrieveFunction, MLValue}
@@ -67,18 +68,17 @@ import scala.concurrent.{Await, Awaitable, ExecutionContext, Future}
  * [[Cterm]]s and regular terms (such as [[Const]]) without explicit conversions. Similarly, patterns such as
  * `case Const(name,typ) =>` also match [[Cterm]]s.
  */
-sealed abstract class Term extends FutureValue {
+sealed abstract class Term extends FutureValue with PrettyPrintable {
   /** Transforms this term into an [[mlvalue.MLValue MLValue]] containing this term. This causes transfer of
    * the term to Isabelle only the first time it is accessed (and not at all if the term
    * came from the Isabelle process in the first place). */
   val mlValue : MLValue[Term]
   /** [[control.Isabelle Isabelle]] instance relative to which this term was constructed. */
   implicit val isabelle : Isabelle
-  /** Produces a string representation of this term. Uses the Isabelle pretty printer.
-   * @param ctxt The Isabelle proof context to use (this contains syntax declarations etc.) */
-  // TODO: Consider returning unicode instead of symbols (same for other .pretty functions)
-  def pretty(ctxt: Context)(implicit ec: ExecutionContext): String =
+
+  override def prettyRaw(ctxt: Context)(implicit ec: ExecutionContext): String =
     Ops.stringOfTerm(MLValue((ctxt, this))).retrieveNow
+
   /** Transforms this term into a [[ConcreteTerm]]. A [[ConcreteTerm]] guarantees
    * that the type of the term ([[App]],[[Const]],[[Abs]]...) corresponds to the top-level
    * constructor on Isabelle side (`$`, `Const`, `Abs`, ...). */
@@ -169,7 +169,7 @@ final class Cterm private(val ctermMlValue: MLValue[Cterm])(implicit val isabell
   private var mlValueLoaded = false
   /** Transforms this [[Cterm]] into an [[MLValueTerm]]. */
   private [pure] def mlValueTerm = new MLValueTerm(mlValue)
-  override def pretty(ctxt: Context)(implicit ec: ExecutionContext): String =
+  override def prettyRaw(ctxt: Context)(implicit ec: ExecutionContext): String =
     Ops.stringOfCterm(MLValue((ctxt, this))).retrieveNow
   lazy val concrete: ConcreteTerm = mlValueTerm.concrete
   override def hashCode(): Int = concrete.hashCode()

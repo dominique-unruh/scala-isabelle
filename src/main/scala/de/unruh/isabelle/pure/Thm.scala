@@ -1,6 +1,7 @@
 package de.unruh.isabelle.pure
 
 import de.unruh.isabelle.control.{Isabelle, OperationCollection}
+import de.unruh.isabelle.misc.{Symbols, Utils}
 import de.unruh.isabelle.mlvalue.MLValue.Converter
 import de.unruh.isabelle.mlvalue.{FutureValue, MLFunction, MLFunction2, MLValue}
 import de.unruh.isabelle.pure.Thm.Ops
@@ -19,7 +20,7 @@ import de.unruh.isabelle.pure.Implicits._
  * all explanations and examples given for [[Context]] also apply here.
  */
 final class Thm private [Thm](val mlValue : MLValue[Thm])
-                             (implicit ec: ExecutionContext, isabelle: Isabelle) extends FutureValue {
+                             (implicit ec: ExecutionContext, isabelle: Isabelle) extends FutureValue with PrettyPrintable {
   /** A string representation. Does not contain the actual proposition of the theorem, use [[pretty]]
    * for that. */
   override def toString: String = s"thm${mlValue.stateString}"
@@ -30,10 +31,7 @@ final class Thm private [Thm](val mlValue : MLValue[Thm])
   /** Returns the theory this theorem is part of. */
   def theoryOf: Theory = Ops.theoryOfThm(this).retrieveNow
 
-  /** Produces a string representation of this theorem.
-   * Uses the Isabelle pretty printer.
-   * @param ctxt The Isabelle proof context to use (this contains syntax declarations etc.) */
-  def pretty(ctxt: Context)(implicit ec: ExecutionContext): String =
+  override def prettyRaw(ctxt: Context)(implicit ec: ExecutionContext): String =
     Ops.stringOfThm(MLValue(ctxt, this)).retrieveNow
 
   /** Returns the proofterm of this theorem. */

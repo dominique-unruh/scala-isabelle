@@ -2,6 +2,7 @@ package de.unruh.isabelle;
 
 import de.unruh.isabelle.control.Isabelle;
 import de.unruh.isabelle.java.JIsabelle;
+import de.unruh.isabelle.misc.Symbols;
 import de.unruh.isabelle.mlvalue.MLFunction2;
 import de.unruh.isabelle.mlvalue.MLValue;
 import de.unruh.isabelle.pure.*;
@@ -135,7 +136,7 @@ public class JavaExample {
         Term term2 = replace(term);
 
         // And pretty print the term
-        out.println("term2: " + term2.pretty(ctxt, global()));
+        out.println("term2: " + term2.pretty(ctxt, Symbols.globalInstance(), global()));
         // ==> term2: x = y * 1
 
         // Compile an ML function that can be executed directly in the Isabelle process
@@ -150,7 +151,7 @@ public class JavaExample {
                 .apply(ctxt, term2, isabelle, global(), contextConverter(), termConverter())
                 .retrieveNow(termConverter(), isabelle, global());
 
-        out.println("term3: " + term3.pretty(ctxt, global()));
+        out.println("term3: " + term3.pretty(ctxt, Symbols.globalInstance(), global()));
         // ==> term3: x = y
 
         // Destroy to save resources. (Not needed if the application ends here anyway.)

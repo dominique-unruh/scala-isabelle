@@ -2,6 +2,7 @@ package de.unruh.isabelle.pure
 
 import de.unruh.isabelle.control.Isabelle.{DInt, DList, DObject, DString}
 import de.unruh.isabelle.control.{Isabelle, IsabelleException, OperationCollection}
+import de.unruh.isabelle.misc.Symbols
 import de.unruh.isabelle.mlvalue.MLValue.Converter
 import de.unruh.isabelle.mlvalue.{FutureValue, MLFunction, MLFunction2, MLFunction3, MLRetrieveFunction, MLValue}
 import de.unruh.isabelle.pure.Typ.Ops
@@ -68,17 +69,17 @@ import de.unruh.isabelle.pure.Implicits._
  * [[Ctyp]]s and regular terms (such as [[TFree]]) without explicit conversions. Similarly, patterns such as
  * `case TFree(name,sort) =>` also match [[Ctyp]]s.
  */
-sealed abstract class Typ extends FutureValue {
+sealed abstract class Typ extends FutureValue with PrettyPrintable {
   /** Transforms this type into an [[mlvalue.MLValue MLValue]] containing this type. This causes transfer of
    * the type to Isabelle only the first time it is accessed (and not at all if the type
    * came from the Isabelle process in the first place). */
   val mlValue : MLValue[Typ]
   /** [[control.Isabelle Isabelle]] instance relative to which this type was constructed. */
   implicit val isabelle : Isabelle
-  /** Produces a string representation of this type. Uses the Isabelle pretty printer.
-   * @param ctxt The Isabelle proof context to use (this contains syntax declarations etc.) */
-  def pretty(ctxt: Context)(implicit ec: ExecutionContext): String =
+
+  override def prettyRaw(ctxt: Context)(implicit ec: ExecutionContext): String =
     Ops.stringOfType(MLValue((ctxt, this))).retrieveNow
+
   /** Transforms this term into a [[ConcreteTyp]]. A [[ConcreteTyp]] guarantees
    * that the Scala-type of the [[Typ]] ([[Type]],[[TFree]],[[TVar]]) corresponds to the top-level
    * constructor on Isabelle side (`Type`, `TFree`, `TVar`). */
@@ -209,7 +210,8 @@ final class MLValueTyp(val mlValue: MLValue[Typ])(implicit val isabelle: Isabell
   private var mlValueLoaded = false
   /** Transforms this [[Ctyp]] into an [[MLValueTyp]]. */
   private [pure] def mlValueTyp = new MLValueTyp(mlValue)
-  override def pretty(ctxt: Context)(implicit ec: ExecutionContext): String =
+
+  override def prettyRaw(ctxt: Context)(implicit ec: ExecutionContext): String =
     Ops.stringOfCtyp(MLValue((ctxt, this))).retrieveNow
 
   override lazy val concrete: ConcreteTyp = new MLValueTyp(mlValue).concrete
