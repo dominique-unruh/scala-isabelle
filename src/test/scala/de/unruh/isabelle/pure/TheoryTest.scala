@@ -67,4 +67,15 @@ class TheoryTest extends AnyFunSuite {
     println(thm.pretty(ctxt))
   }
 
+  test("mergeTheories") {
+    val gcd = Theory("HOL.GCD")
+    val filter = Theory("HOL.Filter")
+    Thm(Context(gcd), "gcd_lcm").force
+    assertThrows[IsabelleException] { Thm(Context(filter), "gcd_lcm").force }
+    assertThrows[IsabelleException] { Thm(Context(gcd), "eventually_Abs_filter").force }
+    Thm(Context(filter), "eventually_Abs_filter").force
+    val merged = Theory.mergeTheories(gcd, filter)
+    Thm(Context(merged), "gcd_lcm").force
+    Thm(Context(merged), "eventually_Abs_filter").force
+  }
 }
