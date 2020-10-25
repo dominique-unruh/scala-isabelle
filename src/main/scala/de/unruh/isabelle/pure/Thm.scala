@@ -26,6 +26,9 @@ final class Thm private [Thm](val mlValue : MLValue[Thm])
   /** Returns the proposition of this theorem (a term of Isabelle type `prop`). */
   lazy val proposition : Cterm = Cterm(Ops.cpropOf(mlValue))
 
+  /** Returns the theory this theorem is part of. */
+  def theoryOf: Theory = Ops.theoryOfThm(this).retrieveNow
+
   /** Produces a string representation of this theorem.
    * Uses the Isabelle pretty printer.
    * @param ctxt The Isabelle proof context to use (this contains syntax declarations etc.) */
@@ -38,10 +41,12 @@ final class Thm private [Thm](val mlValue : MLValue[Thm])
 
 object Thm extends OperationCollection {
   override protected def newOps(implicit isabelle: Isabelle, ec: ExecutionContext): Ops = new Ops()
+  //noinspection TypeAnnotation
   protected[isabelle] class Ops(implicit val isabelle: Isabelle, ec: ExecutionContext) {
     import MLValue.compileFunction
-//    Term.init()
-//    isabelle.executeMLCodeNow("exception E_Thm of thm")
+    //    Term.init()
+    //    isabelle.executeMLCodeNow("exception E_Thm of thm")
+    val theoryOfThm = compileFunction[Thm, Theory]("Thm.theory_of_thm")
     val getThm: MLFunction2[Context, String, Thm] =
       compileFunction("fn (ctxt, name) => Proof_Context.get_thm ctxt name")
     val cpropOf: MLFunction[Thm, Cterm] =

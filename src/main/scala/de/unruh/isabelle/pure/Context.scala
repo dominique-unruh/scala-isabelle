@@ -6,6 +6,8 @@ import de.unruh.isabelle.mlvalue.{FutureValue, MLFunction, MLValue, MLValueWrapp
 
 import scala.concurrent.{ExecutionContext, Future}
 
+import Context.Ops
+
 // Implicits
 import de.unruh.isabelle.pure.Implicits.theoryConverter
 
@@ -41,20 +43,23 @@ final class Context private [Context](val mlValue : MLValue[Context]) extends ML
   /**
    * Returns "context", "context (computing)", or "context (failed)" depending on
    * whether this context is ready, still being computed, or computation has thrown an exception.
-   * @return
    */
-
   override def toString: String = "context" + mlValue.stateString
 //  override def await: Unit = mlValue.await
 //  override def someFuture: Future[Any] = mlValue.someFuture
+
+  /** Returns the theory underlying this context. */
+  def theoryOf(implicit isabelle: Isabelle, executionContext: ExecutionContext) : Theory = Ops.theoryOf(this).retrieveNow
 }
 
 object Context extends MLValueWrapper.Companion[Context] {
   override protected def newOps(implicit isabelle: Isabelle, ec: ExecutionContext): Ops = new Ops()
+  //noinspection TypeAnnotation
   protected[isabelle] class Ops(implicit val isabelle: Isabelle, ec: ExecutionContext) extends super.Ops {
     import MLValue.compileFunction
     lazy val contextFromTheory : MLFunction[Theory, Context] =
       compileFunction[Theory, Context]("Proof_Context.init_global")
+    lazy val theoryOf = compileFunction[Context, Theory]("Proof_Context.theory_of")
   }
 
   /** Initializes a new context from the Isabelle theory `theory` */

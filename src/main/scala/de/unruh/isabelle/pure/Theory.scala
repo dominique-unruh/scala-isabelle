@@ -218,6 +218,14 @@ object Theory extends OperationCollection {
     }
   }
 
+  /** A mutex (in the Isabelle process) for synchronizing non-threadsafe theory operations (e.g., `Thy_Info.use_thy`).
+   * This mutex is internally by operations in [[Theory]]. Use this mutex to avoid concurrent execution with
+   * the functions in [[Theory]].
+   *
+   * @see [[Mutex.wrapWithMutex]] for a helper function to do locking with an Isabelle [[Mutex]]
+   **/
+  def mutex(implicit isabelle: Isabelle, executionContext: ExecutionContext): Mutex = Theory.Ops.theoryMutex
+
   override protected def newOps(implicit isabelle: Isabelle, ec: ExecutionContext): Ops = new Ops()
   //noinspection TypeAnnotation
   protected[isabelle] class Ops(implicit val isabelle: Isabelle, ec: ExecutionContext) {

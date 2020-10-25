@@ -76,6 +76,7 @@ sealed abstract class Term extends FutureValue {
   implicit val isabelle : Isabelle
   /** Produces a string representation of this term. Uses the Isabelle pretty printer.
    * @param ctxt The Isabelle proof context to use (this contains syntax declarations etc.) */
+  // TODO: Consider returning unicode instead of symbols (same for other .pretty functions)
   def pretty(ctxt: Context)(implicit ec: ExecutionContext): String =
     Ops.stringOfTerm(MLValue((ctxt, this))).retrieveNow
   /** Transforms this term into a [[ConcreteTerm]]. A [[ConcreteTerm]] guarantees

@@ -32,9 +32,22 @@ object Mutex extends MLValueWrapper.Companion[Mutex] {
   /** Creates a new mutex */
   def apply()(implicit isabelle: Isabelle, ec: ExecutionContext) : Mutex = Ops.createMutex().retrieveNow
 
-  // DOCUMENT
+  /** Returns a fragment of ML code that exectutes the ML code `code` with the mutex `mutex`.
+   * `mutex` is assumed to be the name of an ML value that holds the mutex.
+   *
+   * Example:
+   * {{{
+   * val thyMutex = Mutex()
+   * val useThyWithMutex = MLValue.compileFunction[Mutex, String, Unit](
+   *         s"fn (mutex,theoryName) => ${Mutex.wrapWithMutex("mutex", "Thy_Info.use_thy name")}")
+   * }}}
+   * Then `useThyWithMutex(mutex, "Test.Test")` loads the theory `Test.Test` in Isabelle but makes sure only
+   * a single instance is running concurrently (with the locking happening in Isabelle using `mutex`), since
+   * `Thy_Info.use_thy` is not thread safe. (In practice, better use [[Theory.mutex]] as the mutex instead
+   * of your own in this specific case.)
+   **/
   def wrapWithMutex(mutex: String, code: String) =
-    s"let val _ = Mutex.lock mutex val result = ($code) handle e => (Mutex.unlock mutex; Exn.reraise e) val _ = Mutex.unlock mutex in result end"
+    s"let val _ = Mutex.lock $mutex val result = ($code) handle e => (Mutex.unlock $mutex; Exn.reraise e) val _ = Mutex.unlock $mutex in result end"
 
   override protected def newOps(implicit isabelle: Isabelle, ec: ExecutionContext): Ops = new Ops
 }
