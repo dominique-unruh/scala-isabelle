@@ -22,6 +22,7 @@ structure Control_Isabelle : sig
   exception E_ToplevelState of Toplevel.state
   exception E_Keywords of Thy_Header.keywords
   exception E_Mutex of Mutex.mutex
+  exception E_Proofterm of Proofterm.proof
 
   val store : int -> exn -> unit
   (* For diagnostics. Linear time *)
@@ -54,6 +55,7 @@ exception E_Position of Position.T
 exception E_ToplevelState of Toplevel.state
 exception E_Keywords of Thy_Header.keywords
 exception E_Mutex of Mutex.mutex
+exception E_Proofterm of Proofterm.proof
 
 val (inStream, outStream) = COMMUNICATION_STREAMS
 val (inSecret, outSecret) = SECRETS

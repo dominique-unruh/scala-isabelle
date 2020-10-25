@@ -4,6 +4,7 @@ import de.unruh.isabelle.control.{Isabelle, OperationCollection}
 import de.unruh.isabelle.mlvalue.MLValue.Converter
 import de.unruh.isabelle.mlvalue.{FutureValue, MLFunction, MLFunction2, MLValue}
 import de.unruh.isabelle.pure.Thm.Ops
+import org.jetbrains.annotations.ApiStatus.Experimental
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -35,6 +36,10 @@ final class Thm private [Thm](val mlValue : MLValue[Thm])
   def pretty(ctxt: Context)(implicit ec: ExecutionContext): String =
     Ops.stringOfThm(MLValue(ctxt, this)).retrieveNow
 
+  /** Returns the proofterm of this theorem. */
+  @Experimental
+  def proofOf: Proofterm = Ops.proofOf(this).retrieveNow
+
   override def await: Unit = mlValue.await
   override def someFuture: Future[Any] = mlValue.someFuture
 }
@@ -53,6 +58,8 @@ object Thm extends OperationCollection {
       compileFunction[Thm, Cterm]("Thm.cprop_of")
     val stringOfThm: MLFunction2[Context, Thm, String] =
       compileFunction("fn (ctxt, thm) => Thm.pretty_thm ctxt thm |> Pretty.unformatted_string_of |> YXML.content_of")
+    val proofOf = compileFunction[Thm, Proofterm]("Thm.proof_of")
+//    val reconstructProofOf = compileFunction[Thm, Proofterm]("Thm.reconstruct_proof_of")
   }
 
   /** Retrieves a theorem from the Isabelle process by name. The theorem needs to be available in the given context.

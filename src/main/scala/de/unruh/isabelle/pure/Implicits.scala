@@ -25,4 +25,5 @@ object Implicits {
   implicit val keywordsConverter = Keywords.converter
   implicit val toplevelStateConverter = ToplevelState.converter
   implicit val pathConverter = PathConverter
+  implicit val prooftermConverter = Proofterm.converter
 }
