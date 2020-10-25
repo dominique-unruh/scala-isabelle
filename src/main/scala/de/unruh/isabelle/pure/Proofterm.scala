@@ -11,13 +11,13 @@ import jdk.jfr.Experimental
 import scala.annotation.tailrec
 
 /** Support for Isabelle proofterms. '''Experimental and incomplete.'''
- * May throw [[NotImplementedError]] and change without notice. Not documented.
+ * May throw [[scala.NotImplementedError NotImplementedError]] and change without notice. Not documented.
  * */
 @Experimental
 sealed trait Proofterm
 
 /** Support for Isabelle proofterms. '''Experimental and incomplete.'''
- * May throw [[NotImplementedError]] and change without notice. Not documented.
+ * May throw [[scala.NotImplementedError NotImplementedError]] and change without notice. Not documented.
  * */
 @Experimental
 object Proofterm extends OperationCollection {
@@ -46,7 +46,7 @@ object Proofterm extends OperationCollection {
         case prf =>
           throw IsabelleException(s"Unexpected proofterm while looking for PThm: $prf")
       }
-      strip(fromThm(thm))
+      strip(thm.proofOf)
     }
   }
 

@@ -157,7 +157,7 @@ object Theory extends OperationCollection {
     Ops.mergeTheories(mergedName2, endTheory, theories.toList).retrieveNow
   }
 
-  // DOCUMENT
+  /** Same as [[mergeTheories(me* mergeTheories]](theories = theories). */
   def mergeTheories(theories: Theory*)(implicit isabelle: Isabelle, executionContext: ExecutionContext): Theory =
     mergeTheories(theories = theories)
 
@@ -297,8 +297,13 @@ object Theory extends OperationCollection {
    * by the theory `name`. (I.e., all theories required to execute `name` must be either in the session image or
    * registered via [[registerSessionDirectoriesNow]].) `ROOT` and `ROOTS` are not taken into account for finding the
    * theories.
+   *
+   * Note: This function invokes `Thy_Info.use_thy` in the Isabelle process. That function is not thread-safe.
+   * Therefore separate invocations of `apply` will not be executed in parallel.
+   * (Locking happens on Isabelle side, thus this function returns immediately anyway.)
+   * If you want to invoke `Thy_Info.use_thy` or related functions yourself, please use [[Theory.mutex]]
+   * to avoid concurrent execution with this function.
    **/
-  // DOCUMENT? not parallel
   def apply(name: String)(implicit isabelle: Isabelle, ec: ExecutionContext): Theory =
     Ops.loadTheoryInternal(Ops.theoryMutex, name).retrieveNow
 
@@ -311,8 +316,9 @@ object Theory extends OperationCollection {
    *
    * Unqualified imports of the theory `X` are searched for in the same directory. Qualified imports
    * must be findable according to the rules specified in [[apply(name* apply(String)]].
+   *
+   * The note about thread-safety from [[apply(name* apply(String)]] applies for this function, too.
    **/
-    // DOCUMENT? not parallel
   def apply(path: Path)(implicit isabelle: Isabelle, ec: ExecutionContext): Theory = {
     val filename = path.getFileName.toString
     if (!filename.endsWith(".thy"))

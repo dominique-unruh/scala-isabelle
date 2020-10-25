@@ -39,7 +39,7 @@ object Mutex extends MLValueWrapper.Companion[Mutex] {
    * {{{
    * val thyMutex = Mutex()
    * val useThyWithMutex = MLValue.compileFunction[Mutex, String, Unit](
-   *         s"fn (mutex,theoryName) => ${Mutex.wrapWithMutex("mutex", "Thy_Info.use_thy name")}")
+   *         s"fn (mutex,theoryName) => \${Mutex.wrapWithMutex("mutex", "Thy_Info.use_thy name")}")
    * }}}
    * Then `useThyWithMutex(mutex, "Test.Test")` loads the theory `Test.Test` in Isabelle but makes sure only
    * a single instance is running concurrently (with the locking happening in Isabelle using `mutex`), since
