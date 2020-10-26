@@ -24,7 +24,7 @@ class MLValueTest extends AnyFunSuite {
     val thm2 = Thm(ctxt2, "HOL.refl")(isabelle2, implicitly)
     val str1 = thm1.pretty(ctxt1)
     val str2 = thm2.pretty(ctxt2)
-    assert(str1 == "?x \\<equiv> ?x")
+    assert(str1 == "?x ≡ ?x")
     assert(str2 == "?t = ?t")
 
     isabelle2.destroy()

@@ -26,4 +26,5 @@ object Implicits {
   implicit val toplevelStateConverter = ToplevelState.converter
   implicit val pathConverter = PathConverter
   implicit val prooftermConverter = Proofterm.converter
+  implicit val prooftermBodyConverter = Proofterm.ThmBody.converter
 }
