@@ -153,7 +153,7 @@ object IsabelleTest {
     val path = if (Files.exists(config))
       new BufferedReader(new FileReader(config.toFile)).readLine()
     else if (SystemUtils.IS_OS_WINDOWS)
-      """c:\Program Files\Isabelle2020"""
+      """c:\Isabelle2020"""
     else
       "/opt/Isabelle2020"
     Paths.get(path)

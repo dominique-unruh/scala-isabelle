@@ -830,7 +830,7 @@ object Isabelle {
     isabelleArguments += "-l" += setup.logic
 
     isabelleArguments += "--"
-    isabelleArguments ++= files.map { _.toAbsolutePath.toString }
+    isabelleArguments ++= files.map(str)
 
     val cmd = makeIsabelleCommandLine(abs(setup.isabelleHome), isabelleArguments.toSeq)
 
