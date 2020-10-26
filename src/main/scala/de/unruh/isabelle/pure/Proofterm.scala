@@ -2,7 +2,7 @@ package de.unruh.isabelle.pure
 
 import de.unruh.isabelle.control.Isabelle.{DInt, DList, DObject, DString, Data}
 import de.unruh.isabelle.control.{Isabelle, IsabelleException, IsabelleProtocolException, OperationCollection}
-import de.unruh.isabelle.mlvalue.{MLRetrieveFunction, MLStoreFunction, MLValue, MLValueWrapper}
+import de.unruh.isabelle.mlvalue.{MLRetrieveFunction, MLStoreFunction, MLValue, MLValueWrapper, Version}
 
 import scala.concurrent.{ExecutionContext, Future}
 import Implicits.{positionConverter, termConverter, theoryConverter, thmConverter, typConverter}
@@ -87,6 +87,8 @@ object Proofterm extends OperationCollection {
 
   //noinspection TypeAnnotation
   protected class Ops(implicit isabelle: Isabelle, executionContext: ExecutionContext) {
+    if (!Version.from2020)
+      throw IsabelleException("Proofterms are supported only for Isabelle >=2020, not " + Version.versionString)
 
     import Proofterm.converter
     import MLValue.compileFunction
