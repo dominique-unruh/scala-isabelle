@@ -7,7 +7,7 @@ orbs:
 
 workflows:
   version: 2
-  win2019:
+  linux2019:
     jobs:
       - test:
           filters:
@@ -19,7 +19,7 @@ workflows:
 jobs:
   test:
 
-    executor: { name: windows/default }
+    machine: {image: ubuntu-2004:202010-01}
 
 #    environment:
 #      # Customize the JVM maximum heap limit
@@ -32,14 +32,14 @@ jobs:
       # Download and cache Isabelle
       - restore_cache:
           keys:
-            - v2-isabelle-2019-windows
+            - v2-isabelle-2019-linux
       - run:
           name: Downloading Isabelle 2019 (if needed)
           shell: bash
           command: |
             if ! [ -e "$HOME/install/Isabelle2019" ]; then
               mkdir -p ~/install
-              case windows in
+              case linux in
                 windows)
                   curl "https://isabelle.in.tum.de/website-Isabelle2019/dist/Isabelle2019.exe" -o /tmp/isabelle.exe
                   7z x -y -o"$HOME/install" /tmp/isabelle.exe;;
@@ -50,13 +50,13 @@ jobs:
       - save_cache:
           paths:
             - ~/install/Isabelle2019
-          key: v2-isabelle-2019-windows
+          key: v2-isabelle-2019-linux
 
       # Download and cache dependencies
       - restore_cache:
           keys:
-            - v3-dependencies-windows-{{ checksum "build.sbt" }}-{{ checksum "publish.sbt" }}
-            - v3-dependencies-windows-
+            - v3-dependencies-linux-{{ checksum "build.sbt" }}-{{ checksum "publish.sbt" }}
+            - v3-dependencies-linux-
       - run:
           name: Downloading build dependencies (if needed)
           shell: bash
@@ -77,13 +77,13 @@ jobs:
             - $LOCALAPPDATA\Coursier\Cache
             - ~/.cache/coursier
             - ~/dependencies-sha1sum
-          key: v3-dependencies-windows-{{ checksum "build.sbt" }}-{{ checksum "publish.sbt" }}
+          key: v3-dependencies-linux-{{ checksum "build.sbt" }}-{{ checksum "publish.sbt" }}
 
       - run:
           name: Running tests
           shell: bash
           command: |
-            case windows in
+            case linux in
               windows)
                 # Isabelle process calls rebaseall and then fails, unless we deactivate it
                 > ~/install/Isabelle2019/contrib/cygwin/isabelle/rebaseall

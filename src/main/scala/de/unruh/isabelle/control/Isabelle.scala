@@ -809,7 +809,6 @@ object Isabelle {
    * @param files Files to open in jEdit
    * @throws IsabelleJEditException if jEdit fails (returns return code ≠0)
    */
-  // TODO try if this still works in Windows (e.g., try via qrhl-tool)
   def jedit(setup: Setup, files: Seq[Path]) : Unit = {
     def wd = setup.workingDirectory
     /** Path to absolute string, interpreted relative to wd */
