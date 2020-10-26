@@ -13,6 +13,7 @@ workflows:
               only:
                 - circleci-project-setup
                 - master
+                - release-candidate
 
 jobs:
   test:
