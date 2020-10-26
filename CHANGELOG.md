@@ -1,5 +1,87 @@
 # Changelog
 
+## [0.3.0] – 2020-???
+
+[//]: # (TODO summary)
+
+[//]: # (TODO release java-patterns and update version)
+
+[//]: # (TODO test all links)
+
+
+### Added
+
+[//]: # (TODO sort sensibly)
+
+* Support for Windows (now runs on Linux, OS/X, Windows)
+* [`MLValueWrapper`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/mlvalue/MLValueWrapper.html): 
+  Utility class for adding support for new ML types (with corresponding Scala classes that simply reference them).
+* [`AdHocConverter`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/mlvalue/AdHocConverter.html): 
+  Utility class for adding support for new ML types very quickly (like `MLValueWrapper` but with less boilerplate but
+  also less customizability).
+* Support for further ML types:
+  * `Position.T` (class [`Position`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/mlvalue/Position.html))
+  * `Thy_Header.header` (class [`TheoryHeader`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/mlvalue/TheoryHeader.html))
+  * `Thy_Header.keywords` (class [`Keywords`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/mlvalue/Keywords.html))
+  * `Toplevel.state` (class [`ToplevelState`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/mlvalue/ToplevelState.html))
+  * `Path.T` (Java's [`Path`](https://docs.oracle.com/javase/8/docs/api/java/nio/file/Path.html) via [`PathConverter`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/mlvalue/PathConverter.html))
+  * `Mutex.mutex` (class [`Mutex`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/mlvalue/Mutex.html))
+  * `Proofterm.proof` (experimental support, class [`Proofterm`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/mlvalue/Proofterm.html))
+* Support for commands sent from Isabelle to Scala (via `Control_Isabelle.sendToScala`, handled by custom handler
+  [`isabelleCommandHandler`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/Isabelle/SetupGeneral.html#isabelleCommandHandler))  
+* Support for connecting to an already running Isabelle instance (experimental, no library support for establishin that connection, 
+  see [`SetupRunning`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/Isabelle/SetupRunning.html))
+* Class [`Isabelle`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/Isabelle.html) 
+  supports to check/wait for successful initialization (by inheriting from [`FutureValue`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/mlvalue/FutureValue.html)) 
+* Class [`Isabelle`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/Isabelle.html)
+  cleans resources (Isabelle process) after garbage collection
+  (calling [`.destroy`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/Isabelle.html#destroy) is optional)
+* Added methods:
+  * [`Utils.freshName`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/misc/Utils.html#freshName) for generating fresh (randomized) names 
+  * [`Theory.mutex`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/mlvalue/Theory.html#mutex) returns a mutex for synchronizing theory operations
+  * [`Thm.theoryOf`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/mlvalue/Thm.html#theoryOf) and
+    [`Context.theoryOf`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/mlvalue/Context.html#theoryOf)
+    return theory behind a theorem/context
+  * [`Isabelle.checkDestroyed`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/Isabelle.html#checkDestroyed)
+    to assert that the Isabelle process is still available
+  * [`Theory.mergeTheories`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/mlvalue/Theory.html#mergeTheories)
+    merges several theories into one.
+* Java support:
+  * Class [`JPatterns`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/java/JPatterns.html)
+    to allow pattern matching of terms/types in Java (based on [java-patterns](https://github.com/dominique-unruh/java-patterns) library).
+  * [`JIsabelle.setupSetBuild`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/java/JIsabelle.html#setupSetBuild)
+    to toggle the [`build`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/Isabelle/Setup.html#build) flag of an Isabelle [`Setup`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/Isabelle/Setup.html)
+* Supertrait [`PrettyPrintable`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/mlvalue/PrettyPrintable.html)
+  for all classes that can invoke Isabelle for prettyprinting themselves
+
+### Changed
+
+* Execution of ML code in the Isabelle process is now multi-threaded.
+  (Several operations triggered from the Scala side are automatically executed concurrently.
+  Use [`Mutex`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/mlvalue/Mutex.html) if
+  locking is needed.)
+* Method `pretty` in classes
+  [`Term`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/mlvalue/Term.html#pretty),
+  [`Typ`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/mlvalue/Typ.html#pretty),
+  [`Thm`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/mlvalue/Thm.html#pretty)
+  return Unicode (instead of Isabelle's internal encoding with `\<...>` sequences). Use method `prettyRaw`
+  if the old behavior is required.
+* Class [`Isabelle`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/Isabelle.html)
+  does not take constructor parameter `build` any more. Set this flag in
+  [`Setup`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/Isabelle/Setup.html#build) instead.
+* Methods [`MLValue.Converter.exnToValue`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/mlvalue/MLValue/Converter.html#exnToValue),
+  [`.valueToExn`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/mlvalue/MLValue/Converter.html#valueToExn),
+  [`.mlType`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/mlvalue/MLValue/Converter.html#mlValue),
+  [`MLStoreFunction`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/mlvalue/MLStoreFunction.html),
+  [`MLRetrieveFunction`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/mlvalue/MLRetrieveFunction.html)
+  take additional implicit arguments of types [`Isabelle`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/Isabelle.html)
+  and [`ExecutionContext`](https://www.scala-lang.org/api/2.13.3/scala/concurrent/ExecutionContext.html).
+
+### Removed
+
+None
+
+
 ## [0.2.0] – 2020-10-01
 
 The biggest changes include completed API documentation as well as improved support
@@ -48,3 +130,4 @@ for loading theory files that are not in the session image.
 * `Cterm.mlValueTerm`, `Ctyp.mlValueTyp` removed.  
 
 [0.2.0]: https://github.com/dominique-unruh/scala-isabelle/compare/v0.1.0...v0.2.0
+[0.3.0]: https://github.com/dominique-unruh/scala-isabelle/compare/v0.2.0...v0.3.0
