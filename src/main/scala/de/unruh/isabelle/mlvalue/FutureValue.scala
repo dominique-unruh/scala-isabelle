@@ -8,6 +8,7 @@ import scala.util.{Failure, Success}
  * But unlike for [[scala.concurrent.Future Future]], no methods are provided for extracting that value,
  * only to wait for it.
  */
+// TODO move to different package since Isabelle-class uses this
 trait FutureValue {
   /** Waits till the computation of this value (in the Isabelle process) has finished.
    * (Or until an exception is thrown.)
