@@ -62,6 +62,8 @@ as well as support for more ML types.
   [`Thm`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/mlvalue/Thm.html#pretty)
   return Unicode (instead of Isabelle's internal encoding with `\<...>` sequences). Use method `prettyRaw`
   if the old behavior is required.
+* Class [`FutureValue`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/misc/FutureValue.html)
+  was moved from package `de.unruh.isabelle.mlvalue` to `de.unruh.isabelle.misc`.
 * Class [`Isabelle`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/Isabelle.html)
   does not take constructor parameter `build` any more. Set this flag in
   [`Setup`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/Isabelle/Setup.html#build) instead.

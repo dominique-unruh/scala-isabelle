@@ -2,9 +2,9 @@ package de.unruh.isabelle.pure
 
 import de.unruh.isabelle.control.Isabelle.{DInt, DList, DObject, DString}
 import de.unruh.isabelle.control.{Isabelle, IsabelleException, OperationCollection}
-import de.unruh.isabelle.misc.Symbols
+import de.unruh.isabelle.misc.{FutureValue, Symbols}
 import de.unruh.isabelle.mlvalue.MLValue.Converter
-import de.unruh.isabelle.mlvalue.{FutureValue, MLFunction, MLFunction2, MLFunction3, MLRetrieveFunction, MLValue}
+import de.unruh.isabelle.mlvalue.{MLFunction, MLFunction2, MLFunction3, MLRetrieveFunction, MLValue}
 import de.unruh.isabelle.pure.Typ.Ops
 import org.apache.commons.lang3.builder.HashCodeBuilder
 
