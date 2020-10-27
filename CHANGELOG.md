@@ -2,16 +2,12 @@
 
 ## [0.3.0] – 2020-???
 
-[//]: # (TODO summary)
-
-[//]: # (TODO release java-patterns and update version)
+The biggest changes include support for Windows, multi-threaded execution in the Isabelle process,
+as well as support for more ML types.
 
 [//]: # (TODO test all links)
 
-
 ### Added
-
-[//]: # (TODO sort sensibly)
 
 * Support for Windows (now runs on Linux, OS/X, Windows)
 * [`MLValueWrapper`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/mlvalue/MLValueWrapper.html): 
@@ -36,6 +32,11 @@
 * Class [`Isabelle`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/Isabelle.html)
   cleans resources (Isabelle process) after garbage collection
   (calling [`.destroy`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/Isabelle.html#destroy) is optional)
+* Java support:
+  * Class [`JPatterns`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/java/JPatterns.html)
+    to allow pattern matching of terms/types in Java (based on [java-patterns](https://github.com/dominique-unruh/java-patterns) library).
+  * [`JIsabelle.setupSetBuild`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/java/JIsabelle.html#setupSetBuild)
+    to toggle the [`build`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/Isabelle/Setup.html#build) flag of an Isabelle [`Setup`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/Isabelle/Setup.html)
 * Added methods:
   * [`Utils.freshName`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/misc/Utils.html#freshName) for generating fresh (randomized) names 
   * [`Theory.mutex`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/mlvalue/Theory.html#mutex) returns a mutex for synchronizing theory operations
@@ -46,11 +47,6 @@
     to assert that the Isabelle process is still available
   * [`Theory.mergeTheories`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/mlvalue/Theory.html#mergeTheories)
     merges several theories into one.
-* Java support:
-  * Class [`JPatterns`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/java/JPatterns.html)
-    to allow pattern matching of terms/types in Java (based on [java-patterns](https://github.com/dominique-unruh/java-patterns) library).
-  * [`JIsabelle.setupSetBuild`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/java/JIsabelle.html#setupSetBuild)
-    to toggle the [`build`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/Isabelle/Setup.html#build) flag of an Isabelle [`Setup`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/Isabelle/Setup.html)
 * Supertrait [`PrettyPrintable`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/mlvalue/PrettyPrintable.html)
   for all classes that can invoke Isabelle for prettyprinting themselves
 
