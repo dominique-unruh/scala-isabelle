@@ -33,7 +33,7 @@ libraryDependencies += "org.apache.commons" % "commons-lang3" % "3.11"
 // https://mvnrepository.com/artifact/org.apache.commons/commons-text
 libraryDependencies += "org.apache.commons" % "commons-text" % "1.9"
 // https://mvnrepository.com/artifact/com.google.guava/guava
-libraryDependencies += "com.google.guava" % "guava" % "29.0-jre"
+libraryDependencies += "com.google.guava" % "guava" % "30.0-jre"
 libraryDependencies += "org.jetbrains" % "annotations" % "20.1.0"
 
 libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value % "test"
