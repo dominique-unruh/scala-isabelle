@@ -52,26 +52,24 @@ as well as support for more ML types.
 
 ### Changed
 
-[//]: # (TODO test all links)
-
 * Execution of ML code in the Isabelle process is now multi-threaded.
   (Several operations triggered from the Scala side are automatically executed concurrently.
-  Use [`Mutex`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/0.3.0-RC1/de/unruh/isabelle/mlvalue/Mutex.html) if
+  Use [`Mutex`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/0.3.0-RC1/de/unruh/isabelle/pure/Mutex.html) if
   locking is needed.)
 * Method `pretty` in classes
-  [`Term`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/0.3.0-RC1/de/unruh/isabelle/mlvalue/Term.html#pretty),
-  [`Typ`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/0.3.0-RC1/de/unruh/isabelle/mlvalue/Typ.html#pretty),
-  [`Thm`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/0.3.0-RC1/de/unruh/isabelle/mlvalue/Thm.html#pretty)
+  [`Term`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/0.3.0-RC1/de/unruh/isabelle/pure/Term.html#pretty(ctxt:de.unruh.isabelle.pure.Context,symbols:de.unruh.isabelle.misc.Symbols)(implicitec:scala.concurrent.ExecutionContext):String),
+  [`Typ`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/0.3.0-RC1/de/unruh/isabelle/pure/Typ.html#pretty(ctxt:de.unruh.isabelle.pure.Context,symbols:de.unruh.isabelle.misc.Symbols)(implicitec:scala.concurrent.ExecutionContext):String),
+  [`Thm`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/0.3.0-RC1/de/unruh/isabelle/pure/Thm.html#pretty(ctxt:de.unruh.isabelle.pure.Context,symbols:de.unruh.isabelle.misc.Symbols)(implicitec:scala.concurrent.ExecutionContext):String)
   return Unicode (instead of Isabelle's internal encoding with `\<...>` sequences). Use method `prettyRaw`
   if the old behavior is required.
 * Class [`FutureValue`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/0.3.0-RC1/de/unruh/isabelle/misc/FutureValue.html)
   was moved from package `de.unruh.isabelle.mlvalue` to `de.unruh.isabelle.misc`.
 * Class [`Isabelle`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/0.3.0-RC1/de/unruh/isabelle/control/Isabelle.html)
   does not take constructor parameter `build` any more. Set this flag in
-  [`Setup`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/0.3.0-RC1/de/unruh/isabelle/control/Isabelle/Setup.html#build) instead.
-* Methods [`MLValue.Converter.exnToValue`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/0.3.0-RC1/de/unruh/isabelle/mlvalue/MLValue/Converter.html#exnToValue),
-  [`.valueToExn`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/0.3.0-RC1/de/unruh/isabelle/mlvalue/MLValue/Converter.html#valueToExn),
-  [`.mlType`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/0.3.0-RC1/de/unruh/isabelle/mlvalue/MLValue/Converter.html#mlValue),
+  [`Setup`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/0.3.0-RC1/de/unruh/isabelle/control/Isabelle$$Setup.html) instead.
+* Methods [`MLValue.Converter.exnToValue`](https://javadoc.io/static/de.unruh/scala-isabelle_2.13/0.3.0-RC1/de/unruh/isabelle/mlvalue/MLValue$$Converter.html#exnToValue(implicitisabelle:de.unruh.isabelle.control.Isabelle,implicitec:scala.concurrent.ExecutionContext):String),
+  [`.valueToExn`](https://javadoc.io/static/de.unruh/scala-isabelle_2.13/0.3.0-RC1/de/unruh/isabelle/mlvalue/MLValue$$Converter.html#valueToExn(implicitisabelle:de.unruh.isabelle.control.Isabelle,implicitec:scala.concurrent.ExecutionContext):String),
+  [`.mlType`](https://javadoc.io/static/de.unruh/scala-isabelle_2.13/0.3.0-RC1/de/unruh/isabelle/mlvalue/MLValue$$Converter.html#mlType(implicitisabelle:de.unruh.isabelle.control.Isabelle,implicitec:scala.concurrent.ExecutionContext):String),
   [`MLStoreFunction`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/0.3.0-RC1/de/unruh/isabelle/mlvalue/MLStoreFunction.html),
   [`MLRetrieveFunction`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/0.3.0-RC1/de/unruh/isabelle/mlvalue/MLRetrieveFunction.html)
   take additional implicit arguments of types [`Isabelle`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/0.3.0-RC1/de/unruh/isabelle/control/Isabelle.html)
