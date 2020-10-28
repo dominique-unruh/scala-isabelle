@@ -1,4 +1,4 @@
-package de.unruh.isabelle.mlvalue
+package de.unruh.isabelle.misc
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
@@ -13,12 +13,14 @@ trait FutureValue {
    * (Or until an exception is thrown.)
    *
    * @return this value, but it is guaranteed to have completed the computation
-   **/
-  def force : this.type = { await; this }
+   * */
+  def force: this.type = {
+    await; this
+  }
 
   /** Blocks until this future value is computed. (Or throws an exception if the computation fails.) */
   //noinspection UnitMethodIsParameterless
-  def await : Unit
+  def await: Unit
 
   /** A future containing this object with the computation completed.
    * In particular, if this value throws an exception upon computation,
@@ -26,7 +28,7 @@ trait FutureValue {
    *
    * Roughly the same as `[[scala.concurrent.Future.apply Future]] { this.[[force]] }`.
    */
-  def forceFuture(implicit ec: ExecutionContext) : Future[this.type] =
+  def forceFuture(implicit ec: ExecutionContext): Future[this.type] =
     for (_ <- someFuture) yield this
 
   /** Returns a future that completes when the computation of this object is complete.
@@ -34,13 +36,13 @@ trait FutureValue {
    * However, upon successful completion, the future may return an arbitrary (and thus useless) value.
    * May be faster to implement than [[forceFuture]] because there may be already a future available but that returns
    * the wrong value. */
-  def someFuture : Future[Any]
+  def someFuture: Future[Any]
 
   /** A utility method that returns "" if this value was successfully computed, " (computing)" if it still computes,
    * and " (failed)" if it finished with an exception.
    *
    * This can be useful to constructing human readable messages about this value.
-   **/
+   * */
   def stateString: String = someFuture.value match {
     case Some(Success(_)) => ""
     case Some(Failure(_)) => " (failed)"

@@ -4,6 +4,7 @@ import de.unruh.isabelle.control.Isabelle.{DInt, DList, DObject, DString, Data, 
 import de.unruh.isabelle.control.{Isabelle, IsabelleException, OperationCollection}
 import de.unruh.isabelle.mlvalue.Implicits._
 import MLValue.{Converter, Ops, logger}
+import de.unruh.isabelle.misc.FutureValue
 import org.log4s
 import scalaz.Id.Id
 
