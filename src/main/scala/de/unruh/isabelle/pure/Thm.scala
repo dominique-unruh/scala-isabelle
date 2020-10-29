@@ -1,9 +1,9 @@
 package de.unruh.isabelle.pure
 
 import de.unruh.isabelle.control.{Isabelle, OperationCollection}
-import de.unruh.isabelle.misc.{Symbols, Utils}
+import de.unruh.isabelle.misc.{FutureValue, Symbols, Utils}
 import de.unruh.isabelle.mlvalue.MLValue.Converter
-import de.unruh.isabelle.mlvalue.{FutureValue, MLFunction, MLFunction2, MLValue}
+import de.unruh.isabelle.mlvalue.{MLFunction, MLFunction2, MLValue}
 import de.unruh.isabelle.pure.Thm.Ops
 import org.jetbrains.annotations.ApiStatus.Experimental
 

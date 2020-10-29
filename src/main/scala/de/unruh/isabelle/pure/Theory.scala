@@ -4,9 +4,9 @@ import java.nio.file.{Files, Path, Paths}
 import java.util.concurrent.ConcurrentHashMap
 
 import de.unruh.isabelle.control.{Isabelle, OperationCollection}
-import de.unruh.isabelle.misc.Utils
+import de.unruh.isabelle.misc.{FutureValue, Utils}
 import de.unruh.isabelle.mlvalue.MLValue.{Converter, compileFunction}
-import de.unruh.isabelle.mlvalue.{FutureValue, MLFunction, MLFunction3, MLValue, Version}
+import de.unruh.isabelle.mlvalue.{MLFunction, MLFunction3, MLValue, Version}
 import de.unruh.isabelle.pure.Theory.Ops
 import org.log4s
 

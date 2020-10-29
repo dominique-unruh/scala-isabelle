@@ -38,11 +38,10 @@ developers += Developer(
 
 organization := "de.unruh"
 
-// TODO: Check if https://mvnrepository.com/artifact/de.unruh/scala-isabelle and https://search.maven.org/artifact/de.unruh/scala-isabelle_2.12 show the HTML correctly.
 description :=
-  """<![CDATA[This library allows to control an <a href="https://isabelle.in.tum.de/">Isabelle</a> process from a Scala program.
+  """This library allows to control an Isabelle process (https://isabelle.in.tum.de/) from a Scala program.
     |It allows to execute ML code inside the Isabelle process, and to operate on theories, theorems, terms, etc.
-    |See the <a href="https://github.com/dominique-unruh/scala-isabelle/blob/master/README.md">README</a> for more information.]]>""".stripMargin
+    |See the README (https://github.com/dominique-unruh/scala-isabelle/blob/master/README.md) for more information.""".stripMargin
 
 licenses += "MIT" -> url("https://raw.githubusercontent.com/dominique-unruh/scala-isabelle/5f28d8e6248f39dd7a31649d92c9850498e3985c/LICENSE")
 licenses += "Isabelle" -> url("https://raw.githubusercontent.com/dominique-unruh/scala-isabelle/5f28d8e6248f39dd7a31649d92c9850498e3985c/COPYRIGHT.Isabelle")

@@ -12,8 +12,8 @@ import com.google.common.escape.Escaper
 import com.google.common.util.concurrent.Striped
 import de.unruh.isabelle.control.Isabelle.SetupGeneral
 import de.unruh.isabelle.misc.SMLCodeUtils.mlInteger
-import de.unruh.isabelle.misc.{SMLCodeUtils, Utils}
-import de.unruh.isabelle.mlvalue.{FutureValue, MLValue}
+import de.unruh.isabelle.misc.{FutureValue, SMLCodeUtils, Utils}
+import de.unruh.isabelle.mlvalue.MLValue
 import de.unruh.isabelle.pure.Term
 import org.apache.commons.io.FileUtils
 import org.apache.commons.lang3.SystemUtils
