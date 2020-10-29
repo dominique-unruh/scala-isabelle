@@ -723,6 +723,7 @@ object Isabelle {
                    workingDirectory : Path = Paths.get(""),
                    sessionRoots : Seq[Path] = Nil,
                    build : Boolean = true,
+                   verbose : Boolean = false, // TODO: make separate build options subclass // DOCUMENT
                    isabelleCommandHandler: Data => Unit = Isabelle.defaultCommandHandler) extends SetupGeneral {
     /** [[isabelleHome]] as an absolute path */
     def isabelleHomeAbsolute: Path = workingDirectory.resolve(isabelleHome)
@@ -775,6 +776,9 @@ object Isabelle {
 
     isabelleArguments += "build"
     isabelleArguments += "-b" // Build heap image
+
+    if (setup.verbose)
+      isabelleArguments += "-v" // Verbose build
 
     for (root <- setup.sessionRoots)
       isabelleArguments += "-d" += str(root)
