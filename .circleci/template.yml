@@ -16,6 +16,7 @@ workflows:
                 - circleci-project-setup
                 - master
                 - release-candidate
+                - test-macos
   no_workflow:
 #    unless:
 #      equal: [ @{baserevision}, << pipeline.git.base_revision >> ]
@@ -44,6 +45,7 @@ jobs:
       # Download and cache Isabelle
       - restore_cache:
           keys:
+            - v3-isabelle-@{isabelle}-@{os}
             - v2-isabelle-@{isabelle}-@{os}
       - run:
           name: Downloading Isabelle @{isabelle} (if needed)
@@ -55,14 +57,14 @@ jobs:
                 windows)
                   curl "https://isabelle.in.tum.de/website-Isabelle@{isabelle}/dist/Isabelle@{isabelle}.exe" -o /tmp/isabelle.exe
                   7z x -y -o"$HOME/install" /tmp/isabelle.exe;;
-                linux)
-                  curl https://isabelle.in.tum.de/website-Isabelle@{isabelle}/dist/Isabelle@{isabelle}_linux.tar.gz | tar -x -z -C ~/install;;
+                linux|macos)
+                  curl https://isabelle.in.tum.de/website-Isabelle@{isabelle}/dist/Isabelle@{isabelle}_@{os}.tar.gz | tar -x -z -C ~/install;;
               esac
             fi
       - save_cache:
           paths:
-            - ~/install/Isabelle@{isabelle}
-          key: v2-isabelle-@{isabelle}-@{os}
+            - @{isabellehome}
+          key: v3-isabelle-@{isabelle}-@{os}
 
       # Download and cache dependencies
       - restore_cache:
@@ -73,13 +75,13 @@ jobs:
           name: Downloading build dependencies (if needed)
           shell: bash
           command: |
-            if ! sha1sum -c ~/dependencies-sha1sum; then
+            if ! shasum -c ~/dependencies-sha1sum; then
               mkdir -p ~/install
               curl -Ls https://git.io/sbt > ~/install/sbt
               chmod +x ~/install/sbt
               ~/install/sbt update test/update </dev/null
             fi
-            sha1sum build.sbt publish.sbt > ~/dependencies-sha1sum
+            shasum build.sbt publish.sbt > ~/dependencies-sha1sum
       - save_cache:
           paths:
             - ~/install/sbt
@@ -98,10 +100,10 @@ jobs:
             case @{os} in
               windows)
                 # Isabelle process calls rebaseall and then fails, unless we deactivate it
-                > ~/install/Isabelle@{isabelle}/contrib/cygwin/isabelle/rebaseall
-                cygpath -w ~/install/Isabelle@{isabelle} > .isabelle-home;;
-              linux)
-                echo ~/install/Isabelle@{isabelle} > .isabelle-home;;
+                > @{isabellehome}/contrib/cygwin/isabelle/rebaseall
+                cygpath -w @{isabellehome} > .isabelle-home;;
+              linux|macos)
+                echo @{isabellehome} > .isabelle-home;;
             esac
 
             ~/install/sbt "testOnly -- -u scalatest-reports" </dev/null
