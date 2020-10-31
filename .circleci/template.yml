@@ -16,8 +16,20 @@ workflows:
                 - circleci-project-setup
                 - master
                 - release-candidate
+  no_workflow:
+    when:
+      not:
+        equal: [ @{baserevision}, << pipeline.git.base_revision >> ]
+    jobs:
+      - do_nothing_job
+
 
 jobs:
+  do_nothing_job:
+    docker: [ image: cimg/base:2020.01 ]
+    steps:
+      - checkout
+
   test:
 
     @{machine_config}

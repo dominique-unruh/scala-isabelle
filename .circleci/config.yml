@@ -7,9 +7,9 @@ orbs:
 
 workflows:
   version: 2
-  linux2020:
+  linux2019:
     when:
-      equal: [ 011fedef6977a80f8fe9fee9252e032bf1c2b259, << pipeline.git.base_revision >> ]
+      equal: [ e6ffd52416b5e1e50c8fb910e7a4a42e85f0150d, << pipeline.git.base_revision >> ]
     jobs:
       - test:
           filters:
@@ -18,8 +18,20 @@ workflows:
                 - circleci-project-setup
                 - master
                 - release-candidate
+  no_workflow:
+    when:
+      not:
+        equal: [ e6ffd52416b5e1e50c8fb910e7a4a42e85f0150d, << pipeline.git.base_revision >> ]
+    jobs:
+      - do_nothing_job
+
 
 jobs:
+  do_nothing_job:
+    docker: [ image: cimg/base:2020.01 ]
+    steps:
+      - checkout
+
   test:
 
     machine: {image: ubuntu-2004:202010-01}
@@ -35,25 +47,25 @@ jobs:
       # Download and cache Isabelle
       - restore_cache:
           keys:
-            - v2-isabelle-2020-linux
+            - v2-isabelle-2019-linux
       - run:
-          name: Downloading Isabelle 2020 (if needed)
+          name: Downloading Isabelle 2019 (if needed)
           shell: bash
           command: |
-            if ! [ -e "$HOME/install/Isabelle2020" ]; then
+            if ! [ -e "$HOME/install/Isabelle2019" ]; then
               mkdir -p ~/install
               case linux in
                 windows)
-                  curl "https://isabelle.in.tum.de/website-Isabelle2020/dist/Isabelle2020.exe" -o /tmp/isabelle.exe
+                  curl "https://isabelle.in.tum.de/website-Isabelle2019/dist/Isabelle2019.exe" -o /tmp/isabelle.exe
                   7z x -y -o"$HOME/install" /tmp/isabelle.exe;;
                 linux)
-                  curl https://isabelle.in.tum.de/website-Isabelle2020/dist/Isabelle2020_linux.tar.gz | tar -x -z -C ~/install;;
+                  curl https://isabelle.in.tum.de/website-Isabelle2019/dist/Isabelle2019_linux.tar.gz | tar -x -z -C ~/install;;
               esac
             fi
       - save_cache:
           paths:
-            - ~/install/Isabelle2020
-          key: v2-isabelle-2020-linux
+            - ~/install/Isabelle2019
+          key: v2-isabelle-2019-linux
 
       # Download and cache dependencies
       - restore_cache:
@@ -89,10 +101,10 @@ jobs:
             case linux in
               windows)
                 # Isabelle process calls rebaseall and then fails, unless we deactivate it
-                > ~/install/Isabelle2020/contrib/cygwin/isabelle/rebaseall
-                cygpath -w ~/install/Isabelle2020 > .isabelle-home;;
+                > ~/install/Isabelle2019/contrib/cygwin/isabelle/rebaseall
+                cygpath -w ~/install/Isabelle2019 > .isabelle-home;;
               linux)
-                echo ~/install/Isabelle2020 > .isabelle-home;;
+                echo ~/install/Isabelle2019 > .isabelle-home;;
             esac
 
             ~/install/sbt "testOnly -- -u scalatest-reports" </dev/null
