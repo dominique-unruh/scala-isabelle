@@ -1,8 +1,11 @@
 #!/usr/bin/python3
 
-import yaml, random, re, sys, textwrap
+import yaml, random, re, sys, textwrap, types, git
 
 config : dict = {}
+defaults : dict = {
+    'baserevision': lambda: git.Repo().head.commit.hexsha
+}
 
 def loadConfigs():
     global configsfile
@@ -13,7 +16,8 @@ def chooseConfig():
     global config, defaults
     pick = configsfile['pick']
     configs = configsfile['configs']
-    defaults = configsfile['defaults']
+    for k,v in configsfile['defaults'].items():
+        defaults[k] = v
     configkeys = list(configs.keys())
     if pick == 'random':
         i = random.randrange(0, len(configkeys))
@@ -25,18 +29,25 @@ def chooseConfig():
     print(f"Picking configuration {configname} for Circle CI")
     config['name'] = configname
 
+def runDefaultCode(key, code):
+    code = textwrap.indent(code, '  ')
+    code = f"def get_default_function():\n{code}\n"
+    locals = config.copy()
+    exec(code, config.copy(), locals) # TODO do we need two config.copy's?
+    result = locals['get_default_function']()
+    if result is None: sys.exit(f"Default key {key} returned no value")
+    return str(result)
+
 def getKey(key: str) -> str:
     if key in config:
         return str(config[key])
     if key in defaults:
         code = defaults[key]
-        code = textwrap.indent(code, '  ')
-        code = f"def get_default_function():\n{code}\n"
-        locals = config.copy()
-        exec(code, config.copy(), locals)
-        result = locals['get_default_function']()
-        if result is None: sys.exit(f"Default key {key} returned no value")
-        return str(result)
+        if isinstance(code, str):
+            return runDefaultCode(key, code)
+        if isinstance(code, types.FunctionType):
+            return code()
+        raise RuntimeError(f"Code for {key} has unexpected type {type(code)}")
     sys.exit(f"Unknown substitution {key} in template. Configured keys: {config.keys()}. Default keys: {defaults.keys()}")
 
 def makeConfig():
