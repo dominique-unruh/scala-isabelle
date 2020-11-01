@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 
-import yaml, random, re, sys, textwrap, types, git
+import yaml, random, re, sys, textwrap, types, git, os.path
 
 repository = git.Repo(".")
 configFile = ".circleci/config.yml"
@@ -76,6 +76,20 @@ def makeConfig():
 def addConfig():
     repository.index.add([configFile])
 
+def warnAboutCommitHook():
+    preCommitFile = os.path.join(repository.common_dir, "hooks/pre-commit")
+
+    def exists():
+        if not os.path.exists(preCommitFile): return False
+        with open(preCommitFile, "rt") as f:
+            content = f.read()
+            if content.find("scripts/circleci-randomize.py") == -1: return False
+        return True
+
+    if not exists():
+        print(f"*** Add scripts/circleci-randomize.py to {preCommitFile} ***")
+
+warnAboutCommitHook()
 if not shouldUpdateConfig(): sys.exit()
 loadConfigs()
 chooseConfig()
