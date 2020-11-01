@@ -129,9 +129,9 @@ jobs:
       # Failure reproduceable via: (no sbt run in circle-ci-jobs), ssh cmd, refreshenv (requires: choco install sbt), cd project, sbt test
       # First run only! Repeated run succeed.
 
-        - run:
-          shell: cmd.exe
-          command: refreshenv & sbt test
+      - run:
+        shell: cmd.exe
+        command: refreshenv & sbt test
 
       - store_test_results:
           path: scalatest-reports
