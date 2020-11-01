@@ -9,7 +9,7 @@ workflows:
   version: 2
   linux2019:
     when:
-      equal: [ e6ffd52416b5e1e50c8fb910e7a4a42e85f0150d, << pipeline.git.base_revision >> ]
+      equal: [ 34303a8fea22c73bc5b638102a3b444b52d72fcc, << pipeline.git.base_revision >> ]
     jobs:
       - test:
           filters:
@@ -19,11 +19,10 @@ workflows:
                 - master
                 - release-candidate
   no_workflow:
-    when:
-      not:
-        equal: [ e6ffd52416b5e1e50c8fb910e7a4a42e85f0150d, << pipeline.git.base_revision >> ]
+    unless:
+      equal: [ 34303a8fea22c73bc5b638102a3b444b52d72fcc, << pipeline.git.base_revision >> ]
     jobs:
-      - do_nothing_job
+      - do_nothing_job: { filters: { branches: { only: [ nonexistingbranch_iuotbgfpgdcnmohgfky ] } } }
 
 
 jobs:
