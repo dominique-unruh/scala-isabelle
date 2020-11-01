@@ -130,8 +130,8 @@ jobs:
       # First run only! Repeated run succeed.
 
       - run:
-        shell: cmd.exe
-        command: refreshenv & sbt test
+          shell: cmd.exe
+          command: refreshenv & sbt test
 
       - store_test_results:
           path: scalatest-reports

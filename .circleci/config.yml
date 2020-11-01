@@ -9,7 +9,7 @@ workflows:
   version: 2
   win2019:
     when:
-      equal: [ b29f23ea655bf758609446a91f8fe3f0029f116e, << pipeline.git.base_revision >> ]
+      equal: [ 3139ac81b2374b261e778050757b729d6df3d57b, << pipeline.git.base_revision >> ]
     jobs:
       - test:
           filters:
@@ -22,7 +22,7 @@ workflows:
   no_workflow:
     when:
       not:
-        equal: [ b29f23ea655bf758609446a91f8fe3f0029f116e, << pipeline.git.base_revision >> ]
+        equal: [ 3139ac81b2374b261e778050757b729d6df3d57b, << pipeline.git.base_revision >> ]
     jobs:
       - do_nothing_job
 
@@ -132,8 +132,8 @@ jobs:
       # First run only! Repeated run succeed.
 
       - run:
-        shell: cmd.exe
-        command: refreshenv & sbt test
+          shell: cmd.exe
+          command: refreshenv & sbt test
 
       - store_test_results:
           path: scalatest-reports
