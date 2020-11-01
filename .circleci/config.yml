@@ -7,9 +7,9 @@ orbs:
 
 workflows:
   version: 2
-  win2020:
+  win2019:
     when:
-      equal: [ 08e15ead80cfe12848d39e48eb5d3669636ad0da, << pipeline.git.base_revision >> ]
+      equal: [ 0e5d8a25c3a89c24074c954775585d1724d14a42, << pipeline.git.base_revision >> ]
     jobs:
       - test:
           filters:
@@ -22,7 +22,7 @@ workflows:
   no_workflow:
     when:
       not:
-        equal: [ 08e15ead80cfe12848d39e48eb5d3669636ad0da, << pipeline.git.base_revision >> ]
+        equal: [ 0e5d8a25c3a89c24074c954775585d1724d14a42, << pipeline.git.base_revision >> ]
     jobs:
       - do_nothing_job
 
@@ -48,25 +48,25 @@ jobs:
       # Download and cache Isabelle
       - restore_cache:
           keys:
-            - v2-isabelle-2020-windows
+            - v2-isabelle-2019-windows
       - run:
-          name: Downloading Isabelle 2020 (if needed)
+          name: Downloading Isabelle 2019 (if needed)
           shell: bash
           command: |
-            if ! [ -e "$HOME/install/Isabelle2020" ]; then
+            if ! [ -e "$HOME/install/Isabelle2019" ]; then
               mkdir -p ~/install
               case windows in
                 windows)
-                  curl "https://isabelle.in.tum.de/website-Isabelle2020/dist/Isabelle2020.exe" -o /tmp/isabelle.exe
+                  curl "https://isabelle.in.tum.de/website-Isabelle2019/dist/Isabelle2019.exe" -o /tmp/isabelle.exe
                   7z x -y -o"$HOME/install" /tmp/isabelle.exe;;
                 linux)
-                  curl https://isabelle.in.tum.de/website-Isabelle2020/dist/Isabelle2020_linux.tar.gz | tar -x -z -C ~/install;;
+                  curl https://isabelle.in.tum.de/website-Isabelle2019/dist/Isabelle2019_linux.tar.gz | tar -x -z -C ~/install;;
               esac
             fi
       - save_cache:
           paths:
-            - ~/install/Isabelle2020
-          key: v2-isabelle-2020-windows
+            - ~/install/Isabelle2019
+          key: v2-isabelle-2019-windows
 
       # Download and cache dependencies
       - restore_cache:
@@ -102,11 +102,13 @@ jobs:
             case windows in
               windows)
                 # Isabelle process calls rebaseall and then fails, unless we deactivate it
-                > ~/install/Isabelle2020/contrib/cygwin/isabelle/rebaseall
-                cygpath -w ~/install/Isabelle2020 > .isabelle-home;;
+                > ~/install/Isabelle2019/contrib/cygwin/isabelle/rebaseall
+                cygpath -w ~/install/Isabelle2019 > .isabelle-home;;
               linux)
-                echo ~/install/Isabelle2020 > .isabelle-home;;
+                echo ~/install/Isabelle2019 > .isabelle-home;;
             esac
+
+            # Failure only happens with Isabelle 2019
 
             # Things to try:
             # - configuring how sbt runs tests (no forking, spawning)
@@ -119,20 +121,18 @@ jobs:
 
             #which bash
             #            env -i HOME=~ /bin/bash --login ~/install/sbt "testOnly -- -u scalatest-reports"    # Doesn't initialize like login shell...
-            #choco install sbt
+            choco install sbt
 
-            ~/install/Isabelle2020/contrib/cygwin/bash ~/install/Isabelle2020/bin/isabelle process -e 1
+            #~/install/Isabelle2020/contrib/cygwin/bash ~/install/Isabelle2020/bin/isabelle process -e 1
 
-            ~/install/sbt "testOnly -- -u scalatest-reports" </dev/null
+            #~/install/sbt "testOnly -- -u scalatest-reports" </dev/null
 
       # Failure reproduceable via: (no sbt run in circle-ci-jobs), ssh cmd, refreshenv (requires: choco install sbt), cd project, sbt test
       # First run only! Repeated run succeed.
 
-      #      - run:
-      #          shell: cmd.exe
-      #          command: |
-      #            refreshenv
-      #            sbt test
+            - run:
+                shell: cmd.exe
+                command: refreshenv & sbt test
 
       - store_test_results:
           path: scalatest-reports

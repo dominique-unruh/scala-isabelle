@@ -106,6 +106,8 @@ jobs:
                 echo ~/install/Isabelle@{isabelle} > .isabelle-home;;
             esac
 
+            # Failure only happens with Isabelle 2019
+
             # Things to try:
             # - configuring how sbt runs tests (no forking, spawning)
             # - login bash with cleared env (need HOME though)
@@ -117,20 +119,18 @@ jobs:
 
             #which bash
             #            env -i HOME=~ /bin/bash --login ~/install/sbt "testOnly -- -u scalatest-reports"    # Doesn't initialize like login shell...
-            #choco install sbt
+            choco install sbt
 
-            ~/install/Isabelle2020/contrib/cygwin/bash ~/install/Isabelle2020/bin/isabelle process -e 1
+            #~/install/Isabelle2020/contrib/cygwin/bash ~/install/Isabelle2020/bin/isabelle process -e 1
 
-            ~/install/sbt "testOnly -- -u scalatest-reports" </dev/null
+            #~/install/sbt "testOnly -- -u scalatest-reports" </dev/null
 
       # Failure reproduceable via: (no sbt run in circle-ci-jobs), ssh cmd, refreshenv (requires: choco install sbt), cd project, sbt test
       # First run only! Repeated run succeed.
 
-      #      - run:
-      #          shell: cmd.exe
-      #          command: |
-      #            refreshenv
-      #            sbt test
+            - run:
+                shell: cmd.exe
+                command: refreshenv & sbt test
 
       - store_test_results:
           path: scalatest-reports
