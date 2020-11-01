@@ -120,9 +120,8 @@ jobs:
             #            ~/install/sbt "testOnly -- -u scalatest-reports" </dev/null
 
       - run:
-          - shell: cmd.exe
-          - command: |
-              sbt test
+          shell: cmd.exe
+          command: sbt test
 
       - store_test_results:
           path: scalatest-reports

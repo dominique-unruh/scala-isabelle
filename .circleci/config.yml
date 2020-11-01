@@ -9,7 +9,7 @@ workflows:
   version: 2
   win2020:
     when:
-      equal: [ 6da85c9d888784d09e973475493e14d282c07a8b, << pipeline.git.base_revision >> ]
+      equal: [ 445d280b79c4a51b2fa04223433635d723d49e3d, << pipeline.git.base_revision >> ]
     jobs:
       - test:
           filters:
@@ -22,7 +22,7 @@ workflows:
   no_workflow:
     when:
       not:
-        equal: [ 6da85c9d888784d09e973475493e14d282c07a8b, << pipeline.git.base_revision >> ]
+        equal: [ 445d280b79c4a51b2fa04223433635d723d49e3d, << pipeline.git.base_revision >> ]
     jobs:
       - do_nothing_job
 
@@ -122,9 +122,8 @@ jobs:
             #            ~/install/sbt "testOnly -- -u scalatest-reports" </dev/null
 
       - run:
-          - shell: cmd.exe
-          - command: |
-              sbt test
+          shell: cmd.exe
+          command: sbt test
 
       - store_test_results:
           path: scalatest-reports
