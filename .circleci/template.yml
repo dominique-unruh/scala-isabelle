@@ -16,6 +16,7 @@ workflows:
                 - circleci-project-setup
                 - master
                 - release-candidate
+                - test-windows
   no_workflow:
     when:
       not:
