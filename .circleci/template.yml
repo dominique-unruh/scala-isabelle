@@ -115,9 +115,9 @@ jobs:
             # run sbt in CMD
 
             which bash
-#            env -i HOME=~ /bin/bash --login ~/install/sbt "testOnly -- -u scalatest-reports"    # Doesn't initialize like login shell...
+            #            env -i HOME=~ /bin/bash --login ~/install/sbt "testOnly -- -u scalatest-reports"    # Doesn't initialize like login shell...
             choco install sbt
-#            ~/install/sbt "testOnly -- -u scalatest-reports" </dev/null
+            #            ~/install/sbt "testOnly -- -u scalatest-reports" </dev/null
 
       - run:
           - shell: cmd.exe

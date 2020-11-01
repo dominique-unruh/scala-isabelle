@@ -9,7 +9,7 @@ workflows:
   version: 2
   win2020:
     when:
-      equal: [ fb640b2a7e2efc8625c8b295fc8c072cdf410bb8, << pipeline.git.base_revision >> ]
+      equal: [ 6da85c9d888784d09e973475493e14d282c07a8b, << pipeline.git.base_revision >> ]
     jobs:
       - test:
           filters:
@@ -22,7 +22,7 @@ workflows:
   no_workflow:
     when:
       not:
-        equal: [ fb640b2a7e2efc8625c8b295fc8c072cdf410bb8, << pipeline.git.base_revision >> ]
+        equal: [ 6da85c9d888784d09e973475493e14d282c07a8b, << pipeline.git.base_revision >> ]
     jobs:
       - do_nothing_job
 
@@ -117,9 +117,9 @@ jobs:
             # run sbt in CMD
 
             which bash
-#            env -i HOME=~ /bin/bash --login ~/install/sbt "testOnly -- -u scalatest-reports"    # Doesn't initialize like login shell...
+            #            env -i HOME=~ /bin/bash --login ~/install/sbt "testOnly -- -u scalatest-reports"    # Doesn't initialize like login shell...
             choco install sbt
-#            ~/install/sbt "testOnly -- -u scalatest-reports" </dev/null
+            #            ~/install/sbt "testOnly -- -u scalatest-reports" </dev/null
 
       - run:
           - shell: cmd.exe
