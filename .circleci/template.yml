@@ -112,7 +112,8 @@ jobs:
             # - nohup
             # no </dev/null
 
-            env -i HOME=~ bash --login ~/bin/sbt "testOnly -- -u scalatest-reports"
+            which bash
+            env -i HOME=~ /bin/bash --login ~/bin/sbt "testOnly -- -u scalatest-reports"
 
 #            ~/install/sbt "testOnly -- -u scalatest-reports" </dev/null
 

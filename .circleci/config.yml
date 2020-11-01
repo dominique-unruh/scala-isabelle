@@ -9,7 +9,7 @@ workflows:
   version: 2
   win2020:
     when:
-      equal: [ 69bd9e08a12bcbe21353c94696a5861af7b5a893, << pipeline.git.base_revision >> ]
+      equal: [ b2bf5a34902b0b60e1d0b88a14d5885018958084, << pipeline.git.base_revision >> ]
     jobs:
       - test:
           filters:
@@ -22,7 +22,7 @@ workflows:
   no_workflow:
     when:
       not:
-        equal: [ 69bd9e08a12bcbe21353c94696a5861af7b5a893, << pipeline.git.base_revision >> ]
+        equal: [ b2bf5a34902b0b60e1d0b88a14d5885018958084, << pipeline.git.base_revision >> ]
     jobs:
       - do_nothing_job
 
@@ -114,7 +114,8 @@ jobs:
             # - nohup
             # no </dev/null
 
-            env -i HOME=~ bash --login ~/bin/sbt "testOnly -- -u scalatest-reports"
+            which bash
+            env -i HOME=~ /bin/bash --login ~/bin/sbt "testOnly -- -u scalatest-reports"
 
 #            ~/install/sbt "testOnly -- -u scalatest-reports" </dev/null
 
