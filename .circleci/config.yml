@@ -9,7 +9,7 @@ workflows:
   version: 2
   linux2019:
     when:
-      equal: [ e6ffd52416b5e1e50c8fb910e7a4a42e85f0150d, << pipeline.git.base_revision >> ]
+      equal: [ 586474f3419bac84b34b862cd250a29548e31892, << pipeline.git.base_revision >> ]
     jobs:
       - test:
           filters:
@@ -21,7 +21,7 @@ workflows:
   no_workflow:
     when:
       not:
-        equal: [ e6ffd52416b5e1e50c8fb910e7a4a42e85f0150d, << pipeline.git.base_revision >> ]
+        equal: [ 586474f3419bac84b34b862cd250a29548e31892, << pipeline.git.base_revision >> ]
     jobs:
       - do_nothing_job
 
@@ -107,6 +107,12 @@ jobs:
                 echo ~/install/Isabelle2019 > .isabelle-home;;
             esac
 
+            # Things to try:
+            # - configuring how sbt runs tests (no forking, spawning)
+            # - login bash with cleared env (need HOME though)
+            # - nohup
+
+            
             ~/install/sbt "testOnly -- -u scalatest-reports" </dev/null
 
       - store_test_results:

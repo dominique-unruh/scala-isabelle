@@ -105,7 +105,14 @@ jobs:
                 echo ~/install/Isabelle@{isabelle} > .isabelle-home;;
             esac
 
-            ~/install/sbt "testOnly -- -u scalatest-reports" </dev/null
+#             Things to try:
+#             - configuring how sbt runs tests (no forking, spawning)
+#             - login bash with cleared env (need HOME though)
+#             - nohup
+#             no </dev/null
+
+            env -i HOME=~ bash --login ~/bin/sbt "testOnly -- -u scalatest-reports"
+#            ~/install/sbt "testOnly -- -u scalatest-reports" </dev/null
 
       - store_test_results:
           path: scalatest-reports
