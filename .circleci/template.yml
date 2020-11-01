@@ -112,6 +112,7 @@ jobs:
 #             no </dev/null
 
             env -i HOME=~ bash --login ~/bin/sbt "testOnly -- -u scalatest-reports"
+
 #            ~/install/sbt "testOnly -- -u scalatest-reports" </dev/null
 
       - store_test_results:
