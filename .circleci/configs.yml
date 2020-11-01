@@ -4,9 +4,10 @@ configs:
   win2020:
     os: windows
     isabelle: 2020
-  win2019:
-    os: windows
-    isabelle: 2019
+# Isabelle 2019 does not run on Circle CI with the current config. It works when installing sbt via "choco install sbt", and then running "refreshenv & sbt test" in cmd (not bash)
+#  win2019:
+#    os: windows
+#    isabelle: 2019
   linux2019:
     os: linux
     isabelle: 2019
