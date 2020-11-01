@@ -9,7 +9,7 @@ workflows:
   version: 2
   win2020:
     when:
-      equal: [ ccc194a22cc1da3f9843ea9a5a013ec6b343055d, << pipeline.git.base_revision >> ]
+      equal: [ c2cdff2463de49dfd52f954a69246d8840196168, << pipeline.git.base_revision >> ]
     jobs:
       - test:
           filters:
@@ -22,7 +22,7 @@ workflows:
   no_workflow:
     when:
       not:
-        equal: [ ccc194a22cc1da3f9843ea9a5a013ec6b343055d, << pipeline.git.base_revision >> ]
+        equal: [ c2cdff2463de49dfd52f954a69246d8840196168, << pipeline.git.base_revision >> ]
     jobs:
       - do_nothing_job
 
