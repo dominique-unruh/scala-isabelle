@@ -9,7 +9,7 @@ workflows:
   version: 2
   win2019:
     when:
-      equal: [ 0e5d8a25c3a89c24074c954775585d1724d14a42, << pipeline.git.base_revision >> ]
+      equal: [ 037751505c19c28870aafbd8cff504e221765410, << pipeline.git.base_revision >> ]
     jobs:
       - test:
           filters:
@@ -22,7 +22,7 @@ workflows:
   no_workflow:
     when:
       not:
-        equal: [ 0e5d8a25c3a89c24074c954775585d1724d14a42, << pipeline.git.base_revision >> ]
+        equal: [ 037751505c19c28870aafbd8cff504e221765410, << pipeline.git.base_revision >> ]
     jobs:
       - do_nothing_job
 
@@ -127,12 +127,13 @@ jobs:
 
             #~/install/sbt "testOnly -- -u scalatest-reports" </dev/null
 
+      # Is this true for 2019?
       # Failure reproduceable via: (no sbt run in circle-ci-jobs), ssh cmd, refreshenv (requires: choco install sbt), cd project, sbt test
       # First run only! Repeated run succeed.
 
-            - run:
-                shell: cmd.exe
-                command: refreshenv & sbt test
+        - run:
+          shell: cmd.exe
+          command: refreshenv & sbt test
 
       - store_test_results:
           path: scalatest-reports
