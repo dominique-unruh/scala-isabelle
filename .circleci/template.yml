@@ -119,7 +119,7 @@ jobs:
             #            env -i HOME=~ /bin/bash --login ~/install/sbt "testOnly -- -u scalatest-reports"    # Doesn't initialize like login shell...
             #choco install sbt
 
-            ~/install/Isabelle2020/bin/isabelle process -e 1
+            ~/install/Isabelle2020/contrib/cygwin/bash ~/install/Isabelle2020/bin/isabelle process -e 1
 
             ~/install/sbt "testOnly -- -u scalatest-reports" </dev/null
 

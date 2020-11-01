@@ -9,7 +9,7 @@ workflows:
   version: 2
   win2020:
     when:
-      equal: [ c68c83bd31992f26159e192eabd186319ba5c811, << pipeline.git.base_revision >> ]
+      equal: [ 08e15ead80cfe12848d39e48eb5d3669636ad0da, << pipeline.git.base_revision >> ]
     jobs:
       - test:
           filters:
@@ -22,7 +22,7 @@ workflows:
   no_workflow:
     when:
       not:
-        equal: [ c68c83bd31992f26159e192eabd186319ba5c811, << pipeline.git.base_revision >> ]
+        equal: [ 08e15ead80cfe12848d39e48eb5d3669636ad0da, << pipeline.git.base_revision >> ]
     jobs:
       - do_nothing_job
 
@@ -121,7 +121,7 @@ jobs:
             #            env -i HOME=~ /bin/bash --login ~/install/sbt "testOnly -- -u scalatest-reports"    # Doesn't initialize like login shell...
             #choco install sbt
 
-            ~/install/Isabelle2020/bin/isabelle process -e 1
+            ~/install/Isabelle2020/contrib/cygwin/bash ~/install/Isabelle2020/bin/isabelle process -e 1
 
             ~/install/sbt "testOnly -- -u scalatest-reports" </dev/null
 
