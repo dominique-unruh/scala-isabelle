@@ -113,6 +113,7 @@ jobs:
             # no </dev/null
             # use a different sbt (choco install sbt)
             # run sbt in CMD
+            # test whether sbt works via ssh if we do not run it here (maybe only first sbt fails)
 
             which bash
             #            env -i HOME=~ /bin/bash --login ~/install/sbt "testOnly -- -u scalatest-reports"    # Doesn't initialize like login shell...
@@ -121,7 +122,9 @@ jobs:
 
       - run:
           shell: cmd.exe
-          command: sbt test
+          command: |
+            refreshenv
+            sbt test
 
       - store_test_results:
           path: scalatest-reports

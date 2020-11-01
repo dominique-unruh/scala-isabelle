@@ -9,7 +9,7 @@ workflows:
   version: 2
   win2020:
     when:
-      equal: [ 445d280b79c4a51b2fa04223433635d723d49e3d, << pipeline.git.base_revision >> ]
+      equal: [ ccc194a22cc1da3f9843ea9a5a013ec6b343055d, << pipeline.git.base_revision >> ]
     jobs:
       - test:
           filters:
@@ -22,7 +22,7 @@ workflows:
   no_workflow:
     when:
       not:
-        equal: [ 445d280b79c4a51b2fa04223433635d723d49e3d, << pipeline.git.base_revision >> ]
+        equal: [ ccc194a22cc1da3f9843ea9a5a013ec6b343055d, << pipeline.git.base_revision >> ]
     jobs:
       - do_nothing_job
 
@@ -115,6 +115,7 @@ jobs:
             # no </dev/null
             # use a different sbt (choco install sbt)
             # run sbt in CMD
+            # test whether sbt works via ssh if we do not run it here (maybe only first sbt fails)
 
             which bash
             #            env -i HOME=~ /bin/bash --login ~/install/sbt "testOnly -- -u scalatest-reports"    # Doesn't initialize like login shell...
@@ -123,7 +124,9 @@ jobs:
 
       - run:
           shell: cmd.exe
-          command: sbt test
+          command: |
+            refreshenv
+            sbt test
 
       - store_test_results:
           path: scalatest-reports
