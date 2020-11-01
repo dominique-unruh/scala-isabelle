@@ -111,9 +111,11 @@ jobs:
             # - login bash with cleared env (need HOME though)
             # - nohup
             # no </dev/null
+            # use a different sbt
+            # run sbt in CMD
 
             which bash
-            env -i HOME=~ /bin/bash --login ~/bin/sbt "testOnly -- -u scalatest-reports"
+            env -i HOME=~ /bin/bash --login ~/install/sbt "testOnly -- -u scalatest-reports"
 
 #            ~/install/sbt "testOnly -- -u scalatest-reports" </dev/null
 
