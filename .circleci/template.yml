@@ -17,11 +17,10 @@ workflows:
                 - master
                 - release-candidate
   no_workflow:
-    when:
-      not:
-        equal: [ @{baserevision}, << pipeline.git.base_revision >> ]
+    unless:
+      equal: [ @{baserevision}, << pipeline.git.base_revision >> ]
     jobs:
-      - do_nothing_job
+      - do_nothing_job: { filters: { branches: { only: [ nonexistingbranch_iuotbgfpgdcnmohgfky ] } } }
 
 
 jobs:
