@@ -6,8 +6,8 @@ orbs:
 workflows:
   version: 2
   @{name}:
-    when:
-      equal: [ @{baserevision}, << pipeline.git.base_revision >> ]
+#    when:
+#      equal: [ @{baserevision}, << pipeline.git.base_revision >> ]
     jobs:
       - test:
           filters:
@@ -17,8 +17,8 @@ workflows:
                 - master
                 - release-candidate
   no_workflow:
-    unless:
-      equal: [ @{baserevision}, << pipeline.git.base_revision >> ]
+#    unless:
+#      equal: [ @{baserevision}, << pipeline.git.base_revision >> ]
     jobs:
       - do_nothing_job: { filters: { branches: { only: [ nonexistingbranch_iuotbgfpgdcnmohgfky ] } } }
 

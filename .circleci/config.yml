@@ -7,9 +7,9 @@ orbs:
 
 workflows:
   version: 2
-  win2020:
-    when:
-      equal: [ 47bef337f18e2b31b5a1155ef09337ba6ae2f229, << pipeline.git.base_revision >> ]
+  macos2020:
+#    when:
+#      equal: [ 1b4d64a5d9b174936b5ee7b81203ad76b58f3624, << pipeline.git.base_revision >> ]
     jobs:
       - test:
           filters:
@@ -18,9 +18,10 @@ workflows:
                 - circleci-project-setup
                 - master
                 - release-candidate
+                - test-macos
   no_workflow:
-    unless:
-      equal: [ 47bef337f18e2b31b5a1155ef09337ba6ae2f229, << pipeline.git.base_revision >> ]
+#    unless:
+#      equal: [ 1b4d64a5d9b174936b5ee7b81203ad76b58f3624, << pipeline.git.base_revision >> ]
     jobs:
       - do_nothing_job: { filters: { branches: { only: [ nonexistingbranch_iuotbgfpgdcnmohgfky ] } } }
 
@@ -33,7 +34,7 @@ jobs:
 
   test:
 
-    executor: { name: windows/default }
+    macos: {xcode: 11.6.0}
 
 #    environment:
 #      # Customize the JVM maximum heap limit
@@ -46,14 +47,14 @@ jobs:
       # Download and cache Isabelle
       - restore_cache:
           keys:
-            - v2-isabelle-2020-windows
+            - v2-isabelle-2020-macos
       - run:
           name: Downloading Isabelle 2020 (if needed)
           shell: bash
           command: |
             if ! [ -e "$HOME/install/Isabelle2020" ]; then
               mkdir -p ~/install
-              case windows in
+              case macos in
                 windows)
                   curl "https://isabelle.in.tum.de/website-Isabelle2020/dist/Isabelle2020.exe" -o /tmp/isabelle.exe
                   7z x -y -o"$HOME/install" /tmp/isabelle.exe;;
@@ -63,25 +64,25 @@ jobs:
             fi
       - save_cache:
           paths:
-            - ~/install/Isabelle2020
-          key: v2-isabelle-2020-windows
+            - ~/install/Isabelle2020.app/Isabelle
+          key: v2-isabelle-2020-macos
 
       # Download and cache dependencies
       - restore_cache:
           keys:
-            - v3-dependencies-windows-{{ checksum "build.sbt" }}-{{ checksum "publish.sbt" }}
-            - v3-dependencies-windows-
+            - v3-dependencies-macos-{{ checksum "build.sbt" }}-{{ checksum "publish.sbt" }}
+            - v3-dependencies-macos-
       - run:
           name: Downloading build dependencies (if needed)
           shell: bash
           command: |
-            if ! sha1sum -c ~/dependencies-sha1sum; then
+            if ! shasum -c ~/dependencies-sha1sum; then
               mkdir -p ~/install
               curl -Ls https://git.io/sbt > ~/install/sbt
               chmod +x ~/install/sbt
               ~/install/sbt update test/update </dev/null
             fi
-            sha1sum build.sbt publish.sbt > ~/dependencies-sha1sum
+            shasum build.sbt publish.sbt > ~/dependencies-sha1sum
       - save_cache:
           paths:
             - ~/install/sbt
@@ -91,19 +92,19 @@ jobs:
             - $LOCALAPPDATA\Coursier\Cache
             - ~/.cache/coursier
             - ~/dependencies-sha1sum
-          key: v3-dependencies-windows-{{ checksum "build.sbt" }}-{{ checksum "publish.sbt" }}
+          key: v3-dependencies-macos-{{ checksum "build.sbt" }}-{{ checksum "publish.sbt" }}
 
       - run:
           name: Running tests
           shell: bash
           command: |
-            case windows in
+            case macos in
               windows)
                 # Isabelle process calls rebaseall and then fails, unless we deactivate it
-                > ~/install/Isabelle2020/contrib/cygwin/isabelle/rebaseall
-                cygpath -w ~/install/Isabelle2020 > .isabelle-home;;
-              linux)
-                echo ~/install/Isabelle2020 > .isabelle-home;;
+                > ~/install/Isabelle2020.app/Isabelle/contrib/cygwin/isabelle/rebaseall
+                cygpath -w ~/install/Isabelle2020.app/Isabelle > .isabelle-home;;
+              linux|macos)
+                echo ~/install/Isabelle2020.app/Isabelle > .isabelle-home;;
             esac
 
             ~/install/sbt "testOnly -- -u scalatest-reports" </dev/null
