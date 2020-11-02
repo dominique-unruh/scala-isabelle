@@ -1,32 +1,58 @@
 #!/usr/bin/python3
 
+# PYTHON_ARGCOMPLETE_OK
 
-import yaml, random, re, sys, textwrap, types, git, os.path
+import yaml, random, re, sys, textwrap, types, git, os.path, argparse, argcomplete
 
-repository = git.Repo(".")
 configFile = ".circleci/config.yml"
+configsFile = ".circleci/configs.yml"
+repository = git.Repo(".")
 
 config : dict = {}
 defaults : dict = {
     'baserevision': lambda: repository.head.commit.hexsha
 }
 
-# TODO: Add command line switch to force changing config,yml
+def parseOptions():
+    global args
+
+    class PickCompleter(object):
+        def __init__(self):
+            self.picks = None
+        def __call__(self, **kwargs):
+            if self.picks is not None: return self.picks
+            with open(configsFile,"rb") as f:
+                conf = yaml.safe_load(f)
+                self.picks = conf['configs'].keys()
+            return self.picks
+
+    parser = argparse.ArgumentParser(description="Updates the Circle CI configuration (with random job choice)")
+    parser.add_argument('-f', '--force', action="store_true", help="Force update (even if already updated or if working tree is clean")
+    parser.add_argument('-p', '--pick', help="Configuration to select (implies --force)").completer = PickCompleter()
+    argcomplete.autocomplete(parser)
+    args = parser.parse_args()
+
 def shouldUpdateConfig() -> bool:
+    if args.force or args.pick: return True
     if not repository.is_dirty(): return False
     if repository.head.commit.diff(other=None, paths=configFile): return False
     return True
 
 def loadConfigs():
-    global configsfile
-    with open(".circleci/configs.yml","rb") as f:
-        configsfile = yaml.safe_load(f)
+    global configsYaml
+    with open(configsFile,"rb") as f:
+        configsYaml = yaml.safe_load(f)
 
 def chooseConfig():
     global config, defaults
-    pick = configsfile['pick']
-    configs = configsfile['configs']
-    for k,v in configsfile['defaults'].items():
+
+    if args.pick is None:
+        pick = configsYaml['pick']
+    else:
+        pick = args.pick
+
+    configs = configsYaml['configs']
+    for k,v in configsYaml['defaults'].items():
         defaults[k] = v
     configkeys = list(configs.keys())
     if pick == 'random':
@@ -89,6 +115,7 @@ def warnAboutCommitHook():
     if not exists():
         print(f"*** Add scripts/circleci-randomize.py to {preCommitFile} ***")
 
+parseOptions()
 warnAboutCommitHook()
 if not shouldUpdateConfig(): sys.exit()
 loadConfigs()
