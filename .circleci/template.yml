@@ -17,6 +17,7 @@ workflows:
                 - master
                 - release-candidate
                 - test-macos
+                - tmp
   no_workflow:
 #    unless:
 #      equal: [ @{baserevision}, << pipeline.git.base_revision >> ]
@@ -69,8 +70,8 @@ jobs:
       # Download and cache dependencies
       - restore_cache:
           keys:
-            - v3-dependencies-@{os}-{{ checksum "build.sbt" }}-{{ checksum "publish.sbt" }}
-            - v3-dependencies-@{os}-
+            - v3-dependencies-@{os}-@{scala}-{{ checksum "build.sbt" }}-{{ checksum "publish.sbt" }}
+            - v3-dependencies-@{os}-@{scala}-
       - run:
           name: Downloading build dependencies (if needed)
           shell: bash
@@ -79,7 +80,7 @@ jobs:
               mkdir -p ~/install
               curl -Ls https://git.io/sbt > ~/install/sbt
               chmod +x ~/install/sbt
-              ~/install/sbt update test/update </dev/null
+              ~/install/sbt -@{scala} update test/update </dev/null
             fi
             shasum build.sbt publish.sbt > ~/dependencies-sha1sum
       - save_cache:
@@ -91,7 +92,7 @@ jobs:
             - $LOCALAPPDATA\Coursier\Cache
             - ~/.cache/coursier
             - ~/dependencies-sha1sum
-          key: v3-dependencies-@{os}-{{ checksum "build.sbt" }}-{{ checksum "publish.sbt" }}
+          key: v3-dependencies-@{os}-@{scala}-{{ checksum "build.sbt" }}-{{ checksum "publish.sbt" }}
 
       - run:
           name: Running tests
@@ -106,7 +107,7 @@ jobs:
                 echo @{isabellehome} > .isabelle-home;;
             esac
 
-            ~/install/sbt "testOnly -- -u scalatest-reports" </dev/null
+            ~/install/sbt -@{scala} "testOnly -- -u scalatest-reports" </dev/null
 
       - store_test_results:
           path: scalatest-reports
