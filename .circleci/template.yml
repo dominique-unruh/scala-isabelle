@@ -17,6 +17,7 @@ workflows:
                 - master
                 - release-candidate
                 - test-macos
+                - tmp
   no_workflow:
 #    unless:
 #      equal: [ @{baserevision}, << pipeline.git.base_revision >> ]
