@@ -7,7 +7,7 @@ import sbt.io.Path.relativeTo
 import scala.sys.process._
 
 name := "scala-isabelle"
-version := "0.3.0-RC1"
+version := "0.3.0"
 
 crossScalaVersions := List("2.13.3", "2.12.12")
 
