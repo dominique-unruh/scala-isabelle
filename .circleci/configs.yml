@@ -56,3 +56,6 @@ defaults:
   isabellehome: |
     if os=="macos": return f"~/install/Isabelle{isabelle}.app/Isabelle"
     return f"~/install/Isabelle{isabelle}"
+  sha1sum: |
+    if os=="macos": return "shasum"
+    return "sha1sum"
