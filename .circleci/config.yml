@@ -7,9 +7,7 @@ orbs:
 
 workflows:
   version: 2
-  linux2020:
-#    when:
-#      equal: [ 0d0aa58497751e27bf0d4e28555d8d328c6c086c, << pipeline.git.base_revision >> ]
+  win2020:
     jobs:
       - test:
           filters:
@@ -20,12 +18,6 @@ workflows:
                 - release-candidate
                 - test-macos
                 - tmp
-  no_workflow:
-#    unless:
-#      equal: [ 0d0aa58497751e27bf0d4e28555d8d328c6c086c, << pipeline.git.base_revision >> ]
-    jobs:
-      - do_nothing_job: { filters: { branches: { only: [ nonexistingbranch_iuotbgfpgdcnmohgfky ] } } }
-
 
 jobs:
   do_nothing_job:
@@ -35,12 +27,7 @@ jobs:
 
   test:
 
-    machine: {image: ubuntu-2004:202010-01}
-
-#    environment:
-#      # Customize the JVM maximum heap limit
-#      JVM_OPTS: -Xmx3200m
-#      TERM: dumb
+    executor: { name: windows/default }
 
     steps:
       - checkout
@@ -48,32 +35,33 @@ jobs:
       # Download and cache Isabelle
       - restore_cache:
           keys:
-            - v3-isabelle-2020-linux
-            - v2-isabelle-2020-linux
+            - v3-isabelle-2020-windows
+            - v2-isabelle-2020-windows
       - run:
           name: Downloading Isabelle 2020 (if needed)
           shell: bash
           command: |
             if ! [ -e "$HOME/install/Isabelle2020" ]; then
               mkdir -p ~/install
-              case linux in
+              case windows in
                 windows)
                   curl "https://isabelle.in.tum.de/website-Isabelle2020/dist/Isabelle2020.exe" -o /tmp/isabelle.exe
                   7z x -y -o"$HOME/install" /tmp/isabelle.exe;;
                 linux|macos)
-                  curl https://isabelle.in.tum.de/website-Isabelle2020/dist/Isabelle2020_linux.tar.gz | tar -x -z -C ~/install;;
+                  curl https://isabelle.in.tum.de/website-Isabelle2020/dist/Isabelle2020_windows.tar.gz | tar -x -z -C ~/install;;
+                *) false;;
               esac
             fi
       - save_cache:
           paths:
             - ~/install/Isabelle2020
-          key: v3-isabelle-2020-linux
+          key: v3-isabelle-2020-windows
 
       # Download and cache dependencies
       - restore_cache:
           keys:
-            - v3-dependencies-linux-213-{{ checksum "build.sbt" }}-{{ checksum "publish.sbt" }}
-            - v3-dependencies-linux-213-
+            - v3-dependencies-windows-213-{{ checksum "build.sbt" }}-{{ checksum "publish.sbt" }}
+            - v3-dependencies-windows-213-
       - run:
           name: Downloading build dependencies (if needed)
           shell: bash
@@ -94,13 +82,13 @@ jobs:
             - $LOCALAPPDATA\Coursier\Cache
             - ~/.cache/coursier
             - ~/dependencies-sha1sum
-          key: v3-dependencies-linux-213-{{ checksum "build.sbt" }}-{{ checksum "publish.sbt" }}
+          key: v3-dependencies-windows-213-{{ checksum "build.sbt" }}-{{ checksum "publish.sbt" }}
 
       - run:
           name: Running tests
           shell: bash
           command: |
-            case linux in
+            case windows in
               windows)
                 # Isabelle process calls rebaseall and then fails, unless we deactivate it
                 > ~/install/Isabelle2020/contrib/cygwin/isabelle/rebaseall

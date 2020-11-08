@@ -6,8 +6,6 @@ orbs:
 workflows:
   version: 2
   @{name}:
-#    when:
-#      equal: [ @{baserevision}, << pipeline.git.base_revision >> ]
     jobs:
       - test:
           filters:
@@ -18,12 +16,6 @@ workflows:
                 - release-candidate
                 - test-macos
                 - tmp
-  no_workflow:
-#    unless:
-#      equal: [ @{baserevision}, << pipeline.git.base_revision >> ]
-    jobs:
-      - do_nothing_job: { filters: { branches: { only: [ nonexistingbranch_iuotbgfpgdcnmohgfky ] } } }
-
 
 jobs:
   do_nothing_job:
@@ -34,11 +26,6 @@ jobs:
   test:
 
     @{machine_config}
-
-#    environment:
-#      # Customize the JVM maximum heap limit
-#      JVM_OPTS: -Xmx3200m
-#      TERM: dumb
 
     steps:
       - checkout
@@ -60,6 +47,7 @@ jobs:
                   7z x -y -o"$HOME/install" /tmp/isabelle.exe;;
                 linux|macos)
                   curl https://isabelle.in.tum.de/website-Isabelle@{isabelle}/dist/Isabelle@{isabelle}_@{os}.tar.gz | tar -x -z -C ~/install;;
+                *) false;;
               esac
             fi
       - save_cache:
