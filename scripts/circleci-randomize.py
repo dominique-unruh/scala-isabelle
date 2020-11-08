@@ -68,8 +68,10 @@ def chooseConfig():
 def runDefaultCode(key, code):
     code = textwrap.indent(code, '  ')
     code = f"def get_default_function():\n{code}\n"
-    locals = config.copy()
-    exec(code, config.copy(), locals) # TODO do we need two config.copy's?
+    locals = dict()
+    globals = config.copy()
+    globals['get'] = getKey
+    exec(code, globals, locals)
     result = locals['get_default_function']()
     if result is None: sys.exit(f"Default key {key} returned no value")
     return str(result)
