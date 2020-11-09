@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 # PYTHON_ARGCOMPLETE_OK
+from typing import Dict, List, Any, Tuple
 
 import yaml, random, re, sys, textwrap, types, git, os.path, argparse, argcomplete
 
@@ -43,6 +44,19 @@ def loadConfigs():
     with open(configsFile,"rb") as f:
         configsYaml = yaml.safe_load(f)
 
+def randomChoice(configs: Dict[str,Dict]):
+    weights: List[Tuple[str, float]] = [(key,float(conf.get("weight", 100))) for (key,conf) in configs.items()]
+    assert(all(w >= 0 for (k,w) in weights))
+    total: float = sum(w for (k,w) in weights)
+    choice = random.uniform(0, total)
+    for (k,w) in weights:
+        choice -= w
+        if choice <= 0:
+            return k
+    raise AssertionError("Unreachable code. Rounding error?")
+
+
+
 def chooseConfig():
     global config, defaults
 
@@ -54,10 +68,8 @@ def chooseConfig():
     configs = configsYaml['configs']
     for k,v in configsYaml['defaults'].items():
         defaults[k] = v
-    configkeys = list(configs.keys())
     if pick == 'random':
-        i = random.randrange(0, len(configkeys))
-        configname = configkeys[i]
+        configname = randomChoice(configs)
     else:
         configname = pick
     config = configs[configname]
