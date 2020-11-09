@@ -8,7 +8,7 @@
  - Set correct date (today) for this version in CHANGELOG.md (only for releases)
  - Edit version in README.md
  - git commit (to be able to cherry pick those into master)
- - Set version in version.sbt
+ - Set version in build.sbt
  - git commit
  - sbt clean
  - sbt +publishSigned (don't forget the +) (should run tests!)

@@ -306,17 +306,10 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
   }
 
   /** Invokes the Isabelle process.
-   * This function is not portable.
-   * To make the library run with Windows (and maybe OS/X), this function needs to be rewritten.
    * */
   private def startProcessSlave(setup: Setup) : java.lang.Process = {
+    implicit val s: Setup = setup
     def wd = setup.workingDirectory
-    def cygwinIfWin(path: Path) =
-      if (SystemUtils.IS_OS_WINDOWS) Utils.cygwinPath(path) else path.toString
-    def abs(path: Path) = wd.resolve(path).toAbsolutePath
-    /** Path to absolute string, interpreted relative to wd */
-    def str(path: Path) = cygwinIfWin(abs(path))
-
     val useSockets = SystemUtils.IS_OS_WINDOWS
 
     val tempDir = Files.createTempDirectory("isabellecontrol").toAbsolutePath
@@ -376,19 +369,15 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
     isabelleArguments += "-e" += "Control_Isabelle.handleLines()"
 
     for (root <- setup.sessionRoots)
-      isabelleArguments += "-d" += str(root)
+      isabelleArguments += "-d" += cygwinAbs(root)
 
-    val cmd = makeIsabelleCommandLine(abs(setup.isabelleHome), isabelleArguments.toSeq)
+    val cmd = makeIsabelleCommandLine(absPath(setup.isabelleHome), isabelleArguments.toSeq)
 
     logger.debug(s"Cmd line: ${cmd.mkString(" ")}")
 
     val processBuilder = new java.lang.ProcessBuilder(cmd :_*)
     processBuilder.directory(wd.toAbsolutePath.toFile)
-    for (userDir <- setup.userDir)
-      processBuilder.environment.put("USER_HOME", str(userDir.getParent))
-
-    // Needed on Windows so that cygwin-bash does not cd to home
-    processBuilder.environment.put("CHERE_INVOKING", "true")
+    for ((k,v) <- makeIsabelleEnvironment) processBuilder.environment().put(k,v)
 
     val processQueueThread = new Thread("Send to Isabelle") {
       override def run(): Unit = processQueue(input) }
@@ -400,7 +389,7 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
     parseIsabelleThread.setDaemon(true)
     parseIsabelleThread.start()
 
-    val lock = Isabelle.buildLocks.get(abs(setup.isabelleHome).normalize).readLock
+    val lock = Isabelle.buildLocks.get(absPath(setup.isabelleHome).normalize).readLock
 
     lock.lockInterruptibly()
     try {
@@ -728,7 +717,7 @@ object Isabelle {
     /** [[isabelleHome]] as an absolute path */
     def isabelleHomeAbsolute: Path = workingDirectory.resolve(isabelleHome)
     /** [[userDir]] as an absolute path. If [[userDir]] is [[scala.None None]], the Isabelle default user directory is returned. */
-    def userDirAbsolute: Path = userDir match {
+    def userDirAbsolute: Path = userDir.map(workingDirectory.resolve) match {
       case Some(dir) => workingDirectory.resolve(dir)
       case None => SystemUtils.getUserHome.toPath.resolve(".isabelle")
     }
@@ -765,12 +754,8 @@ object Isabelle {
    * @param setup Configuration of Isabelle.
    */
   def buildSession(setup: Setup) : Unit = {
+    implicit val s: Setup = setup
     def wd = setup.workingDirectory
-    def cygwinIfWin(path: Path) =
-      if (SystemUtils.IS_OS_WINDOWS) Utils.cygwinPath(path) else path.toString
-    def abs(path: Path) = wd.resolve(path).toAbsolutePath
-    /** Path to absolute string, interpreted relative to wd */
-    def str(path: Path) = cygwinIfWin(abs(path))
 
     val isabelleArguments = ListBuffer[String]()
 
@@ -781,22 +766,18 @@ object Isabelle {
       isabelleArguments += "-v" // Verbose build
 
     for (root <- setup.sessionRoots)
-      isabelleArguments += "-d" += str(root)
+      isabelleArguments += "-d" += cygwinAbs(root)
 
     isabelleArguments += setup.logic
 
-    val cmd = makeIsabelleCommandLine(abs(setup.isabelleHome), isabelleArguments.toSeq)
+    val cmd = makeIsabelleCommandLine(absPath(setup.isabelleHome), isabelleArguments.toSeq)
 
     logger.debug(s"Cmd line: ${cmd.mkString(" ")}")
 
-    val extraEnv =
-      for (userDir <- setup.userDir.toList)
-        yield ("USER_HOME", str(userDir.getParent))
-
-    val processBuilder = scala.sys.process.Process(cmd, wd.toAbsolutePath.toFile, extraEnv :_*)
+    val processBuilder = scala.sys.process.Process(cmd, wd.toAbsolutePath.toFile, makeIsabelleEnvironment :_*)
     val errors = ListBuffer[String]()
 
-    val lock = buildLocks.get(abs(setup.isabelleHome).normalize).writeLock
+    val lock = buildLocks.get(absPath(setup.isabelleHome).normalize).writeLock
     lock.lockInterruptibly()
     try {
       if (0 != processBuilder.!(ProcessLogger(line => logger.debug(s"Isabelle build: $line"),
@@ -814,13 +795,8 @@ object Isabelle {
    * @throws IsabelleJEditException if jEdit fails (returns return code ≠0)
    */
   def jedit(setup: Setup, files: Seq[Path]) : Unit = {
+    implicit val s = setup
     def wd = setup.workingDirectory
-    /** Path to absolute string, interpreted relative to wd */
-    def cygwinIfWin(path: Path) =
-      if (SystemUtils.IS_OS_WINDOWS) Utils.cygwinPath(path) else path.toString
-    def abs(path: Path) = wd.resolve(path).toAbsolutePath
-    /** Path to absolute string, interpreted relative to wd */
-    def str(path: Path) = cygwinIfWin(abs(path))
 
 //    val isabelleBinary = setup.isabelleHome.resolve("bin").resolve("isabelle")
     val isabelleArguments = ListBuffer[String]()
@@ -828,24 +804,20 @@ object Isabelle {
     isabelleArguments += "jedit"
 
     for (root <- setup.sessionRoots)
-      isabelleArguments += "-d" += str(root)
+      isabelleArguments += "-d" += cygwinAbs(root)
 
     isabelleArguments += "-l" += setup.logic
 
     isabelleArguments += "--"
-    isabelleArguments ++= files.map(str)
+    isabelleArguments ++= files.map(cygwinAbs)
 
-    val cmd = makeIsabelleCommandLine(abs(setup.isabelleHome), isabelleArguments.toSeq)
+    val cmd = makeIsabelleCommandLine(absPath(setup.isabelleHome), isabelleArguments.toSeq)
 
     logger.debug(s"Cmd line: ${cmd.mkString(" ")}")
 
-    val extraEnv =
-      for (userDir <- setup.userDir.toList)
-        yield ("USER_HOME", str(userDir.getParent))
+    val processBuilder = scala.sys.process.Process(cmd.toSeq, wd.toAbsolutePath.toFile, makeIsabelleEnvironment :_*)
 
-    val processBuilder = scala.sys.process.Process(cmd.toSeq, wd.toAbsolutePath.toFile, extraEnv :_*)
-
-    val lock = buildLocks.get(wd.resolve(setup.isabelleHome).toAbsolutePath.normalize).readLock
+    val lock = buildLocks.get(absPath(setup.isabelleHome).normalize).readLock
     lock.lockInterruptibly()
     try {
       if (0 != processBuilder.!(ProcessLogger(line => logger.debug(s"Isabelle jedit: $line"),
@@ -854,6 +826,43 @@ object Isabelle {
     } finally
       lock.unlock()
   }
+
+  private def makeIsabelleEnvironment(implicit setup: Setup): List[(String, String)] = {
+    val env = ListBuffer[(String, String)]()
+    setup.userDir match {
+      case Some(path) => env += "USER_HOME" -> cygwinAbs(path.getParent)
+      case None =>
+    }
+    /* Things copied from Isabelle's Cygwin-Terminal.bat, they seem necessary for correct startup:
+       set TEMP_WINDOWS=%TEMP%
+       set HOME=%HOMEDRIVE%%HOMEPATH%
+       set PATH=%CD%\bin;%PATH%
+       set LANG=en_US.UTF-8
+       set CHERE_INVOKING=true
+     */
+    if (SystemUtils.IS_OS_WINDOWS) {
+      // Needed on Windows so that cygwin-bash does not cd to home
+      env += "CHERE_INVOKING" -> "true"
+      env += "HOME" -> SystemUtils.getUserHome.getAbsolutePath
+      System.getenv("TEMP") match {
+        case null =>
+          val tempDir = Files.createTempDirectory("isabellecontrol").toAbsolutePath
+          tempDir.toFile.deleteOnExit()
+          env += "TEMP_WINDOWS" -> tempDir.toString
+        case temp =>
+          env += "TEMP_WINDOWS" -> temp
+      }
+      env += "LANG" -> "en_US.UTF-8"
+    }
+    env.toList
+  }
+
+  private def cygwinIfWin(path: Path) =
+    if (SystemUtils.IS_OS_WINDOWS) Utils.cygwinPath(path) else path.toString
+  /** Path to absolute string, interpreted relative to wd */
+  private def absPath(path: Path)(implicit setup: Setup) = setup.workingDirectory.resolve(path).toAbsolutePath
+  /** Path to absolute string, interpreted relative to wd */
+  private def cygwinAbs(path: Path)(implicit setup: Setup) = cygwinIfWin(absPath(path))
 
   private def makeIsabelleCommandLine(isabelleHome: Path, arguments: Seq[String]) : Seq[String]= {
     if (SystemUtils.IS_OS_WINDOWS) {

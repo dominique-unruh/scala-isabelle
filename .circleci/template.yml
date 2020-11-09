@@ -6,8 +6,6 @@ orbs:
 workflows:
   version: 2
   @{name}:
-#    when:
-#      equal: [ @{baserevision}, << pipeline.git.base_revision >> ]
     jobs:
       - test:
           filters:
@@ -17,12 +15,7 @@ workflows:
                 - master
                 - release-candidate
                 - test-macos
-  no_workflow:
-#    unless:
-#      equal: [ @{baserevision}, << pipeline.git.base_revision >> ]
-    jobs:
-      - do_nothing_job: { filters: { branches: { only: [ nonexistingbranch_iuotbgfpgdcnmohgfky ] } } }
-
+                - tmp
 
 jobs:
   do_nothing_job:
@@ -33,11 +26,6 @@ jobs:
   test:
 
     @{machine_config}
-
-#    environment:
-#      # Customize the JVM maximum heap limit
-#      JVM_OPTS: -Xmx3200m
-#      TERM: dumb
 
     steps:
       - checkout
@@ -59,6 +47,7 @@ jobs:
                   7z x -y -o"$HOME/install" /tmp/isabelle.exe;;
                 linux|macos)
                   curl https://isabelle.in.tum.de/website-Isabelle@{isabelle}/dist/Isabelle@{isabelle}_@{os}.tar.gz | tar -x -z -C ~/install;;
+                *) false;;
               esac
             fi
       - save_cache:
@@ -69,19 +58,19 @@ jobs:
       # Download and cache dependencies
       - restore_cache:
           keys:
-            - v3-dependencies-@{os}-{{ checksum "build.sbt" }}-{{ checksum "publish.sbt" }}
-            - v3-dependencies-@{os}-
+            - v3-dependencies-@{os}-@{scala}-{{ checksum "build.sbt" }}-{{ checksum "publish.sbt" }}
+            - v3-dependencies-@{os}-@{scala}-
       - run:
           name: Downloading build dependencies (if needed)
           shell: bash
           command: |
-            if ! shasum -c ~/dependencies-sha1sum; then
+            if ! @{sha1sum} -c ~/dependencies-sha1sum; then
               mkdir -p ~/install
               curl -Ls https://git.io/sbt > ~/install/sbt
               chmod +x ~/install/sbt
-              ~/install/sbt update test/update </dev/null
+              ~/install/sbt -@{scala} update test/update </dev/null
             fi
-            shasum build.sbt publish.sbt > ~/dependencies-sha1sum
+            @{sha1sum} build.sbt publish.sbt > ~/dependencies-sha1sum
       - save_cache:
           paths:
             - ~/install/sbt
@@ -91,7 +80,7 @@ jobs:
             - $LOCALAPPDATA\Coursier\Cache
             - ~/.cache/coursier
             - ~/dependencies-sha1sum
-          key: v3-dependencies-@{os}-{{ checksum "build.sbt" }}-{{ checksum "publish.sbt" }}
+          key: v3-dependencies-@{os}-@{scala}-{{ checksum "build.sbt" }}-{{ checksum "publish.sbt" }}
 
       - run:
           name: Running tests
@@ -106,7 +95,7 @@ jobs:
                 echo @{isabellehome} > .isabelle-home;;
             esac
 
-            ~/install/sbt "testOnly -- -u scalatest-reports" </dev/null
+            ~/install/sbt -@{scala} "testOnly -- -u scalatest-reports" </dev/null
 
       - store_test_results:
           path: scalatest-reports

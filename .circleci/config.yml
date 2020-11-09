@@ -7,9 +7,7 @@ orbs:
 
 workflows:
   version: 2
-  linux2019:
-#    when:
-#      equal: [ a58d4bffc4e2070121dec9a5120369632082657f, << pipeline.git.base_revision >> ]
+  macos2019-212:
     jobs:
       - test:
           filters:
@@ -19,12 +17,7 @@ workflows:
                 - master
                 - release-candidate
                 - test-macos
-  no_workflow:
-#    unless:
-#      equal: [ a58d4bffc4e2070121dec9a5120369632082657f, << pipeline.git.base_revision >> ]
-    jobs:
-      - do_nothing_job: { filters: { branches: { only: [ nonexistingbranch_iuotbgfpgdcnmohgfky ] } } }
-
+                - tmp
 
 jobs:
   do_nothing_job:
@@ -34,12 +27,7 @@ jobs:
 
   test:
 
-    machine: {image: ubuntu-2004:202010-01}
-
-#    environment:
-#      # Customize the JVM maximum heap limit
-#      JVM_OPTS: -Xmx3200m
-#      TERM: dumb
+    macos: {xcode: 11.6.0}
 
     steps:
       - checkout
@@ -47,32 +35,33 @@ jobs:
       # Download and cache Isabelle
       - restore_cache:
           keys:
-            - v3-isabelle-2019-linux
-            - v2-isabelle-2019-linux
+            - v3-isabelle-2019-macos
+            - v2-isabelle-2019-macos
       - run:
           name: Downloading Isabelle 2019 (if needed)
           shell: bash
           command: |
             if ! [ -e "$HOME/install/Isabelle2019" ]; then
               mkdir -p ~/install
-              case linux in
+              case macos in
                 windows)
                   curl "https://isabelle.in.tum.de/website-Isabelle2019/dist/Isabelle2019.exe" -o /tmp/isabelle.exe
                   7z x -y -o"$HOME/install" /tmp/isabelle.exe;;
                 linux|macos)
-                  curl https://isabelle.in.tum.de/website-Isabelle2019/dist/Isabelle2019_linux.tar.gz | tar -x -z -C ~/install;;
+                  curl https://isabelle.in.tum.de/website-Isabelle2019/dist/Isabelle2019_macos.tar.gz | tar -x -z -C ~/install;;
+                *) false;;
               esac
             fi
       - save_cache:
           paths:
-            - ~/install/Isabelle2019
-          key: v3-isabelle-2019-linux
+            - ~/install/Isabelle2019.app/Isabelle
+          key: v3-isabelle-2019-macos
 
       # Download and cache dependencies
       - restore_cache:
           keys:
-            - v3-dependencies-linux-{{ checksum "build.sbt" }}-{{ checksum "publish.sbt" }}
-            - v3-dependencies-linux-
+            - v3-dependencies-macos-212-{{ checksum "build.sbt" }}-{{ checksum "publish.sbt" }}
+            - v3-dependencies-macos-212-
       - run:
           name: Downloading build dependencies (if needed)
           shell: bash
@@ -81,7 +70,7 @@ jobs:
               mkdir -p ~/install
               curl -Ls https://git.io/sbt > ~/install/sbt
               chmod +x ~/install/sbt
-              ~/install/sbt update test/update </dev/null
+              ~/install/sbt -212 update test/update </dev/null
             fi
             shasum build.sbt publish.sbt > ~/dependencies-sha1sum
       - save_cache:
@@ -93,22 +82,22 @@ jobs:
             - $LOCALAPPDATA\Coursier\Cache
             - ~/.cache/coursier
             - ~/dependencies-sha1sum
-          key: v3-dependencies-linux-{{ checksum "build.sbt" }}-{{ checksum "publish.sbt" }}
+          key: v3-dependencies-macos-212-{{ checksum "build.sbt" }}-{{ checksum "publish.sbt" }}
 
       - run:
           name: Running tests
           shell: bash
           command: |
-            case linux in
+            case macos in
               windows)
                 # Isabelle process calls rebaseall and then fails, unless we deactivate it
-                > ~/install/Isabelle2019/contrib/cygwin/isabelle/rebaseall
-                cygpath -w ~/install/Isabelle2019 > .isabelle-home;;
+                > ~/install/Isabelle2019.app/Isabelle/contrib/cygwin/isabelle/rebaseall
+                cygpath -w ~/install/Isabelle2019.app/Isabelle > .isabelle-home;;
               linux|macos)
-                echo ~/install/Isabelle2019 > .isabelle-home;;
+                echo ~/install/Isabelle2019.app/Isabelle > .isabelle-home;;
             esac
 
-            ~/install/sbt "testOnly -- -u scalatest-reports" </dev/null
+            ~/install/sbt -212 "testOnly -- -u scalatest-reports" </dev/null
 
       - store_test_results:
           path: scalatest-reports
