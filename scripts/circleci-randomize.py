@@ -28,7 +28,7 @@ def parseOptions():
             return self.picks
 
     parser = argparse.ArgumentParser(description="Updates the Circle CI configuration (with random job choice)")
-    parser.add_argument('-f', '--force', action="store_true", help="Force update (even if already updated or if working tree is clean")
+    parser.add_argument('-f', '--force', action="store_true", help="Force update (even if already updated, if working tree is clean, or if on a detached head)")
     parser.add_argument('-p', '--pick', help="Configuration to select (implies --force)").completer = PickCompleter()
     argcomplete.autocomplete(parser)
     args = parser.parse_args()
@@ -36,6 +36,7 @@ def parseOptions():
 def shouldUpdateConfig() -> bool:
     if args.force or args.pick: return True
     if not repository.is_dirty(): return False
+    if repository.head.is_detached: return False
     if repository.head.commit.diff(other=None, paths=configFile): return False
     return True
 
