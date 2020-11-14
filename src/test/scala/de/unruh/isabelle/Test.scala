@@ -25,5 +25,15 @@ class Test extends AnyFunSuite {
   }
 
   test("temporary experiments") {
+    implicit class Interpolator(sc: StringContext) {
+      def sc(args: Any*): (StringContext, List[Any]) = (sc, args.toList)
+    }
+
+
+
+    f"${1}%02d"
+
+    val list = for (i <- List(1,2)) yield sc"x${i}y"
+    list
   }
 }
