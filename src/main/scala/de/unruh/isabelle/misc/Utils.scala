@@ -24,8 +24,11 @@ object Utils {
     name
       .map { c => if (c<128 && c.isLetterOrDigit) c else '_' }
       .into { n => if (n.head.isLetter) n else "x"+n }
-      .into { _ + '_' + Random.alphanumeric.take(12).mkString }
+      .into { _ + '_' + randomString() }
   }
+
+  // DOCUMENT
+  def randomString(): String = Random.alphanumeric.take(12).mkString
 
   /** Converts `path` to a path understood by Cygwin.
    * (Only available when running under Windows.) */

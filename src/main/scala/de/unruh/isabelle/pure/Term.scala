@@ -196,8 +196,10 @@ object Cterm {
 
   /** Converts a [[Term]] into a [[Cterm]]. This involves type-checking (relative to the
    * context `ctxt`). The resulting [[Cterm]] is then certified to be correctly typed. */
-  def apply(ctxt: Context, term: Term)(implicit isabelle: Isabelle, ec: ExecutionContext) : Cterm =
-    new Cterm(Ops.ctermOfTerm(MLValue((ctxt, term))))
+  def apply(ctxt: Context, term: Term)(implicit isabelle: Isabelle, ec: ExecutionContext) : Cterm = term match {
+    case cterm : Cterm => cterm
+    case term => new Cterm(Ops.ctermOfTerm(MLValue((ctxt, term))))
+  }
 
   /** Representation of cterms in ML.
    *
