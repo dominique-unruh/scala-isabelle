@@ -19,24 +19,22 @@ import de.unruh.isabelle.pure.Implicits._
 // TODO: Think about what user should import to get the implicit
 // DOCUMENT
 object TermInterpolator extends OperationCollection {
-  // TODO hide
   @compileTimeOnly("Macro implementation for TermInterpolator.Interpolator.term.apply")
   private class MacroImpl(val c: whitebox.Context) {
-
     import c.universe._
 
     private def stringOfLiteral(literal: c.Tree) = literal match {
       case Literal(Constant(string: String)) => string
     }
 
-    val prefix = s"VAR_${Utils.randomString()}_"
+    private val prefix = s"VAR_${Utils.randomString()}_"
 
-    val parts: List[String] = c.prefix.tree match {
+    private val parts: List[String] = c.prefix.tree match {
       case Select(Apply(_, List(Apply(_, parts))), _) =>
         parts.map(stringOfLiteral)
     }
 
-    val templateString: String = {
+    private val templateString: String = {
       val templateString = new StringBuilder
       var index = -1
       for (part <- parts) {
@@ -47,24 +45,39 @@ object TermInterpolator extends OperationCollection {
       templateString.toString
     }
 
-    val vars : Seq[String] = for (i <- 0 until parts.length - 1)
-      yield prefix + i.toString
+    private val varNames : Seq[String] =
+      for (i <- 0 until parts.length - 1)
+        yield prefix + i.toString
 
     def applyImpl(terms: c.Expr[Term]*)
                  (context: c.Expr[Context], isabelle: c.Expr[Isabelle], executionContext: c.Expr[ExecutionContext]): c.Expr[Term] = {
+      if (terms.length != parts.length-1)
+        c.abort(c.enclosingPosition, s"Expecting ${parts.length-1} arguments")
       c.Expr(
         q"""
-          _root_.de.unruh.isabelle.pure.TermInterpolator.Impl.applyImplRuntime($context,$templateString,List(..$vars),List(..$terms))($isabelle,$executionContext)
+          _root_.de.unruh.isabelle.pure.TermInterpolator.Impl.applyImplRuntime($context,$templateString,List(..$varNames),List(..$terms))($isabelle,$executionContext)
           """)
     }
 
-    def unapplySeqImpl(term: c.Expr[Term])
+    def unapplyImpl(term: c.Expr[Term])
                       (context: c.Expr[Context], isabelle: c.Expr[Isabelle], executionContext: c.Expr[ExecutionContext]):
-      c.Expr[Option[Seq[Term]]] = {
+    c.Expr[Option[Product]] = {
+      val returnType = tq"(..${varNames.map(_ => tq"Term")})"
+      val vars = for (i <- varNames.indices) yield c.universe.TermName("v"+i)
+
       c.Expr(q"""
-          {
-            new _root_.de.unruh.isabelle.pure.TermInterpolator.Impl.unapplySeqImplRuntime($context,$templateString,List(..$vars))($isabelle,$executionContext)
-          }.unapplySeq($term)
+          new {
+            import _root_.de.unruh.isabelle.pure._
+            def unapply(term : Term) : Option[$returnType] = {
+              val listOption = TermInterpolator.Impl.unapplyImplRuntime($context,$templateString,List(..$varNames),term)
+                               ($isabelle,$executionContext)
+              listOption match {
+                case None => None
+                case Some(List(..${vars.map(v => pq"$v")})) => Some((..$vars))
+                case _ => throw new AssertionError("Unexpected result in macro implementation of term-interpolation: " + listOption)
+              }
+            }
+          }.unapply($term)
           """)
     }
   }
@@ -72,13 +85,10 @@ object TermInterpolator extends OperationCollection {
   /** This object should be considered private. (It is only visible to be accessible in
    * macro code.) */
   object Impl {
-
-    class unapplySeqImplRuntime(context: Context, string: String, vars: List[String])
-                               (implicit isabelle: Isabelle, executionContext: ExecutionContext) {
-      def unapplySeq(term: Term): Option[List[Term]] = {
-        val template = Term(Ops.setModePattern(context).retrieveNow, string)
-        Ops.patternMatch(context, template, term, vars).retrieveNow
-      }
+    def unapplyImplRuntime(context: Context, string: String, vars: List[String], term: Term)
+                               (implicit isabelle: Isabelle, executionContext: ExecutionContext) : Option[List[Term]] = {
+      val template = Term(Ops.setModePattern(context).retrieveNow, string)
+      Ops.patternMatch(context, template, term, vars).retrieveNow
     }
 
     def applyImplRuntime(context: Context, string: String, vars: List[String], terms: List[Term])
@@ -86,7 +96,7 @@ object TermInterpolator extends OperationCollection {
       val template = Term(Ops.setModePattern(context).retrieveNow, string)
       val instantiation = for ((varname, term) <- vars.zip(terms))
         yield ((varname, 0), Cterm(context, term))
-      Ops.inferInstantiateTerm(context, instantiation.toList, template).retrieveNow
+      Ops.inferInstantiateTerm(context, instantiation, template).retrieveNow
     }
   }
 
@@ -95,9 +105,9 @@ object TermInterpolator extends OperationCollection {
       def apply(terms: Term*)(implicit context: Context, isabelle: Isabelle, executionContext: ExecutionContext) : Term =
         macro MacroImpl.applyImpl
 
-      def unapplySeq(term: Term)
-                    (implicit context: Context, isabelle: Isabelle, executionContext: ExecutionContext): Option[Seq[Term]] =
-        macro MacroImpl.unapplySeqImpl
+      def unapply(term: Term)
+                    (implicit context: Context, isabelle: Isabelle, executionContext: ExecutionContext): Option[Any] =
+        macro MacroImpl.unapplyImpl
     }
   }
 
