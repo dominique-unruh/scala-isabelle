@@ -239,8 +239,10 @@ object Ctyp {
 
   /** Converts a [[Typ]] into a [[Ctyp]]. This involves type-checking (relative to the
    * context `ctxt`). The resulting [[Ctyp]] is then certified to be correctly formed. */
-  def apply(ctxt: Context, typ: Typ)(implicit isabelle: Isabelle, ec: ExecutionContext) : Ctyp =
-    new Ctyp(Ops.ctypOfTyp(MLValue((ctxt, typ))))
+  def apply(ctxt: Context, typ: Typ)(implicit isabelle: Isabelle, ec: ExecutionContext): Ctyp = typ match {
+    case ctyp : Ctyp => ctyp
+    case typ => new Ctyp(Ops.ctypOfTyp(MLValue((ctxt, typ))))
+  }
 
   /** Representation of ctyps in ML.
    *
