@@ -13,6 +13,7 @@ import org.apache.commons.lang3.builder.HashCodeBuilder
 import scala.annotation.tailrec
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Awaitable, ExecutionContext, Future}
+import scala.util.control.Breaks
 
 /**
  * This class represents a term (ML type `term`) in Isabelle. It can be transferred to and from the Isabelle process
@@ -138,6 +139,35 @@ sealed abstract class Term extends FutureValue with PrettyPrintable {
    * @see pretty for pretty printed terms
    **/
   override def toString: String
+
+  // DOCUMENT
+  // TODO test case
+  def fastType(implicit executionContext: ExecutionContext) : Typ = {
+    import Breaks._
+    tryBreakable {
+      def typ(t: Term, env: List[Typ]): Typ = t match {
+        case Free(_, t) => t
+        case Const(_, t) => t
+        case Var(_, _, t) => t
+        case Abs(_, t, body) => t -->: typ(body, t::env)
+        case Bound(i) => env(i)
+        case App(f,u) =>
+          val fType = typ(f, env)
+          if (!fType.concreteComputed) break()
+          val Type("fun", _, t) = fType
+          t
+        case cterm: Cterm =>
+          if (cterm.concreteComputed) typ(cterm.concrete, env)
+          else break()
+        case term: MLValueTerm =>
+          if (term.concreteComputed) typ(term.concrete, env)
+          else break()
+      }
+      typ(this, Nil)
+    } catchBreak {
+      Ops.fastypeOf(this).retrieveNow
+    }
+  }
 }
 
 /** Base class for all concrete terms.
@@ -510,6 +540,7 @@ object Bound {
 
 object Term extends OperationCollection {
   override protected def newOps(implicit isabelle: Isabelle, ec: ExecutionContext): Ops = new Ops()
+  //noinspection TypeAnnotation
   protected[pure] class Ops(implicit val isabelle: Isabelle, ec: ExecutionContext) {
     import MLValue.compileFunction
 //    Typ.init()
@@ -545,6 +576,8 @@ object Term extends OperationCollection {
     val makeApp : MLFunction2[Term, Term, Term] = MLValue.compileFunction("op$")
     val makeBound : MLFunction[Int, Term] = MLValue.compileFunction("Bound")
     val makeAbs : MLFunction3[String, Typ, Term, Term] = MLValue.compileFunction("Abs")
+
+    val fastypeOf = MLValue.compileFunction[Term,Typ]("Term.fastype_of")
   }
 
   /** Creates a term from a string (using the parser from Isabelle).
