@@ -7,7 +7,7 @@ orbs:
 
 workflows:
   version: 2
-  linux2020:
+  win2020-212:
     jobs:
       - test:
           filters:
@@ -27,7 +27,7 @@ jobs:
 
   test:
 
-    machine: {image: ubuntu-2004:202010-01}
+    executor: { name: windows/default }
 
     steps:
       - checkout
@@ -35,33 +35,33 @@ jobs:
       # Download and cache Isabelle
       - restore_cache:
           keys:
-            - v3-isabelle-2020-linux
-            - v2-isabelle-2020-linux
+            - v3-isabelle-2020-windows
+            - v2-isabelle-2020-windows
       - run:
           name: Downloading Isabelle 2020 (if needed)
           shell: bash
           command: |
             if ! [ -e "$HOME/install/Isabelle2020" ]; then
               mkdir -p ~/install
-              case linux in
+              case windows in
                 windows)
                   curl "https://isabelle.in.tum.de/website-Isabelle2020/dist/Isabelle2020.exe" -o /tmp/isabelle.exe
                   7z x -y -o"$HOME/install" /tmp/isabelle.exe;;
                 linux|macos)
-                  curl https://isabelle.in.tum.de/website-Isabelle2020/dist/Isabelle2020_linux.tar.gz | tar -x -z -C ~/install;;
+                  curl https://isabelle.in.tum.de/website-Isabelle2020/dist/Isabelle2020_windows.tar.gz | tar -x -z -C ~/install;;
                 *) false;;
               esac
             fi
       - save_cache:
           paths:
             - ~/install/Isabelle2020
-          key: v3-isabelle-2020-linux
+          key: v3-isabelle-2020-windows
 
       # Download and cache dependencies
       - restore_cache:
           keys:
-            - v3-dependencies-linux-213-{{ checksum "build.sbt" }}-{{ checksum "publish.sbt" }}
-            - v3-dependencies-linux-213-
+            - v3-dependencies-windows-212-{{ checksum "build.sbt" }}-{{ checksum "publish.sbt" }}
+            - v3-dependencies-windows-212-
       - run:
           name: Downloading build dependencies (if needed)
           shell: bash
@@ -70,7 +70,7 @@ jobs:
               mkdir -p ~/install
               curl -Ls https://git.io/sbt > ~/install/sbt
               chmod +x ~/install/sbt
-              ~/install/sbt -213 update test/update </dev/null
+              ~/install/sbt -212 update test/update </dev/null
             fi
             sha1sum build.sbt publish.sbt > ~/dependencies-sha1sum
       - save_cache:
@@ -82,13 +82,13 @@ jobs:
             - $LOCALAPPDATA\Coursier\Cache
             - ~/.cache/coursier
             - ~/dependencies-sha1sum
-          key: v3-dependencies-linux-213-{{ checksum "build.sbt" }}-{{ checksum "publish.sbt" }}
+          key: v3-dependencies-windows-212-{{ checksum "build.sbt" }}-{{ checksum "publish.sbt" }}
 
       - run:
           name: Running tests
           shell: bash
           command: |
-            case linux in
+            case windows in
               windows)
                 # Isabelle process calls rebaseall and then fails, unless we deactivate it
                 > ~/install/Isabelle2020/contrib/cygwin/isabelle/rebaseall
@@ -97,7 +97,7 @@ jobs:
                 echo ~/install/Isabelle2020 > .isabelle-home;;
             esac
 
-            ~/install/sbt -213 "testOnly -- -u scalatest-reports" </dev/null
+            ~/install/sbt -212 "testOnly -- -u scalatest-reports" </dev/null
 
       - store_test_results:
           path: scalatest-reports
