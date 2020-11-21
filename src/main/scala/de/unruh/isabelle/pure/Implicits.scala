@@ -30,4 +30,5 @@ object Implicits {
   implicit val prooftermConverter = Proofterm.converter
   implicit val prooftermBodyConverter = Proofterm.ThmBody.converter
   implicit final def termInterpolator(stringContext: StringContext) = StringInterpolators.TermInterpolator(stringContext)
+  implicit final def typInterpolator(stringContext: StringContext) = StringInterpolators.TypInterpolator(stringContext)
 }

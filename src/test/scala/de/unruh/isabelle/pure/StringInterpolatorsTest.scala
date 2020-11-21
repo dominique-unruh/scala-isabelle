@@ -17,6 +17,12 @@ class StringInterpolatorsTest extends AnyFunSuite {
     assert(term.pretty(context) == "x + 2")
   }
 
+  test("interpolate typ") {
+    val nat = Typ(context, "nat")
+    val typ = typ"$nat list"
+    assert(typ.pretty(context) == "nat list")
+  }
+
   test("pattern match") {
     val term = Term(context, "1+2+3")
     term match {
@@ -26,7 +32,14 @@ class StringInterpolatorsTest extends AnyFunSuite {
     }
   }
 
-  test("type interpolation") {
+  test("pattern match of type") {
+    val typ = Typ(context, "nat list")
+    typ match {
+      case typ"$t list" => assert(t.pretty(context) == "nat")
+    }
+  }
+
+  test("type interpolation in term") {
     val typ = Typ(context, "nat")
     val term = term"(1 :: $typ :: one) = b"
 
