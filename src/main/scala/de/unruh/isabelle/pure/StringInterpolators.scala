@@ -21,9 +21,8 @@ import de.unruh.isabelle.mlvalue.Implicits._
 import de.unruh.isabelle.pure.Implicits._
 
 // TODO: Add an interpolator for types
-// TODO: Think about what user should import to get the implicit
 // DOCUMENT
-object TermInterpolator extends OperationCollection {
+object StringInterpolators extends OperationCollection {
   private case class Hole(varName: String, isTerm: Boolean)
 
   /** Best approximation to the union type of [[Term]] and [[Typ]] that we can easily manage. */
@@ -91,7 +90,7 @@ object TermInterpolator extends OperationCollection {
 
       c.Expr(
         q"""
-          _root_.de.unruh.isabelle.pure.TermInterpolator.Impl.applyImplRuntime(
+          _root_.de.unruh.isabelle.pure.StringInterpolators.PrivateImplementation.applyImplRuntime(
              $uniqueId, $context, $templateString, List(..$typInstantiations), List(..$termInstantiations))($isabelle,$executionContext)
           """)
     }
@@ -108,7 +107,7 @@ object TermInterpolator extends OperationCollection {
           new {
             import _root_.de.unruh.isabelle.pure._
             def unapply(term : Term) : Option[$returnType] = {
-              val listOption = TermInterpolator.Impl.unapplyImplRuntime($uniqueId, $context, $templateString,
+              val listOption = StringInterpolators.PrivateImplementation.unapplyImplRuntime($uniqueId, $context, $templateString,
                    List(..${holes collect { case h if !h.isTerm => h.varName }}),
                    List(..${holes collect { case h if h.isTerm => h.varName }}),
                    term)
@@ -128,7 +127,7 @@ object TermInterpolator extends OperationCollection {
 
   /** This object should be considered private. (It is only visible to be accessible in
    * macro code.) */
-  object Impl {
+  object PrivateImplementation {
     private val cache: Cache[Long, (Context,Term)] = CacheBuilder.newBuilder().weakValues().build[Long, (Context,Term)]()
 
     private def parseTerm(uniqueId: Long, context: Context, string: String)
@@ -145,24 +144,27 @@ object TermInterpolator extends OperationCollection {
         term
     }
 
+    /** This function should be considered private. (It is only visible to be accessible in
+     * macro code.) */
     def unapplyImplRuntime(uniqueId: Long, context: Context, string: String, typVars: List[String], termVars: List[String], term: Term)
                           (implicit isabelle: Isabelle, executionContext: ExecutionContext) : Option[(List[Typ], List[Term])] = {
       val template = parseTerm(uniqueId, context, string)
       Ops.patternMatch(context, template, term, typVars, termVars).retrieveNow
     }
 
+    /** This function should be considered private. (It is only visible to be accessible in
+     * macro code.) */
     def applyImplRuntime(uniqueId: Long, context: Context, string: String, typeInstantiation: List[(String,Typ)], termInstantiation: List[(String,Term)])
                         (implicit isabelle: Isabelle, executionContext: ExecutionContext): Cterm = {
       val template = parseTerm(uniqueId, context, string)
       val typeInstantiation2 = for ((v,typ) <- typeInstantiation) yield ((v,0), Ctyp(context, typ))
       val termInstantiation2 = for ((v,term) <- termInstantiation) yield ((v,0), Cterm(context, term))
-//      val instantiation = for ((varname, term) <- vars.zip(terms))
-//        yield ((varname, 0), Cterm(context, term))
       Ops.inferInstantiateTerm(context, typeInstantiation2, termInstantiation2, template).retrieveNow
     }
   }
 
-  implicit final class Interpolator(val stringContext: StringContext) {
+  // DOCUMENT
+  implicit final class TermInterpolator(val stringContext: StringContext) {
     object term {
       def apply(args: TermOrTyp*)(implicit context: Context, isabelle: Isabelle, executionContext: ExecutionContext) : Term =
         macro MacroImpl.applyImpl

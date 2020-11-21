@@ -3,11 +3,12 @@ package de.unruh.isabelle.pure
 import de.unruh.isabelle.control.IsabelleTest.isabelle
 import org.scalatest.funsuite.AnyFunSuite
 
+// Implicits
 import scala.concurrent.ExecutionContext.Implicits.global
-import de.unruh.isabelle.pure.TermInterpolator.Interpolator
-import org.scalactic.PrettyMethods.Prettyizer
+import de.unruh.isabelle.pure.Implicits._
 
-class TermInterpolatorTest extends AnyFunSuite {
+
+class StringInterpolatorsTest extends AnyFunSuite {
   implicit lazy val context: Context = Context("Main")
 
   test("interpolate term") {

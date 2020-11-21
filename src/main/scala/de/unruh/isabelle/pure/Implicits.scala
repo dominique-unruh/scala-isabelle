@@ -2,6 +2,8 @@ package de.unruh.isabelle.pure
 
 import de.unruh.isabelle.pure._
 
+import scala.language.implicitConversions
+
 /** Contains all the implicit [[mlvalue.MLValue.Converter MLValue.Converter]] instances provided by the package [[pure]].
  * Use
  * {{{
@@ -27,4 +29,5 @@ object Implicits {
   implicit val pathConverter = PathConverter
   implicit val prooftermConverter = Proofterm.converter
   implicit val prooftermBodyConverter = Proofterm.ThmBody.converter
+  implicit final def termInterpolator(stringContext: StringContext) = StringInterpolators.TermInterpolator(stringContext)
 }
