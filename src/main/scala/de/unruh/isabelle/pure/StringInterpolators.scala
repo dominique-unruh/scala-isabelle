@@ -55,10 +55,10 @@ object StringInterpolators extends OperationCollection {
         var part = part_
         if (index >= 0) {
           val isTerm =
-            if (regexPercentTerm.matches(part)) {
+            if (regexPercentTerm.findFirstIn(part).nonEmpty) {
               part = part.stripPrefix("%term")
               true
-            } else if (regexPercentType.matches(part)) {
+            } else if (regexPercentType.findFirstIn(part).nonEmpty) {
               part = part.stripPrefix("%type")
               false
             } else
@@ -69,7 +69,7 @@ object StringInterpolators extends OperationCollection {
           templateString ++= " ?" ++= varName ++= ".0" += ' '
         }
 
-        nextHoleIsType = regexColonColon.matches(part)
+        nextHoleIsType = regexColonColon.findFirstIn(part).nonEmpty
         templateString ++= part
         index += 1
       }
@@ -174,11 +174,11 @@ object StringInterpolators extends OperationCollection {
   object PrivateImplementation {
     // TODO: Probably we should just use Cache and uniqueId as keys.
     // TODO: Use softValues?
-    private val termCache: Cache[Long, (Context,Term)] = CacheBuilder.newBuilder().weakValues().build[Long, (Context,Term)]()
-    private val typCache: Cache[Long, (Context,Typ)] = CacheBuilder.newBuilder().weakValues().build[Long, (Context,Typ)]()
+    private val termCache: Cache[java.lang.Long, (Context,Term)] = CacheBuilder.newBuilder().weakValues().build()
+    private val typCache: Cache[java.lang.Long, (Context,Typ)] = CacheBuilder.newBuilder().weakValues().build()
 
-    private def cachedCompute[A](cache: Cache[Long, (Context,A)], uniqueId: Long, context: Context, compute: => A) = {
-      val (prevContext, a) = cache.get(uniqueId, { () => (context, compute) })
+    private def cachedCompute[A](cache: Cache[java.lang.Long, (Context,A)], uniqueId: Long, context: Context, compute: => A) = {
+      val (prevContext, a) = cache.get(uniqueId : java.lang.Long, { () => (context, compute) })
 
       if (prevContext ne context) {
         val b = compute
@@ -190,7 +190,7 @@ object StringInterpolators extends OperationCollection {
 
     private def parseTerm(uniqueId: Long, context: Context, string: String)
                          (implicit isabelle: Isabelle, executionContext: ExecutionContext): Term =
-      cachedCompute(termCache, uniqueId, context, Term(context.setMode(Mode.pattern), string))
+      cachedCompute(termCache, uniqueId : Long, context, Term(context.setMode(Mode.pattern), string))
 
     private def parseTyp(uniqueId: Long, context: Context, string: String)
                         (implicit isabelle: Isabelle, executionContext: ExecutionContext) : Typ =
