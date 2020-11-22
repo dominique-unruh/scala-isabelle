@@ -1,19 +1,16 @@
 package de.unruh.isabelle.pure
 
-import com.google.common.cache
-import com.google.common.cache.{Cache, CacheBuilder, CacheLoader}
-import com.google.common.collect.MapMaker
+import com.google.common.cache.{Cache, CacheBuilder}
 import de.unruh.isabelle.control.{Isabelle, OperationCollection}
 import de.unruh.isabelle.misc.{FutureValue, Utils}
 import de.unruh.isabelle.mlvalue.MLValue
+import de.unruh.isabelle.pure.Context.Mode
 
 import scala.annotation.compileTimeOnly
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.ExecutionContext
 import scala.language.experimental.macros
-import scala.reflect
 import scala.reflect.macros.whitebox
-import scala.reflect.runtime
 import scala.util.Random
 
 // Implicits
@@ -41,12 +38,15 @@ object StringInterpolators extends OperationCollection {
     protected val uniqueId: Long = Random.nextLong()
   }
 
+  private val regexPercentTerm = raw"%term\b.*".r
+  private val regexPercentType = raw"%type\b.*".r
+  private val regexColonColon = raw".*(\b|\s)::\s*".r
+
   @compileTimeOnly("Macro implementation for StringInterpolators.TermInterpolator.term")
   private final class TermMacroImpl(_c: whitebox.Context) extends CommonMacroImpl(_c) {
     import c.universe._
 
     private val (templateString, holes) = {
-      // TODO: buffer regexes
       val templateString = new StringBuilder
       val holes = new ListBuffer[Hole]
       var index = -1
@@ -55,10 +55,10 @@ object StringInterpolators extends OperationCollection {
         var part = part_
         if (index >= 0) {
           val isTerm =
-            if (raw"%term\b.*".r.matches(part)) {
+            if (regexPercentTerm.matches(part)) {
               part = part.stripPrefix("%term")
               true
-            } else if (raw"%type\b.*".r.matches(part)) {
+            } else if (regexPercentType.matches(part)) {
               part = part.stripPrefix("%type")
               false
             } else
@@ -69,7 +69,7 @@ object StringInterpolators extends OperationCollection {
           templateString ++= " ?" ++= varName ++= ".0" += ' '
         }
 
-        nextHoleIsType = raw".*(\b|\s)::\s*".r.matches(part)
+        nextHoleIsType = regexColonColon.matches(part)
         templateString ++= part
         index += 1
       }
@@ -190,13 +190,11 @@ object StringInterpolators extends OperationCollection {
 
     private def parseTerm(uniqueId: Long, context: Context, string: String)
                          (implicit isabelle: Isabelle, executionContext: ExecutionContext): Term =
-      cachedCompute(termCache, uniqueId, context,
-        Term(Ops.setModePattern(context).retrieveNow, string))
+      cachedCompute(termCache, uniqueId, context, Term(context.setMode(Mode.pattern), string))
 
     private def parseTyp(uniqueId: Long, context: Context, string: String)
                         (implicit isabelle: Isabelle, executionContext: ExecutionContext) : Typ =
-      cachedCompute(typCache, uniqueId, context,
-        Typ(Ops.setModePattern(context).retrieveNow, string))
+      cachedCompute(typCache, uniqueId, context, Typ(context.setMode(Mode.pattern), string))
 
     /** This function should be considered private. (It is only visible to be accessible in
      * macro code.) */
@@ -221,9 +219,8 @@ object StringInterpolators extends OperationCollection {
     def termApplyImplRuntime(uniqueId: Long, context: Context, string: String, typeInstantiation: List[(String,Typ)], termInstantiation: List[(String,Term)])
                             (implicit isabelle: Isabelle, executionContext: ExecutionContext): Cterm = {
       val template = parseTerm(uniqueId, context, string)
-      // TODO: The ,0 could be done in ML
-      val typeInstantiation2 = for ((v,typ) <- typeInstantiation) yield ((v,0), Ctyp(context, typ))
-      val termInstantiation2 = for ((v,term) <- termInstantiation) yield ((v,0), Cterm(context, term))
+      val typeInstantiation2 = for ((v,typ) <- typeInstantiation) yield (v, Ctyp(context, typ))
+      val termInstantiation2 = for ((v,term) <- termInstantiation) yield (v, Cterm(context, term))
       Ops.inferInstantiateTerm(context, typeInstantiation2, termInstantiation2, template).retrieveNow
     }
 
@@ -232,9 +229,7 @@ object StringInterpolators extends OperationCollection {
     def typApplyImplRuntime(uniqueId: Long, context: Context, string: String, instantiation: List[(String,Typ)])
                            (implicit isabelle: Isabelle, executionContext: ExecutionContext) : Typ = {
       val template = parseTyp(uniqueId, context, string)
-      // TODO: The ,0 could be done in ML
-      val instantiation2 = for ((v,typ) <- instantiation) yield ((v,0), typ)
-      Ops.instantiateTyp(instantiation2, template).retrieveNow
+      Ops.instantiateTyp(instantiation, template).retrieveNow
     }
   }
 
@@ -269,13 +264,12 @@ object StringInterpolators extends OperationCollection {
 
   //noinspection TypeAnnotation
   protected final class Ops(implicit isabelle: Isabelle, executionContext: ExecutionContext) {
-    // TODO: This should be offered by Context
-    val setModePattern = MLValue.compileFunction[Context, Context]("Proof_Context.set_mode Proof_Context.mode_pattern")
-    val inferInstantiateTerm = MLValue.compileFunction[Context, List[((String, Int), Typ)], List[((String, Int), Cterm)], Term, Cterm](
+    val inferInstantiateTerm = MLValue.compileFunction[Context, List[(String, Typ)], List[(String, Cterm)], Term, Cterm](
       """fn (ctxt, typInst, termInst, term) => let
-        |  val term2 = Term.map_types (Term.map_atyps (fn v as TVar(ni,_) =>
-        |        (case AList.lookup (op=) typInst ni of SOME T => T | NONE => v) | T => T)) term
-        |  val thm1 = infer_instantiate ctxt [(("x",0), Thm.cterm_of ctxt term2)] reflexive_thm
+        |  val term = Term.map_types (Term.map_atyps (fn v as TVar((n,0),_) =>
+        |        (case AList.lookup (op=) typInst n of SOME T => T | NONE => v) | T => T)) term
+        |  val termInst = map (fn (v,t) => ((v,0),t)) termInst
+        |  val thm1 = infer_instantiate ctxt [(("x",0), Thm.cterm_of ctxt term)] reflexive_thm
         |  val thm2 = infer_instantiate ctxt termInst thm1
         |  val term = Thm.rhs_of thm2
         |  in term end
@@ -288,9 +282,9 @@ object StringInterpolators extends OperationCollection {
         |  val termMatch = map (fn x => Vartab.lookup tenv (x,0) |> the |> snd) termVars
         |  in SOME (typMatch,termMatch) end
         |  handle Pattern.MATCH => NONE""".stripMargin)
-    val instantiateTyp = MLValue.compileFunction[List[((String, Int), Typ)], Typ, Typ](
-      """fn (inst, typ) => Term.map_atyps (fn v as TVar(ni,_) =>
-        |        (case AList.lookup (op=) inst ni of SOME T => T | NONE => v) | T => T) typ""".stripMargin)
+    val instantiateTyp = MLValue.compileFunction[List[(String, Typ)], Typ, Typ](
+      """fn (inst, typ) => Term.map_atyps (fn v as TVar((n,0),_) =>
+        |        (case AList.lookup (op=) inst n of SOME T => T | NONE => v) | T => T) typ""".stripMargin)
     val patternMatchTyp = MLValue.compileFunction[Context, Typ, Typ, List[String], Option[List[Typ]]](
       """fn (ctxt,pattern,typ,vars) => let
         |  val tyenv = Sign.typ_match (Proof_Context.theory_of ctxt) (pattern,typ) Vartab.empty
