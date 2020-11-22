@@ -1,5 +1,7 @@
 package de.unruh.isabelle.pure
 
+import java.util.concurrent.TimeUnit
+
 import com.google.common.cache.{Cache, CacheBuilder}
 import de.unruh.isabelle.control.{Isabelle, OperationCollection}
 import de.unruh.isabelle.misc.{FutureValue, Utils}
@@ -172,29 +174,18 @@ object StringInterpolators extends OperationCollection {
   /** This object should be considered private. (It is only visible to be accessible in
    * macro code.) */
   object PrivateImplementation {
-    // TODO: Probably we should just use Cache and uniqueId as keys.
-    // TODO: Use softValues?
-    private val termCache: Cache[java.lang.Long, (Context,Term)] = CacheBuilder.newBuilder().weakValues().build()
-    private val typCache: Cache[java.lang.Long, (Context,Typ)] = CacheBuilder.newBuilder().weakValues().build()
-
-    private def cachedCompute[A](cache: Cache[java.lang.Long, (Context,A)], uniqueId: Long, context: Context, compute: => A) = {
-      val (prevContext, a) = cache.get(uniqueId : java.lang.Long, { () => (context, compute) })
-
-      if (prevContext ne context) {
-        val b = compute
-        cache.put(uniqueId, (context, b))
-        b
-      } else
-        a
-    }
+    private val termCache: Cache[(Long,Context), Term] = CacheBuilder.newBuilder().expireAfterAccess(5, TimeUnit.SECONDS).maximumSize(1000).build()
+    private val typCache:  Cache[(Long,Context), Typ]  = CacheBuilder.newBuilder().expireAfterAccess(5, TimeUnit.SECONDS).maximumSize(1000).build()
 
     private def parseTerm(uniqueId: Long, context: Context, string: String)
-                         (implicit isabelle: Isabelle, executionContext: ExecutionContext): Term =
-      cachedCompute(termCache, uniqueId : Long, context, Term(context.setMode(Mode.pattern), string))
+                         (implicit isabelle: Isabelle, executionContext: ExecutionContext): Term = {
+      termCache.get((uniqueId,context), () => Term(context.setMode(Mode.pattern), string))
+    }
 
     private def parseTyp(uniqueId: Long, context: Context, string: String)
-                        (implicit isabelle: Isabelle, executionContext: ExecutionContext) : Typ =
-      cachedCompute(typCache, uniqueId, context, Typ(context.setMode(Mode.pattern), string))
+                        (implicit isabelle: Isabelle, executionContext: ExecutionContext) : Typ = {
+      typCache.get((uniqueId,context), () => Typ(context.setMode(Mode.pattern), string))
+    }
 
     /** This function should be considered private. (It is only visible to be accessible in
      * macro code.) */
