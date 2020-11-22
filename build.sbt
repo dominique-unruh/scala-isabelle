@@ -40,16 +40,15 @@ libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value
 
 libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value % "test"
 
-lazy val travisRandomize = taskKey[Unit]("Randomize which test is run on Travis next time")
-travisRandomize := {
+lazy val circleCIRandomize = taskKey[Unit]("Randomize which test is run on CircleCI next time")
+circleCIRandomize := {
     if (!SystemUtils.IS_OS_WINDOWS) // On my machine, Windows doesn't have enough tools installed.
         if (Process("git diff --quiet", cwd=baseDirectory.value).! != 0) {
-            print(Process("scripts/travis-randomize.py", cwd=baseDirectory.value).!!)
             print(Process("scripts/circleci-randomize.py", cwd=baseDirectory.value).!!)
         }
 }
-compile in Compile := (compile in Compile).dependsOn(travisRandomize).value
-doc in Compile := (doc in Compile).dependsOn(travisRandomize).value
+compile in Compile := (compile in Compile).dependsOn(circleCIRandomize).value
+doc in Compile := (doc in Compile).dependsOn(circleCIRandomize).value
 
 lazy val makeGitrevision = taskKey[File]("Create gitrevision.txt")
 Compile / resourceGenerators += makeGitrevision.map(Seq(_))
