@@ -12,7 +12,7 @@ import com.google.common.escape.Escaper
 import com.google.common.util.concurrent.Striped
 import de.unruh.isabelle.control.Isabelle.SetupGeneral
 import de.unruh.isabelle.misc.SMLCodeUtils.mlInteger
-import de.unruh.isabelle.misc.{FutureValue, SMLCodeUtils, Utils}
+import de.unruh.isabelle.misc.{FutureValue, SMLCodeUtils, SharedCleaner, Utils}
 import de.unruh.isabelle.mlvalue.MLValue
 import de.unruh.isabelle.pure.Term
 import org.apache.commons.io.FileUtils
@@ -87,7 +87,6 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
 
   private val sendQueue : BlockingQueue[(DataOutputStream => Unit, Try[Data] => Unit)] = new ArrayBlockingQueue(1000)
   private val callbacks : ConcurrentHashMap[Long, Try[Data] => Unit] = new ConcurrentHashMap()
-  private val cleaner = Cleaner.create()
 
   private val inSecret = Random.nextLong()
   private val outSecret = Random.nextLong()
@@ -396,7 +395,7 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
       val process = processBuilder.start()
 
       // Ensures that process will be terminated if this object is garbage collected
-      cleaner.register(this, new Isabelle.ProcessCleaner(process))
+      SharedCleaner.register(this, new Isabelle.ProcessCleaner(process))
 
       logStream(process.getErrorStream, Warn) // stderr
       logStream(process.getInputStream, Debug) // stdout
@@ -659,7 +658,7 @@ object Isabelle {
    * in the Isabelle process, too.
    */
   final class ID private[control] (private[control] val id: Long, isabelle: Isabelle) {
-    isabelle.cleaner.register(this, new IDCleaner(id, isabelle))
+    SharedCleaner.register(this, new IDCleaner(id, isabelle))
 
     override def equals(obj: Any): Boolean = obj match {
       case obj: ID => id == obj.id
