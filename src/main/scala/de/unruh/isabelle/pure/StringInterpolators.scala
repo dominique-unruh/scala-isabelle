@@ -41,10 +41,6 @@ object StringInterpolators extends OperationCollection {
     protected val uniqueId: Long = Random.nextLong()
   }
 
-  private val regexPercentTerm = raw"%term\b.*".r
-  private val regexPercentType = raw"%type\b.*".r
-  private val regexColonColon = raw".*(\b|\s)::\s*".r
-
   @compileTimeOnly("Macro implementation for StringInterpolators.TermInterpolator.term")
   private final class TermMacroImpl(_c: whitebox.Context) extends CommonMacroImpl(_c) {
     import c.universe._
@@ -58,10 +54,10 @@ object StringInterpolators extends OperationCollection {
         var part = part_
         if (index >= 0) {
           val isTerm =
-            if (regexPercentTerm.findFirstIn(part).nonEmpty) {
+            if (raw"%term\b.*".r.findFirstIn(part).nonEmpty) {
               part = part.stripPrefix("%term")
               true
-            } else if (regexPercentType.findFirstIn(part).nonEmpty) {
+            } else if (raw"%type\b.*".r.findFirstIn(part).nonEmpty) {
               part = part.stripPrefix("%type")
               false
             } else
@@ -72,7 +68,7 @@ object StringInterpolators extends OperationCollection {
           templateString ++= " ?" ++= varName ++= ".0" += ' '
         }
 
-        nextHoleIsType = regexColonColon.findFirstIn(part).nonEmpty
+        nextHoleIsType = raw".*(\b|\s)::\s*".r.findFirstIn(part).nonEmpty
         templateString ++= part
         index += 1
       }
