@@ -26,6 +26,7 @@ object StringInterpolators extends OperationCollection {
   /** Best approximation to the union type of [[Term]] and [[Typ]] that we can easily manage. */
   type TermOrTyp = FutureValue with PrettyPrintable
 
+  @compileTimeOnly("Macro implementation")
   private class CommonMacroImpl(protected val c: whitebox.Context) {
     import c.universe._
 
@@ -229,11 +230,6 @@ object StringInterpolators extends OperationCollection {
     object term {
       def apply(args: TermOrTyp*)(implicit context: Context, isabelle: Isabelle, executionContext: ExecutionContext) : Term =
       macro TermMacroImpl.termApplyImpl
-
-      // TODO: Can we add a fake unapplySeq that is erased on compilation and returns Option[List[TypAndTerm]]
-      //  where TypAndTerm is a fake type that is the intersection of Typ and Term?
-      //  This might give a better approximation of the behaviour of the interpolator for the IDE.
-      //  (We'd need to hide unapply as well, maybe?)
 
       def unapply(term: Term)
                  (implicit context: Context, isabelle: Isabelle, executionContext: ExecutionContext): Option[Any] =
