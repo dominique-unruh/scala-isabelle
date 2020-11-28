@@ -36,7 +36,7 @@ configs:
   # Isabelle 2019 does not run on Circle CI with the current config. It works when installing sbt via "choco install sbt", and then running "refreshenv & sbt test" in cmd (not bash)
   win2019-212:
     os: windows
-    isabelle: 2020
+    isabelle: 2019
     scala: 212
     weight: 0
   linux2019-212:
