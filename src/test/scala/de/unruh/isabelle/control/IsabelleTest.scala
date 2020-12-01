@@ -155,7 +155,7 @@ object IsabelleTest {
     else if (SystemUtils.IS_OS_WINDOWS)
       """c:\Isabelle2020"""
     else
-      "/opt/Isabelle2020"
+      "/opt/Isabelle2021-RC0"
     Paths.get(path)
   }
 

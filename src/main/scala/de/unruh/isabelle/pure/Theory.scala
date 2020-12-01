@@ -214,9 +214,11 @@ object Theory extends OperationCollection {
 
     logger.debug(Ops.sessionPaths.toString)
 
-    if (Version.from2020) {
+    if (Version.from2021)
+      Ops.updateKnownTheories2021(Ops.sessionPaths.asScala.toList.map { case (n,p) => (p,n) }).retrieve
+    else if (Version.from2020)
       Ops.updateKnownTheories2020(Ops.sessionPaths.asScala.toList.map { case (n,p) => (p,n) }).retrieve
-    } else {
+    else {
       val thyPaths = ListBuffer[(String,Path)]()
       for ((session,path) <- Ops.sessionPaths.asScala;
            file <- Files.list(path).iterator().asScala;
@@ -246,7 +248,7 @@ object Theory extends OperationCollection {
 
     val sessionPaths = new ConcurrentHashMap[String, Path]()
 
-    /** Expects (directory, session-name) pairs. Works on Isabelle2020+ */
+    /** Expects (directory, session-name) pairs. Works on Isabelle2020 */
     lazy val updateKnownTheories2020 = compileFunction[List[(Path, String)], Unit](
       s"""fn known => let
         val known = map (apfst Path.implode) known
@@ -254,7 +256,21 @@ object Theory extends OperationCollection {
         val global = names |> List.mapPartial (fn n => case Resources.global_theory n of SOME session => SOME (n,session) | NONE => NONE)
         val loaded = names |> filter Resources.loaded_theory
         in
-          Resources.init_session_base {session_directories=known, session_positions=[], docs=[], global_theories=global, loaded_theories=[]}
+          Resources.init_session_base {session_directories=known, session_positions=[], docs=[], global_theories=global, loaded_theories=loaded}
+        end
+        """)
+
+
+    /** Expects (directory, session-name) pairs. Works on Isabelle2021+ */
+    lazy val updateKnownTheories2021 = compileFunction[List[(Path, String)], Unit](
+      s"""fn known => let
+        val known = map (apfst Path.implode) known
+        val names = Thy_Info.get_names ()
+        val global = names |> List.mapPartial (fn n => case Resources.global_theory n of SOME session => SOME (n,session) | NONE => NONE)
+        val loaded = names |> filter Resources.loaded_theory
+        in
+          Resources.init_session {session_directories=known, session_positions=[], global_theories=global,
+              loaded_theories=loaded, session_chapters=[], bibtex_entries=[], command_timings=[], scala_functions=[]}
         end
         """)
 
@@ -266,7 +282,7 @@ object Theory extends OperationCollection {
         val global = names |> List.mapPartial (fn n => case Resources.global_theory n of SOME session => SOME (n,session) | NONE => NONE)
         val loaded = names |> filter Resources.loaded_theory
         in
-          Resources.init_session_base {sessions=[], docs=[], global_theories=global, loaded_theories=[], known_theories=known}
+          Resources.init_session_base {sessions=[], docs=[], global_theories=global, loaded_theories=loaded, known_theories=known}
         end
         """)
 

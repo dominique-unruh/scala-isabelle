@@ -97,6 +97,8 @@ object Proofterm extends OperationCollection {
       "fn (thy, t, prf) => Proofterm.reconstruct_proof thy t prf")
     val thm_body_proof_open = compileFunction[ThmBody, Proofterm]("Proofterm.thm_body_proof_open")
 
+    val ofClassName = if (Version.from2021) "PClass" else "OfClass"
+
     val retrieve = MLRetrieveFunction[Proofterm](s"""
       let fun opt f NONE = DList []
             | opt f (SOME x) = DList [f x]
@@ -114,7 +116,7 @@ object Proofterm extends OperationCollection {
             | f (prf %% prf') = DList [DInt 5, f prf, f prf']
             | f (Hyp t) = DList [DInt 6, term t]
             | f (PAxm (name, t, Ts)) = DList [DInt 7, DString name, term t, opt (list typ) Ts]
-            | f (OfClass (T, class)) = DList [DInt 8, typ T, DString class]
+            | f ($ofClassName (T, class)) = DList [DInt 8, typ T, DString class]
             | f (Oracle (name, t, Ts)) = DList [DInt 9, DString name, term t, opt (list typ) Ts]
             | f (PThm (header, body)) = DList [DInt 10, hdr header, DObject (${ThmBody.exceptionName} body)]
         in f end
