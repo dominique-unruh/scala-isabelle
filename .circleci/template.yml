@@ -41,12 +41,13 @@ jobs:
           command: |
             if ! [ -e "$HOME/install/Isabelle@{isabelle}" ]; then
               mkdir -p ~/install
+              if [ @{isabelle} = 2021-RC0 ]; then DIST=""; else DIST="/dist"; fi # Temporary until 2021 is properly released
               case @{os} in
                 windows)
-                  curl "https://isabelle.in.tum.de/website-Isabelle@{isabelle}/dist/Isabelle@{isabelle}.exe" -o /tmp/isabelle.exe
+                  curl "https://isabelle.in.tum.de/website-Isabelle@{isabelle}$DIST/Isabelle@{isabelle}.exe" -o /tmp/isabelle.exe
                   7z x -y -o"$HOME/install" /tmp/isabelle.exe;;
                 linux|macos)
-                  curl https://isabelle.in.tum.de/website-Isabelle@{isabelle}/dist/Isabelle@{isabelle}_@{os}.tar.gz | tar -x -z -C ~/install;;
+                  curl https://isabelle.in.tum.de/website-Isabelle@{isabelle}$DIST/Isabelle@{isabelle}_@{os}.tar.gz | tar -x -z -C ~/install;;
                 *) false;;
               esac
             fi
