@@ -36,6 +36,7 @@ libraryDependencies += "org.apache.commons" % "commons-text" % "1.9"
 libraryDependencies += "com.google.guava" % "guava" % "30.0-jre"
 libraryDependencies += "org.jetbrains" % "annotations" % "20.1.0"
 
+// TODO: mark as compile time only or something
 libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value
 
 libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value % "test"
