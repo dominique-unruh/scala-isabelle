@@ -35,28 +35,27 @@ jobs:
       # Download and cache Isabelle
       - restore_cache:
           keys:
-            - v3-isabelle-2021-RC0-windows
-            - v2-isabelle-2021-RC0-windows
+            - v3-isabelle-2021-RC2-windows
+            - v2-isabelle-2021-RC2-windows
       - run:
-          name: Downloading Isabelle 2021-RC0 (if needed)
+          name: Downloading Isabelle 2021-RC2 (if needed)
           shell: bash
           command: |
-            if ! [ -e "$HOME/install/Isabelle2021-RC0" ]; then
+            if ! [ -e "$HOME/install/Isabelle2021-RC2" ]; then
               mkdir -p ~/install
-              if [ 2021-RC0 = 2021-RC0 ]; then DIST=""; else DIST="/dist"; fi # Temporary until 2021 is properly released
               case windows in
                 windows)
-                  curl "https://isabelle.in.tum.de/website-Isabelle2021-RC0$DIST/Isabelle2021-RC0.exe" -o /tmp/isabelle.exe
+                  curl "https://isabelle.in.tum.de/website-Isabelle2021-RC2/dist/Isabelle2021-RC2.exe" -o /tmp/isabelle.exe
                   7z x -y -o"$HOME/install" /tmp/isabelle.exe;;
                 linux|macos)
-                  curl https://isabelle.in.tum.de/website-Isabelle2021-RC0$DIST/Isabelle2021-RC0_windows.tar.gz | tar -x -z -C ~/install;;
+                  curl https://isabelle.in.tum.de/website-Isabelle2021-RC2/dist/Isabelle2021-RC2_windows.tar.gz | tar -x -z -C ~/install;;
                 *) false;;
               esac
             fi
       - save_cache:
           paths:
-            - ~/install/Isabelle2021-RC0
-          key: v3-isabelle-2021-RC0-windows
+            - ~/install/Isabelle2021-RC2
+          key: v3-isabelle-2021-RC2-windows
 
       # Download and cache dependencies
       - restore_cache:
@@ -92,10 +91,10 @@ jobs:
             case windows in
               windows)
                 # Isabelle process calls rebaseall and then fails, unless we deactivate it
-                > ~/install/Isabelle2021-RC0/contrib/cygwin/isabelle/rebaseall
-                cygpath -w ~/install/Isabelle2021-RC0 > .isabelle-home;;
+                > ~/install/Isabelle2021-RC2/contrib/cygwin/isabelle/rebaseall
+                cygpath -w ~/install/Isabelle2021-RC2 > .isabelle-home;;
               linux|macos)
-                echo ~/install/Isabelle2021-RC0 > .isabelle-home;;
+                echo ~/install/Isabelle2021-RC2 > .isabelle-home;;
             esac
 
             ~/install/sbt -213 "testOnly -- -u scalatest-reports" </dev/null

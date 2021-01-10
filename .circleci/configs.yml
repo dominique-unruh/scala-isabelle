@@ -3,29 +3,29 @@ pick: random
 configs:
   win2021:
     os: windows
-    isabelle: 2021-RC0
+    isabelle: 2021-RC2
     scala: 213
     weight: 50
   linux2021:
     os: linux
-    isabelle: 2021-RC0
+    isabelle: 2021-RC2
     scala: 213
   macos2021:
     os: macos
-    isabelle: 2021-RC0
+    isabelle: 2021-RC2
     scala: 213
   win2021-212:
     os: windows
-    isabelle: 2021-RC0
+    isabelle: 2021-RC2
     scala: 212
     weight: 50
   linux2021-212:
     os: linux
-    isabelle: 2021-RC0
+    isabelle: 2021-RC2
     scala: 212
   macos2021-212:
     os: macos
-    isabelle: 2021-RC0
+    isabelle: 2021-RC2
     scala: 212
 
   win2020:
