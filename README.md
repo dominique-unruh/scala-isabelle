@@ -45,6 +45,15 @@ Isabelle2020 at `/opt/Isabelle2020`.
 ##  Example
 
 ```Scala
+import de.unruh.isabelle.mlvalue.{MLFunction2, MLValue}
+import de.unruh.isabelle.pure.{Abs, App, Const, Term}
+import de.unruh.isabelle.control.Isabelle
+import de.unruh.isabelle.pure.Context
+// Importing implicits
+import de.unruh.isabelle.mlvalue.Implicits._
+import de.unruh.isabelle.pure.Implicits._
+import scala.concurrent.ExecutionContext.Implicits.global
+
 // Initialize the Isabelle process with session HOL.
 // We assume an Isabelle installation in /opt/Isabelle2020
 val setup = Isabelle.Setup(isabelleHome = Path.of("/opt/Isabelle2020"), logic = "HOL")
