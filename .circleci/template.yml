@@ -43,10 +43,10 @@ jobs:
               mkdir -p ~/install
               case @{os} in
                 windows)
-                  curl "https://isabelle.in.tum.de/website-Isabelle@{isabelle}/dist/Isabelle@{isabelle}.exe" -o /tmp/isabelle.exe
+                  curl "@{isabelle_url}" -o /tmp/isabelle.exe
                   7z x -y -o"$HOME/install" /tmp/isabelle.exe;;
                 linux|macos)
-                  curl https://isabelle.in.tum.de/website-Isabelle@{isabelle}/dist/Isabelle@{isabelle}_@{os}.tar.gz | tar -x -z -C ~/install;;
+                  curl "@{isabelle_url}" | tar -x -z -C ~/install;;
                 *) false;;
               esac
             fi

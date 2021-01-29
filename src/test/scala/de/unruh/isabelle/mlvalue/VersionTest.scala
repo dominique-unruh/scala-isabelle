@@ -20,7 +20,10 @@ class VersionTest extends org.scalatest.funsuite.AnyFunSuite {
         assert(triple == (2021,0,0))
       case "Isabelle2021-RC2: January 2021" =>
         assert(triple == (2021,0,2))
-      case _ => fail(s"Unknown version string $string")
+      case "Isabelle2021-RC3: January 2021" =>
+        assert(triple == (2021,0,3))
+      case _ =>
+        fail(s"Unknown version string $string. Please extend test case")
     }
   }
 }
