@@ -3,29 +3,29 @@ pick: random
 configs:
   win2021:
     os: windows
-    isabelle: 2021-RC3
+    isabelle: 2021-RC4
     scala: 213
     weight: 50
   linux2021:
     os: linux
-    isabelle: 2021-RC3
+    isabelle: 2021-RC4
     scala: 213
   macos2021:
     os: macos
-    isabelle: 2021-RC3
+    isabelle: 2021-RC4
     scala: 213
   win2021-212:
     os: windows
-    isabelle: 2021-RC3
+    isabelle: 2021-RC4
     scala: 212
     weight: 50
   linux2021-212:
     os: linux
-    isabelle: 2021-RC3
+    isabelle: 2021-RC4
     scala: 212
   macos2021-212:
     os: macos
-    isabelle: 2021-RC3
+    isabelle: 2021-RC4
     scala: 212
 
   win2020:
@@ -98,9 +98,9 @@ defaults:
     if os=="macos": return "shasum"
     return "sha1sum"
   isabelle_url: |
-    if isabelle=="2021-RC3":
-      if os=="windows": return "https://isabelle.sketis.net/website-Isabelle2021-RC3/dist/Isabelle2021-RC3.exe"
-      else: return f"https://isabelle.sketis.net/website-Isabelle2021-RC3/dist/Isabelle2021-RC3_{os}.tar.gz"
+    if isabelle=="2021-RC4":
+      if os=="windows": return "https://isabelle.sketis.net/website-Isabelle2021-RC4/dist/Isabelle2021-RC4.exe"
+      else: return f"https://isabelle.sketis.net/website-Isabelle2021-RC4/dist/Isabelle2021-RC4_{os}.tar.gz"
 
     if os=="windows":
       return f"https://isabelle.in.tum.de/website-Isabelle{isabelle}/dist/Isabelle{isabelle}.exe"

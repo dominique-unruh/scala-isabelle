@@ -34,7 +34,6 @@ jobs:
       - restore_cache:
           keys:
             - v3-isabelle-@{isabelle}-@{os}
-            - v2-isabelle-@{isabelle}-@{os}
       - run:
           name: Downloading Isabelle @{isabelle} (if needed)
           shell: bash
