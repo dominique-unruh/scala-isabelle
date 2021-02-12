@@ -105,3 +105,4 @@ and [Term](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/i
 ## Projects using scala-isabelle
 
 * [qrhl-tool](https://github.com/dominique-unruh/qrhl-tool) – A theorem prover for post-quantum security.
+* [PISA](https://github.com/albertqjiang/PISA) - A reinforcement learning environment for theorem proving in Isabelle.
