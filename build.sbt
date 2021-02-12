@@ -6,6 +6,8 @@ import sbt.io.Path.relativeTo
 
 import scala.sys.process._
 
+lazy val component = RootProject(file("component"))
+
 name := "scala-isabelle"
 version := "master-SNAPSHOT"
 

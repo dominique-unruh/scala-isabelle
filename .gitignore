@@ -6,3 +6,9 @@
 /src/test/isabelle/Scratch.thy
 /src/test/isabelle/#Scratch.thy#
 /src/test/isabelle/.*.marks
+/component-example/target
+/component-example/project/target
+/component-example/project/project/target
+/component-example/.idea
+/component-example/isabelle-example-component.jar
+/component-example/.bsp/sbt.json

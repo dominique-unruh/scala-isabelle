@@ -1,0 +1,7 @@
+# -*- shell-script -*- :mode=shellscript:
+
+EXAMPLE_COMPONENT_HOME="$COMPONENT"
+
+classpath "$COMPONENT/isabelle-example-component.jar"
+
+isabelle_scala_service example.MyFunctions
