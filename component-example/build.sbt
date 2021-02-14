@@ -6,7 +6,7 @@ Global / onChangedBuildSource := ReloadOnSourceChanges
 
 scalaVersion := "2.13.4"
 
-val isabelleHome = file("/opt/Isabelle2021-RC5")
+val isabelleHome = file("/opt/Isabelle2021-RC6")
 
 Compile / packageBin / artifactPath :=
   baseDirectory.value / "isabelle-example-component.jar"
