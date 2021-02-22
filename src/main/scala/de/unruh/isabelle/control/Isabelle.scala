@@ -1,6 +1,6 @@
 package de.unruh.isabelle.control
 
-import java.io.{BufferedReader, BufferedWriter, DataInputStream, DataOutputStream, EOFException, FileInputStream, FileOutputStream, FileWriter, IOException, InputStream, InputStreamReader, OutputStream, OutputStreamWriter}
+import java.io.{BufferedReader, BufferedWriter, DataInputStream, DataOutputStream, EOFException, FileInputStream, FileOutputStream, FileWriter, IOException, InputStream, InputStreamReader, OutputStream, OutputStreamWriter, UncheckedIOException}
 import java.lang
 import java.lang.ref.Cleaner
 import java.net.{InetAddress, ServerSocket, Socket}
@@ -100,6 +100,11 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
   // Must be Integer, not Int, because ConcurrentLinkedList uses null to indicate that it is empty
   private val garbageQueue = new ConcurrentLinkedQueue[java.lang.Long]()
 
+  // Must not contain any references to this Isabelle instance, even indirectly (otherwise the cleaner will not be called)
+  private val destroyActions = new ConcurrentLinkedQueue[Runnable]()
+  // Ensures that process will be terminated if this object is garbage collected
+  SharedCleaner.register(this, new Isabelle.ProcessCleaner(destroyActions))
+
   private def garbageCollect(stream: DataOutputStream) : Boolean = {
     //    println("Checking for garbage")
     if (garbageQueue.peek() == null)
@@ -124,6 +129,8 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
 
   private def processQueue(isabelleInput: OutputStream) : Unit = try {
     logger.debug("Process queue thread started")
+    destroyActions.add(() => isabelleInput.close())
+
     val stream = new DataOutputStream(isabelleInput)
     var count = 0
 
@@ -230,6 +237,7 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
    **/
   private def parseIsabelle(isabelleOutput: InputStream) : Unit = try {
     val output = new DataInputStream(isabelleOutput)
+    destroyActions.add(() => isabelleOutput.close())
 
     val outSecret2 = output.readLong()
     if (outSecret != outSecret2) throw IsabelleProtocolException("Got incorrect secret value from Isabelle process")
@@ -285,8 +293,10 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
     }
   } catch {
     case e : Throwable =>
-      destroy(IsabelleDestroyedException(e))
-      throw e
+      if (destroyed == null) { // Do not report the exception if the process is already supposed to be destroyed.
+        destroy(IsabelleDestroyedException(e))
+        throw e
+      }
   }
 
   //noinspection SameParameterValue
@@ -393,9 +403,7 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
     lock.lockInterruptibly()
     try {
       val process = processBuilder.start()
-
-      // Ensures that process will be terminated if this object is garbage collected
-      SharedCleaner.register(this, new Isabelle.ProcessCleaner(process))
+      destroyActions.add(() => process.destroy())
 
       logStream(process.getErrorStream, Warn) // stderr
       logStream(process.getInputStream, Debug) // stdout
@@ -454,14 +462,15 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
   def destroy(): Unit = destroy(IsabelleDestroyedException("Isabelle process has been destroyed"))
 
   private def destroy(cause: IsabelleDestroyedException): Unit = {
+    if (destroyed != null) return
+
     destroyed = cause
 
     try initializedPromise.complete(Failure(cause))
     catch { case _ : IllegalStateException => }
 
     garbageQueue.clear()
-    if (process != null)
-      process.destroy()
+    new ProcessCleaner(destroyActions).run()
 
     def callCallback(cb: Try[Data] => Unit): Unit =
       cb(Failure(cause))
@@ -635,10 +644,15 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
     val log = logger(level)
     val thread = new Thread(s"Isabelle output logger, $level") {
       override def run(): Unit = {
-        new BufferedReader(new InputStreamReader(stream)).lines().forEach { line =>
-          if (lastMessages.size >= 10) lastMessages.dequeue()
-          lastMessages.enqueue(line)
-          log(line)
+        try
+          new BufferedReader(new InputStreamReader(stream)).lines().forEach { line =>
+            if (lastMessages.size >= 10) lastMessages.dequeue()
+            lastMessages.enqueue(line)
+            log(line)
+          }
+        catch {
+          case _ : UncheckedIOException =>
+            // Can happen if the stream is closed. Ignore
         }
       }
     }
@@ -904,8 +918,17 @@ object Isabelle {
   final case class DList(list: Data*) extends Data
   final case class DObject(id: ID) extends Data
 
-  private final class ProcessCleaner(process: lang.Process) extends Runnable {
-    override def run(): Unit = process.destroy()
+  private final class ProcessCleaner(destroyActions: ConcurrentLinkedQueue[Runnable]) extends Runnable {
+    override def run(): Unit = {
+      while (!destroyActions.isEmpty) {
+        val action = destroyActions.poll()
+        if (action != null)
+          try action.run()
+          catch {
+            case e: Throwable => e.printStackTrace()
+          }
+      }
+    }
   }
 }
 
