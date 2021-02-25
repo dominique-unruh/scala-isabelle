@@ -40,7 +40,7 @@ jobs:
           name: Downloading Isabelle 2020 (if needed)
           shell: bash
           command: |
-            if ! [ -e "$HOME/install/Isabelle2020" ]; then
+            if ! [ -e "~/install/Isabelle2020.app/Isabelle" ]; then
               mkdir -p ~/install
               case macos in
                 windows)
