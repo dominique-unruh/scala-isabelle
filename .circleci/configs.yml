@@ -92,7 +92,7 @@ defaults:
     if os=="linux": return "machine: {image: ubuntu-2004:202010-01}"
     if os=="macos": return "macos: {xcode: 11.6.0}"
   isabellehome: |
-    if os=="macos" and isabelle in ("2019", "2020"): return f"~/install/Isabelle{isabelle}.app/Isabelle"
+    if os=="macos" and str(isabelle) in ("2019", "2020"): return f"~/install/Isabelle{isabelle}.app/Isabelle"
     if os=="macos": return f"~/install/Isabelle{isabelle}.app"
     return f"~/install/Isabelle{isabelle}"
   sha1sum: |

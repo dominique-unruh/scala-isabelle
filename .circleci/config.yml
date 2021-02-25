@@ -53,7 +53,7 @@ jobs:
             fi
       - save_cache:
           paths:
-            - ~/install/Isabelle2020.app
+            - ~/install/Isabelle2020.app/Isabelle
           key: v3-isabelle-2020-macos
 
       # Download and cache dependencies
@@ -90,10 +90,10 @@ jobs:
             case macos in
               windows)
                 # Isabelle process calls rebaseall and then fails, unless we deactivate it
-                > ~/install/Isabelle2020.app/contrib/cygwin/isabelle/rebaseall
-                cygpath -w ~/install/Isabelle2020.app > .isabelle-home;;
+                > ~/install/Isabelle2020.app/Isabelle/contrib/cygwin/isabelle/rebaseall
+                cygpath -w ~/install/Isabelle2020.app/Isabelle > .isabelle-home;;
               linux|macos)
-                echo ~/install/Isabelle2020.app > .isabelle-home;;
+                echo ~/install/Isabelle2020.app/Isabelle > .isabelle-home;;
             esac
 
             ~/install/sbt -213 "testOnly -- -u scalatest-reports" </dev/null
