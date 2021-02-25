@@ -403,7 +403,7 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
     lock.lockInterruptibly()
     try {
       val process = processBuilder.start()
-      destroyActions.add(() => process.destroy())
+      destroyActions.add(() => Utils.destroyProcessThoroughly(process))
 
       logStream(process.getErrorStream, Warn) // stderr
       logStream(process.getInputStream, Debug) // stdout
