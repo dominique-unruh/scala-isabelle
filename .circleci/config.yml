@@ -7,7 +7,7 @@ orbs:
 
 workflows:
   version: 2
-  macos2019-212:
+  win2021:
     jobs:
       - test:
           filters:
@@ -27,7 +27,7 @@ jobs:
 
   test:
 
-    macos: {xcode: 11.6.0}
+    executor: { name: windows/default }
 
     steps:
       - checkout
@@ -35,43 +35,43 @@ jobs:
       # Download and cache Isabelle
       - restore_cache:
           keys:
-            - v3-isabelle-2019-macos
+            - v3-isabelle-2021-windows
       - run:
-          name: Downloading Isabelle 2019 (if needed)
+          name: Downloading Isabelle 2021 (if needed)
           shell: bash
           command: |
-            if ! [ -e "~/install/Isabelle2019.app/Isabelle" ]; then
+            if ! [ -e "~/install/Isabelle2021" ]; then
               mkdir -p ~/install
-              case macos in
+              case windows in
                 windows)
-                  curl "https://isabelle.in.tum.de/website-Isabelle2019/dist/Isabelle2019_macos.tar.gz" -o /tmp/isabelle.exe
+                  curl "https://isabelle.in.tum.de/website-Isabelle2021/dist/Isabelle2021.exe" -o /tmp/isabelle.exe
                   7z x -y -o"$HOME/install" /tmp/isabelle.exe;;
                 linux|macos)
-                  curl "https://isabelle.in.tum.de/website-Isabelle2019/dist/Isabelle2019_macos.tar.gz" | tar -x -z -C ~/install;;
+                  curl "https://isabelle.in.tum.de/website-Isabelle2021/dist/Isabelle2021.exe" | tar -x -z -C ~/install;;
                 *) false;;
               esac
             fi
       - save_cache:
           paths:
-            - ~/install/Isabelle2019.app/Isabelle
-          key: v3-isabelle-2019-macos
+            - ~/install/Isabelle2021
+          key: v3-isabelle-2021-windows
 
       # Download and cache dependencies
       - restore_cache:
           keys:
-            - v3-dependencies-macos-212-{{ checksum "build.sbt" }}-{{ checksum "publish.sbt" }}
-            - v3-dependencies-macos-212-
+            - v3-dependencies-windows-213-{{ checksum "build.sbt" }}-{{ checksum "publish.sbt" }}
+            - v3-dependencies-windows-213-
       - run:
           name: Downloading build dependencies (if needed)
           shell: bash
           command: |
-            if ! shasum -c ~/dependencies-sha1sum; then
+            if ! sha1sum -c ~/dependencies-sha1sum; then
               mkdir -p ~/install
               curl -Ls https://git.io/sbt > ~/install/sbt
               chmod +x ~/install/sbt
-              ~/install/sbt -212 update test/update </dev/null
+              ~/install/sbt -213 update test/update </dev/null
             fi
-            shasum build.sbt publish.sbt > ~/dependencies-sha1sum
+            sha1sum build.sbt publish.sbt > ~/dependencies-sha1sum
       - save_cache:
           paths:
             - ~/install/sbt
@@ -81,22 +81,22 @@ jobs:
             - $LOCALAPPDATA\Coursier\Cache
             - ~/.cache/coursier
             - ~/dependencies-sha1sum
-          key: v3-dependencies-macos-212-{{ checksum "build.sbt" }}-{{ checksum "publish.sbt" }}
+          key: v3-dependencies-windows-213-{{ checksum "build.sbt" }}-{{ checksum "publish.sbt" }}
 
       - run:
           name: Running tests
           shell: bash
           command: |
-            case macos in
+            case windows in
               windows)
                 # Isabelle process calls rebaseall and then fails, unless we deactivate it
-                > ~/install/Isabelle2019.app/Isabelle/contrib/cygwin/isabelle/rebaseall
-                cygpath -w ~/install/Isabelle2019.app/Isabelle > .isabelle-home;;
+                > ~/install/Isabelle2021/contrib/cygwin/isabelle/rebaseall
+                cygpath -w ~/install/Isabelle2021 > .isabelle-home;;
               linux|macos)
-                echo ~/install/Isabelle2019.app/Isabelle > .isabelle-home;;
+                echo ~/install/Isabelle2021 > .isabelle-home;;
             esac
 
-            ~/install/sbt -212 "testOnly -- -u scalatest-reports" </dev/null
+            ~/install/sbt -213 "testOnly -- -u scalatest-reports" </dev/null
 
       - store_test_results:
           path: scalatest-reports

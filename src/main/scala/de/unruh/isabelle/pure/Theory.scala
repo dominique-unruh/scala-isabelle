@@ -141,6 +141,11 @@ final class Theory private [Theory](val name: String, val mlValue : MLValue[Theo
 
   override def await: Unit = mlValue.await
   override def someFuture: Future[Any] = mlValue.someFuture
+
+  // TODO document
+  // TODO document that this generates a new context each time (potentially inefficient)
+  def context(implicit isabelle: Isabelle, executionContext: ExecutionContext): Context =
+    Ops.init_global(this).retrieveNow
 }
 
 object Theory extends OperationCollection {
@@ -310,6 +315,8 @@ object Theory extends OperationCollection {
         | SOME (_,s) => s
                   val _ = #enterStruct ML_Env.name_space (hereStruct, theirStruct)
                   in () end""")
+
+    lazy val init_global = compileFunction[Theory, Context]("Proof_Context.init_global")
   }
 
   /** Retrieves a theory by its name. E.g., `Theory("HOL-Analysis.Inner_Product")`.
