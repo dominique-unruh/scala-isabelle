@@ -7,7 +7,6 @@ import java.net.{InetAddress, ServerSocket, Socket}
 import java.nio.charset.StandardCharsets
 import java.nio.file.{FileSystemNotFoundException, Files, Path, Paths}
 import java.util.concurrent.{ArrayBlockingQueue, BlockingQueue, ConcurrentHashMap, ConcurrentLinkedQueue}
-
 import com.google.common.escape.Escaper
 import com.google.common.util.concurrent.Striped
 import de.unruh.isabelle.control.Isabelle.SetupGeneral
@@ -29,7 +28,7 @@ import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future, Promise}
 import scala.io.Source
-import scala.sys.process.{Process, ProcessLogger}
+import scala.sys.process.{Process, ProcessLogger, stderr}
 import scala.util.{Failure, Random, Success, Try}
 
 /**
@@ -316,7 +315,7 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
 
   /** Invokes the Isabelle process.
    * */
-  private def startProcessSlave(setup: Setup) : java.lang.Process = {
+  private def startProcessSlave(setup: Setup) : PIDEWrapper#Process = {
     implicit val s: Setup = setup
     def wd = setup.workingDirectory
     val useSockets = SystemUtils.IS_OS_WINDOWS
@@ -354,10 +353,10 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
         (new FileOutputStream(inputPipe.toFile), new FileInputStream(outputPipe.toFile))
       }
 
-    val isabelleArguments = ListBuffer[String]()
+//    val isabelleArguments = ListBuffer[String]()
 
-    isabelleArguments += "process"
-    isabelleArguments += "-l" += setup.logic
+//    isabelleArguments += "process"
+//    isabelleArguments += "-l" += setup.logic
 
     val communicationStreams = if (useSockets) {
       val address = s"${serverSocket.getInetAddress.getHostAddress}:${serverSocket.getLocalPort}"
@@ -369,24 +368,33 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
       s"""(BinIO.openIn "$inFile", BinIO.openOut "$outFile")"""
     }
 
-    val mlFile = filePathFromResource("control_isabelle.ml", tempDir,
-      _.replace("COMMUNICATION_STREAMS", communicationStreams)
-        .replace("SECRETS", s"(${mlInteger(inSecret)}, ${mlInteger(outSecret)})"))
+//    val mlFile = filePathFromResource("control_isabelle.ml", tempDir,
+//      _.replace("COMMUNICATION_STREAMS", communicationStreams)
+//        .replace("SECRETS", s"(${mlInteger(inSecret)}, ${mlInteger(outSecret)})"))
 
-    isabelleArguments += "-f" += mlFile.toAbsolutePath.toString.replace('\\', '/')
+    val source = Source.fromURL(getClass.getResource("control_isabelle.ml"))
+    val mlCode1 =
+      source.getLines().map {
+        _.replace("COMMUNICATION_STREAMS", communicationStreams)
+                .replace("SECRETS", s"(${mlInteger(inSecret)}, ${mlInteger(outSecret)})")
+      } mkString ("\n")
+    val mlCode = mlCode1 + "\n;;\nControl_Isabelle.handleLines()"
+    source.close()
 
-    isabelleArguments += "-e" += "Control_Isabelle.handleLines()"
+    //    isabelleArguments += "-f" += mlFile.toAbsolutePath.toString.replace('\\', '/')
 
-    for (root <- setup.sessionRoots)
-      isabelleArguments += "-d" += cygwinAbs(root)
+//    isabelleArguments += "-e" += "Control_Isabelle.handleLines()"
 
-    val cmd = makeIsabelleCommandLine(absPath(setup.isabelleHome), isabelleArguments.toSeq)
+//    for (root <- setup.sessionRoots)
+//      isabelleArguments += "-d" += cygwinAbs(root)
 
-    logger.debug(s"Cmd line: ${cmd.mkString(" ")}")
+//    val cmd = makeIsabelleCommandLine(absPath(setup.isabelleHome), isabelleArguments.toSeq)
 
-    val processBuilder = new java.lang.ProcessBuilder(cmd :_*)
-    processBuilder.directory(wd.toAbsolutePath.toFile)
-    for ((k,v) <- makeIsabelleEnvironment) processBuilder.environment().put(k,v)
+//    logger.debug(s"Cmd line: ${cmd.mkString(" ")}")
+
+//    val processBuilder = new java.lang.ProcessBuilder(cmd :_*)
+//    processBuilder.directory(wd.toAbsolutePath.toFile)
+//    for ((k,v) <- makeIsabelleEnvironment) processBuilder.environment().put(k,v)
 
     val processQueueThread = new Thread("Send to Isabelle") {
       override def run(): Unit = processQueue(input) }
@@ -402,13 +410,19 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
 
     lock.lockInterruptibly()
     try {
-      val process = processBuilder.start()
-      destroyActions.add(() => Utils.destroyProcessThoroughly(process))
+      // TODO: dynamically load this
+      val pideWrapper = PIDEWrapper.getPIDEWrapper(absPath(setup.isabelleHome).normalize())
+      val process = pideWrapper.startIsabelleProcess(
+        cwd = wd.toAbsolutePath.toFile,
+        logic = setup.logic,
+        mlCode = mlCode)
+      destroyActions.add(() => pideWrapper.killProcess(process))
 
-      logStream(process.getErrorStream, Warn) // stderr
-      logStream(process.getInputStream, Debug) // stdout
+      logStream(pideWrapper.stderr(process), Warn) // stderr
+      logStream(pideWrapper.stdout(process), Debug) // stdout
 
-      process.onExit.thenRun(() => processTerminated())
+      // TODO wait for termination?
+//      process.onExit.thenRun(() => processTerminated())
 
       process
     } finally {
@@ -420,7 +434,7 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
     }
   }
 
-  private def startProcessRunning(setup: SetupRunning) : java.lang.Process = {
+  private def startProcessRunning(setup: SetupRunning) : Unit = {
     val inputPipe = setup.inputPipe
     val outputPipe = setup.outputPipe
 
@@ -439,13 +453,13 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
     parseIsabelleThread.setDaemon(true)
     parseIsabelleThread.start()
 
-    return null; // No process
+    null; // No process
   }
 
   setup match {
     case setup : Setup => if (setup.build) buildSession(setup)
     case _ => }
-  private val process: lang.Process = setup match {
+  private val process: Any = setup match {
     case setup : Setup => startProcessSlave(setup)
     case setup : SetupRunning => startProcessRunning(setup)
   }
@@ -484,16 +498,17 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
   }
 
   private def processTerminated() : Unit = {
-    logger.debug("Isabelle process terminated")
-    val exitValue = process.exitValue
-    if (exitValue == 0)
-      destroy(IsabelleDestroyedException(s"Isabelle process terminated normally"))
-    else {
-      Thread.sleep(500) // To ensure the error processing thread has time to store lastMessage
-      destroy(IsabelleDestroyedException(
-        (s"Isabelle process failed with exit value $exitValue, last lines of output:" ::
-          lastMessages.toList.map("> "+_)).mkString("\n")))
-    }
+//    logger.debug("Isabelle process terminated")
+//    val exitValue = process.exitValue
+//    if (exitValue == 0)
+//      destroy(IsabelleDestroyedException(s"Isabelle process terminated normally"))
+//    else {
+//      Thread.sleep(500) // To ensure the error processing thread has time to store lastMessage
+//      destroy(IsabelleDestroyedException(
+//        (s"Isabelle process failed with exit value $exitValue, last lines of output:" ::
+//          lastMessages.toList.map("> "+_)).mkString("\n")))
+//    }
+    // TODO
   }
 
   /** Throws an [[IsabelleDestroyedException]] if this Isabelle process has been destroyed.
@@ -640,12 +655,12 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
     for (f2 <- f; fx <- applyFunction(f2, x)) yield fx
 
   private val lastMessages = new mutable.Queue[String]()
-  private def logStream(stream: InputStream, level: LogLevel) : Unit = {
+  private def logStream(stream: BufferedReader, level: LogLevel) : Unit = {
     val log = logger(level)
     val thread = new Thread(s"Isabelle output logger, $level") {
       override def run(): Unit = {
         try
-          new BufferedReader(new InputStreamReader(stream)).lines().forEach { line =>
+          stream.lines().forEach { line =>
             if (lastMessages.size >= 10) lastMessages.dequeue()
             lastMessages.enqueue(line)
             log(line)
@@ -949,6 +964,8 @@ case class IsabelleJEditException(message: String) extends IsabelleControllerExc
 /** Thrown if the build process of Isabelle fails */
 case class IsabelleBuildException(message: String, errors: List[String])
   extends IsabelleControllerException(if (errors.nonEmpty) message + ": " + errors.last else message)
+/** Thrown in case something is wrong with the setup */
+case class IsabelleSetupException(message: String) extends IsabelleControllerException(message)
 /** Thrown in case of an error in the ML process (ML compilation errors, exceptions thrown by ML code) */
 case class IsabelleException(message: String) extends IsabelleControllerException(message)
 /** Thrown in case of protocol errors in Isabelle process */

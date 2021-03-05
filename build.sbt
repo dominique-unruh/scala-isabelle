@@ -8,6 +8,47 @@ import scala.sys.process._
 
 lazy val component = RootProject(file("component"))
 
+def pideWrapper(version: String) = Project(s"pidewrapper$version", file(s"pidewrappers/$version"))
+  .settings(
+    Compile / sourceDirectories += baseDirectory.value,
+    scalaVersion := "2.13.4",
+    Compile / unmanagedJars := {
+      val isabelleHome = file("/opt") / s"Isabelle$version"
+      assert(isabelleHome.canRead)
+      val cp = ((isabelleHome / "lib" / "classes" +++ isabelleHome / "contrib") ** "*.jar").classpath
+      assert(cp.nonEmpty)
+//      println(cp)
+      cp
+    },
+    Compile / managedClasspath += {
+      val classes = (Compile/classDirectory).in(root).value
+      classes
+    }
+  )
+  .dependsOn(pidewrapperCommon % "compile -> compile")
+
+lazy val pidewrapperCommon = (project in file("pidewrappers/common"))
+  .settings(Compile / scalaSource := baseDirectory.value,
+    scalaVersion := "2.13.4")
+lazy val pidewrapper2021 = pideWrapper("2021")
+
+lazy val root = (project in file("."))
+  .withId("scala-isabelle")
+  .dependsOn(pidewrapperCommon % "compile -> compile")
+
+Compile / managedResources ++= {
+  val jars = (Compile/packageBin).all(ScopeFilter(inProjects(pidewrapper2021))).value
+  val targets = for (jar <- jars) yield {
+    val version = jar.relativeTo(baseDirectory.value / "pidewrappers").get.toPath.getName(0)
+    val target = (Compile/managedResourceDirectories).value.head / "de/unruh/isabelle/control" / s"pidewrapper$version.jar"
+    IO.copyFile(jar, target)
+//    println(jar, target)
+    target
+  }
+
+  targets
+}
+
 name := "scala-isabelle"
 version := "master-SNAPSHOT"
 

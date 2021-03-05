@@ -57,3 +57,5 @@ credentials += Credentials("GnuPG Key ID", "gpg", "B12742E4CC2172D894730C1AE1F9C
 
 publish := publish.dependsOn(test in Test).value
 PgpKeys.publishSigned := PgpKeys.publishSigned.dependsOn(test in Test).value
+
+// TODO set apiURL?
