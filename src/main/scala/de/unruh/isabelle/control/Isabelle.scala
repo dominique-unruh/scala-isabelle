@@ -700,7 +700,7 @@ object Isabelle {
                    workingDirectory : Path = Paths.get(""),
                    sessionRoots : Seq[Path] = Nil,
                    build : Boolean = true,
-                   verbose : Boolean = false, // TODO: make separate build options subclass // DOCUMENT
+                   verbose : Boolean = false, // TODO: remove (is ignored)
                    isabelleCommandHandler: Data => Unit = Isabelle.defaultCommandHandler) extends SetupGeneral {
     /** [[isabelleHome]] as an absolute path */
     def isabelleHomeAbsolute: Path = workingDirectory.resolve(isabelleHome)

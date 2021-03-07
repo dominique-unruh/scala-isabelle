@@ -16,6 +16,7 @@ workflows:
                 - release-candidate
                 - test-macos
                 - tmp
+                - topic-pide
 
 jobs:
   do_nothing_job:

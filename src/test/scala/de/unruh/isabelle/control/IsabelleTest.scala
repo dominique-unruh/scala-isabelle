@@ -149,7 +149,7 @@ class IsabelleTest extends AnyFunSuite {
 }
 
 object IsabelleTest {
-  private val isabelleVersion = "2020"
+  private val isabelleVersion = "2021"
   val isabelleHome: Path = {
     val config = Paths.get(".isabelle-home") // For setting the Isabelle home in Travis CI etc.
     val path = if (Files.exists(config))

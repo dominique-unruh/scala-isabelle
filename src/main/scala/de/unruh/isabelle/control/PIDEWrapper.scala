@@ -7,6 +7,7 @@ import org.log4s
 import java.io.{BufferedReader, InputStream, InputStreamReader, UncheckedIOException}
 import java.net.{URL, URLClassLoader}
 import java.nio.file.{Files, Path}
+import java.util.Optional
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.function.Consumer
 import scala.collection.JavaConverters.asScalaIteratorConverter
@@ -20,10 +21,9 @@ abstract class PIDEWrapper {
 
   type Process <: AnyRef
 
-  // TODO: userDir is ignored in some implementations!
   def startIsabelleProcess(cwd: Path = Path.of("").toAbsolutePath, mlCode: String = "",
                            logic: String = "HOL", sessionRoots: Array[Path] = Array(), build: Boolean = false,
-                           userDir: Option[Path] = None): Process
+                           userDir: Optional[Path] = Optional.empty()): Process
 
   // DOCUMENT
   /** @return true if the process terminated normally (without error) */
@@ -122,9 +122,9 @@ class PIDEWrapperCommandline(val isabelleRoot: Path) extends PIDEWrapper {
    *
    *  All paths must be absolute. */
   override def startIsabelleProcess(cwd: Path, mlCode: String, logic: String, sessionRoots: Array[Path], build: Boolean,
-                                    userDir: Option[Path] = None): Process = {
+                                    userDir: Optional[Path]): Process = {
     if (build)
-      buildSession(wd = cwd, logic = logic, sessionRoots = sessionRoots, userDir = userDir)
+      buildSession(wd = cwd, logic = logic, sessionRoots = sessionRoots, userDir = Utils.optionalAsScala(userDir))
 
     val isabelleArguments = ListBuffer[String]()
 
@@ -147,7 +147,8 @@ class PIDEWrapperCommandline(val isabelleRoot: Path) extends PIDEWrapper {
 
     val processBuilder = new java.lang.ProcessBuilder(cmd :_*)
     processBuilder.directory(cwd.toFile)
-    for ((k,v) <- Isabelle.makeIsabelleEnvironment(userDir)) processBuilder.environment().put(k,v)
+    for ((k,v) <- Isabelle.makeIsabelleEnvironment(Utils.optionalAsScala(userDir)))
+      processBuilder.environment().put(k,v)
 
     val process = processBuilder.start()
 

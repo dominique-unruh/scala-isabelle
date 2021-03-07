@@ -6,12 +6,17 @@ import org.apache.commons.lang3.SystemUtils
 import scala.util.Random
 import scalaz.syntax.id._
 
+import java.util.Optional
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 /** Contains miscellaneous utility functions */
 object Utils {
+  def optionalAsScala[A](option: Optional[A]): Option[A] =
+    if (option.isEmpty) None
+    else Some(option.get)
+
   /** Destroys the process `process`. Unlike `process.destroy()`,
    * this also invokes `.destroy()` on all child processes. And one second later,
    * it invokes `.destroyForcibly()` in case they didn't terminate yet. */
