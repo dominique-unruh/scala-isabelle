@@ -20,33 +20,29 @@ def pideWrapper(version: String) = Project(s"pidewrapper$version", file(s"pidewr
 //      println(cp)
       cp
     },
+    // Add classes from root project to classpath (need PIDEWrapper.class)
     Compile / managedClasspath += {
       val classes = (Compile/classDirectory).in(root).value
+      // This makes sure the directory "classes" contains up-to-date classes from the root project
+      (Compile/compile).in(root).value
       classes
     }
   )
-  .dependsOn(pidewrapperCommon % "compile -> compile")
 
-lazy val pidewrapperCommon = (project in file("pidewrappers/common"))
-  .settings(Compile / scalaSource := baseDirectory.value,
-    scalaVersion := "2.13.4")
 lazy val pidewrapper2021 = pideWrapper("2021")
 
 lazy val root = (project in file("."))
   .withId("scala-isabelle")
-  .dependsOn(pidewrapperCommon % "compile -> compile")
 
 Compile / managedResources ++= {
+  // This compiles all projects in inProjects(...) and returns the resulting jars
   val jars = (Compile/packageBin).all(ScopeFilter(inProjects(pidewrapper2021))).value
-  val targets = for (jar <- jars) yield {
+  for (jar <- jars) yield {
     val version = jar.relativeTo(baseDirectory.value / "pidewrappers").get.toPath.getName(0)
     val target = (Compile/managedResourceDirectories).value.head / "de/unruh/isabelle/control" / s"pidewrapper$version.jar"
     IO.copyFile(jar, target)
-//    println(jar, target)
     target
   }
-
-  targets
 }
 
 name := "scala-isabelle"
@@ -54,8 +50,8 @@ version := "master-SNAPSHOT"
 
 crossScalaVersions := List("2.13.3", "2.12.12")
 
-scalaVersion := "2.13.3"
-//scalaVersion := "2.12.12"
+//scalaVersion := "2.13.3"
+scalaVersion := "2.12.12"
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 

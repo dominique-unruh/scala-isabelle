@@ -396,15 +396,8 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
 //    processBuilder.directory(wd.toAbsolutePath.toFile)
 //    for ((k,v) <- makeIsabelleEnvironment) processBuilder.environment().put(k,v)
 
-    val processQueueThread = new Thread("Send to Isabelle") {
-      override def run(): Unit = processQueue(input) }
-    processQueueThread.setDaemon(true)
-    processQueueThread.start()
-
-    val parseIsabelleThread = new Thread("Read from Isabelle") {
-      override def run(): Unit = parseIsabelle(output) }
-    parseIsabelleThread.setDaemon(true)
-    parseIsabelleThread.start()
+    Utils.runAsDaemonThread("Send to Isabelle", () => processQueue(input))
+    Utils.runAsDaemonThread("Read from Isabelle", () => parseIsabelle(output))
 
     val lock = Isabelle.buildLocks.get(absPath(setup.isabelleHome).normalize).readLock
 
@@ -412,16 +405,24 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
     try {
       // TODO: dynamically load this
       val pideWrapper = PIDEWrapper.getPIDEWrapper(absPath(setup.isabelleHome).normalize())
-      val process = pideWrapper.startIsabelleProcess(
-        cwd = wd.toAbsolutePath.toFile,
-        logic = setup.logic,
-        mlCode = mlCode)
+      val process = {
+        pideWrapper.catchException(IsabelleSetupException.apply) {
+          pideWrapper.startIsabelleProcess(
+            cwd = wd.toAbsolutePath.toFile,
+            logic = setup.logic,
+            mlCode = mlCode)
+        }
+      }
       destroyActions.add(() => pideWrapper.killProcess(process))
 
-      logStream(pideWrapper.stderr(process), Warn) // stderr
-      logStream(pideWrapper.stdout(process), Debug) // stdout
+      Utils.runAsDaemonThread(s"Wait for Isabelle process ${process}", { () =>
+        pideWrapper.waitForProcess(process, logLine(_, Debug), logLine(_, Warn))
+        processTerminated()
+      })
 
-      // TODO wait for termination?
+//      logStream(pideWrapper.stderr(process), Warn) // stderr
+//      logStream(pideWrapper.stdout(process), Debug) // stdout
+
 //      process.onExit.thenRun(() => processTerminated())
 
       process
@@ -655,16 +656,16 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
     for (f2 <- f; fx <- applyFunction(f2, x)) yield fx
 
   private val lastMessages = new mutable.Queue[String]()
+  private def logLine(line: String, level: LogLevel): Unit = {
+    if (lastMessages.size >= 10) lastMessages.dequeue()
+    lastMessages.enqueue(line)
+    logger(level = level)(msg = line)
+  }
   private def logStream(stream: BufferedReader, level: LogLevel) : Unit = {
-    val log = logger(level)
     val thread = new Thread(s"Isabelle output logger, $level") {
       override def run(): Unit = {
         try
-          stream.lines().forEach { line =>
-            if (lastMessages.size >= 10) lastMessages.dequeue()
-            lastMessages.enqueue(line)
-            log(line)
-          }
+          stream.lines().forEach(logLine(_,level))
         catch {
           case _ : UncheckedIOException =>
             // Can happen if the stream is closed. Ignore
@@ -948,10 +949,10 @@ object Isabelle {
 }
 
 /** Ancestor of all exceptions specific to [[Isabelle]] */
-abstract class IsabelleControllerException(message: String) extends IOException(message)
+abstract class IsabelleControllerException(val message: String) extends IOException(message)
 
 /** Thrown if an operation cannot be executed because [[Isabelle.destroy]] has already been invoked. */
-case class IsabelleDestroyedException(message: String) extends IsabelleControllerException(message)
+case class IsabelleDestroyedException(override val message: String) extends IsabelleControllerException(message)
 object IsabelleDestroyedException {
   def apply(cause: Throwable): IsabelleDestroyedException = {
     val exn = IsabelleDestroyedException("Isabelle process was destroyed: " + cause.getMessage)
@@ -960,13 +961,20 @@ object IsabelleDestroyedException {
   }
 }
 /** Thrown if running Isabelle/jEdit fails */
-case class IsabelleJEditException(message: String) extends IsabelleControllerException(message)
+case class IsabelleJEditException(override val message: String) extends IsabelleControllerException(message)
 /** Thrown if the build process of Isabelle fails */
-case class IsabelleBuildException(message: String, errors: List[String])
+case class IsabelleBuildException(override val message: String, errors: List[String])
   extends IsabelleControllerException(if (errors.nonEmpty) message + ": " + errors.last else message)
 /** Thrown in case something is wrong with the setup */
-case class IsabelleSetupException(message: String) extends IsabelleControllerException(message)
+case class IsabelleSetupException(override val message: String) extends IsabelleControllerException(message)
+object IsabelleSetupException {
+  def apply(message: String, cause: Throwable): IsabelleSetupException = {
+    val exn = IsabelleSetupException(message)
+    exn.initCause(cause)
+    exn
+  }
+}
 /** Thrown in case of an error in the ML process (ML compilation errors, exceptions thrown by ML code) */
-case class IsabelleException(message: String) extends IsabelleControllerException(message)
+case class IsabelleException(override val message: String) extends IsabelleControllerException(message)
 /** Thrown in case of protocol errors in Isabelle process */
-case class IsabelleProtocolException(message: String) extends IsabelleControllerException(message)
+case class IsabelleProtocolException(override val message: String) extends IsabelleControllerException(message)

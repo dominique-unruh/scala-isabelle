@@ -70,4 +70,12 @@ object Utils {
       val parts = for (i <- 0 until path.getNameCount) yield path.getName(i)
       parts.mkString("/")
     }
+
+  def runAsDaemonThread(name: String, run: Runnable): Thread = {
+    val thread = new Thread(run, name)
+    thread.setDaemon(true)
+    thread.start()
+    thread
+  }
+
 }

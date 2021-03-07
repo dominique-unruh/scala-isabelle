@@ -99,13 +99,14 @@ class IsabelleTest extends AnyFunSuite {
   }
 
   test("Isabelle fails to start") {
-    val setup = IsabelleTest.setup.copy(logic="NonexistingLogic")
-    val isabelle = new Isabelle(setup)
-    val id = isabelle.storeValue("Match")
-    val exn = intercept[IsabelleDestroyedException] {
+    val exn = intercept[IsabelleControllerException] {
+      val setup = IsabelleTest.setup.copy(logic="NonexistingLogic")
+      val isabelle = new Isabelle(setup)
+      val id = isabelle.storeValue("Match")
       await(id)
     }
     println(exn)
+    assert(exn.isInstanceOf[IsabelleSetupException] || exn.isInstanceOf[IsabelleDestroyedException])
     assert(exn.message.contains("Undefined session"))
   }
 
@@ -148,14 +149,15 @@ class IsabelleTest extends AnyFunSuite {
 }
 
 object IsabelleTest {
+  private val isabelleVersion = "2021"
   val isabelleHome: Path = {
     val config = Paths.get(".isabelle-home") // For setting the Isabelle home in Travis CI etc.
     val path = if (Files.exists(config))
       new BufferedReader(new FileReader(config.toFile)).readLine()
     else if (SystemUtils.IS_OS_WINDOWS)
-      """c:\Isabelle2021"""
+      s"""c:\Isabelle$isabelleVersion"""
     else
-      "/opt/Isabelle2021"
+      s"/opt/Isabelle$isabelleVersion"
     Paths.get(path)
   }
 
