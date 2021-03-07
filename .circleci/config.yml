@@ -7,7 +7,7 @@ orbs:
 
 workflows:
   version: 2
-  linux2019:
+  linux2021:
     jobs:
       - test:
           filters:
@@ -35,26 +35,26 @@ jobs:
       # Download and cache Isabelle
       - restore_cache:
           keys:
-            - v3-isabelle-2019-linux
+            - v3-isabelle-2021-linux
       - run:
-          name: Downloading Isabelle 2019 (if needed)
+          name: Downloading Isabelle 2021 (if needed)
           shell: bash
           command: |
-            if ! [ -e "$HOME/install/Isabelle2019" ]; then
+            if ! [ -e "$HOME/install/Isabelle2021" ]; then
               mkdir -p ~/install
               case linux in
                 windows)
-                  curl "https://isabelle.in.tum.de/website-Isabelle2019/dist/Isabelle2019_linux.tar.gz" -o /tmp/isabelle.exe
+                  curl "https://isabelle.in.tum.de/website-Isabelle2021/dist/Isabelle2021_linux.tar.gz" -o /tmp/isabelle.exe
                   7z x -y -o"$HOME/install" /tmp/isabelle.exe;;
                 linux|macos)
-                  curl "https://isabelle.in.tum.de/website-Isabelle2019/dist/Isabelle2019_linux.tar.gz" | tar -x -z -C ~/install;;
+                  curl "https://isabelle.in.tum.de/website-Isabelle2021/dist/Isabelle2021_linux.tar.gz" | tar -x -z -C ~/install;;
                 *) false;;
               esac
             fi
       - save_cache:
           paths:
-            - ~/install/Isabelle2019
-          key: v3-isabelle-2019-linux
+            - ~/install/Isabelle2021
+          key: v3-isabelle-2021-linux
 
       # Download and cache dependencies
       - restore_cache:
@@ -90,10 +90,10 @@ jobs:
             case linux in
               windows)
                 # Isabelle process calls rebaseall and then fails, unless we deactivate it
-                > ~/install/Isabelle2019/contrib/cygwin/isabelle/rebaseall
-                cygpath -w ~/install/Isabelle2019 > .isabelle-home;;
+                > ~/install/Isabelle2021/contrib/cygwin/isabelle/rebaseall
+                cygpath -w ~/install/Isabelle2021 > .isabelle-home;;
               linux|macos)
-                echo ~/install/Isabelle2019 > .isabelle-home;;
+                echo ~/install/Isabelle2021 > .isabelle-home;;
             esac
 
             ~/install/sbt -213 "testOnly -- -u scalatest-reports" </dev/null

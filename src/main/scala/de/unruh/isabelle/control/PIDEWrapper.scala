@@ -16,7 +16,7 @@ abstract class PIDEWrapper {
   def killProcess(process: Process): Unit
   type Process <: AnyRef
   def startIsabelleProcess(cwd: File = new File("").getAbsoluteFile, mlCode: String = "",
-                           logic: String = "HOL"): Process
+                           logic: String = "HOL", sessionDirs: Array[String] = Array(), build: Boolean = false): Process
 
   def waitForProcess(process: Process, progress_stdout: Consumer[String], progress_stderr: Consumer[String]): Unit
 

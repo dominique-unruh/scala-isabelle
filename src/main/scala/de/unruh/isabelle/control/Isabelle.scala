@@ -298,21 +298,6 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
       }
   }
 
-  //noinspection SameParameterValue
-  private def filePathFromResource(name: String, tmpDir: Path, replace: String => String): Path = {
-    val url = getClass.getResource(name)
-    val tmpPath = tmpDir.resolve(name.split('/').last)
-    val tmpFile = tmpPath.toFile
-    tmpFile.deleteOnExit()
-    val source = Source.fromURL(url)
-    val writer = new FileWriter(tmpFile)
-    for (line <- source.getLines())
-      writer.write(replace(line)+"\n")
-    writer.close()
-    source.close()
-    tmpPath
-  }
-
   /** Invokes the Isabelle process.
    * */
   private def startProcessSlave(setup: Setup) : PIDEWrapper#Process = {
@@ -381,21 +366,6 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
     val mlCode = mlCode1 + "\n;;\nControl_Isabelle.handleLines()"
     source.close()
 
-    //    isabelleArguments += "-f" += mlFile.toAbsolutePath.toString.replace('\\', '/')
-
-//    isabelleArguments += "-e" += "Control_Isabelle.handleLines()"
-
-//    for (root <- setup.sessionRoots)
-//      isabelleArguments += "-d" += cygwinAbs(root)
-
-//    val cmd = makeIsabelleCommandLine(absPath(setup.isabelleHome), isabelleArguments.toSeq)
-
-//    logger.debug(s"Cmd line: ${cmd.mkString(" ")}")
-
-//    val processBuilder = new java.lang.ProcessBuilder(cmd :_*)
-//    processBuilder.directory(wd.toAbsolutePath.toFile)
-//    for ((k,v) <- makeIsabelleEnvironment) processBuilder.environment().put(k,v)
-
     Utils.runAsDaemonThread("Send to Isabelle", () => processQueue(input))
     Utils.runAsDaemonThread("Read from Isabelle", () => parseIsabelle(output))
 
@@ -403,14 +373,15 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
 
     lock.lockInterruptibly()
     try {
-      // TODO: dynamically load this
       val pideWrapper = PIDEWrapper.getPIDEWrapper(absPath(setup.isabelleHome).normalize())
       val process = {
         pideWrapper.catchException(IsabelleSetupException.apply) {
           pideWrapper.startIsabelleProcess(
             cwd = wd.toAbsolutePath.toFile,
             logic = setup.logic,
-            mlCode = mlCode)
+            mlCode = mlCode,
+            sessionDirs = setup.sessionRoots.map(cygwinAbs).toArray,
+            build = setup.build)
         }
       }
       destroyActions.add(() => pideWrapper.killProcess(process))
@@ -420,14 +391,9 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
         processTerminated()
       })
 
-//      logStream(pideWrapper.stderr(process), Warn) // stderr
-//      logStream(pideWrapper.stdout(process), Debug) // stdout
-
-//      process.onExit.thenRun(() => processTerminated())
-
       process
     } finally {
-      // This happens almost immediately, so it would be possible that a build process starts *after*
+      // If we have `setup.build==false`, this happens almost immediately, so it would be possible that a build process starts *after*
       // we initiated the Isabelle process. So ideally, the lock.unlock() should be delayed until we know that
       // the current Isabelle process has loaded any files that would be written by a build. But this is
       // a very exotic situation, so we just release the lock right away.
@@ -453,14 +419,9 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
       override def run(): Unit = parseIsabelle(new FileInputStream(outputPipe.toFile)) }
     parseIsabelleThread.setDaemon(true)
     parseIsabelleThread.start()
-
-    null; // No process
   }
 
   setup match {
-    case setup : Setup => if (setup.build) buildSession(setup)
-    case _ => }
-  private val process: Any = setup match {
     case setup : Setup => startProcessSlave(setup)
     case setup : SetupRunning => startProcessRunning(setup)
   }
@@ -776,46 +737,6 @@ object Isabelle {
   //noinspection UnstableApiUsage
   private val buildLocks = Striped.lazyWeakReadWriteLock(10)
 
-  /** Runs the Isabelle build process to build the session heap image `setup.logic`
-   *
-   * This is done automatically by the constructors of [[Isabelle]] unless `build=false`.
-   *
-   * @param setup Configuration of Isabelle.
-   */
-  def buildSession(setup: Setup) : Unit = {
-    implicit val s: Setup = setup
-    def wd = setup.workingDirectory
-
-    val isabelleArguments = ListBuffer[String]()
-
-    isabelleArguments += "build"
-    isabelleArguments += "-b" // Build heap image
-
-    if (setup.verbose)
-      isabelleArguments += "-v" // Verbose build
-
-    for (root <- setup.sessionRoots)
-      isabelleArguments += "-d" += cygwinAbs(root)
-
-    isabelleArguments += setup.logic
-
-    val cmd = makeIsabelleCommandLine(absPath(setup.isabelleHome), isabelleArguments.toSeq)
-
-    logger.debug(s"Cmd line: ${cmd.mkString(" ")}")
-
-    val processBuilder = scala.sys.process.Process(cmd, wd.toAbsolutePath.toFile, makeIsabelleEnvironment :_*)
-    val errors = ListBuffer[String]()
-
-    val lock = buildLocks.get(absPath(setup.isabelleHome).normalize).writeLock
-    lock.lockInterruptibly()
-    try {
-      if (0 != processBuilder.!(ProcessLogger(line => logger.debug(s"Isabelle build: $line"),
-        { line => errors.append(line); logger.warn(s"Isabelle build: $line") })))
-        throw IsabelleBuildException(s"Isabelle build for session ${setup.logic} failed", errors.toList)
-    } finally
-      lock.unlock()
-  }
-
   /**
    * Starts Isabelle/jEdit (interactive editing of theories) with the given Isabelle configuration.
    *
@@ -823,6 +744,7 @@ object Isabelle {
    * @param files Files to open in jEdit
    * @throws IsabelleJEditException if jEdit fails (returns return code ≠0)
    */
+  // TODO: Implement using PIDEWrapper
   def jedit(setup: Setup, files: Seq[Path]) : Unit = {
     implicit val s = setup
     def wd = setup.workingDirectory
