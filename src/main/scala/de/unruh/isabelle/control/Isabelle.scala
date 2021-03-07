@@ -373,22 +373,22 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
 
     lock.lockInterruptibly()
     try {
-      val pideWrapper = PIDEWrapper.getPIDEWrapper(absPath(setup.isabelleHome).normalize())
+      val pideWrapper = PIDEWrapper.getDefaultPIDEWrapper(absPath(setup.isabelleHome).normalize())
       val process = {
         pideWrapper.catchException(IsabelleSetupException.apply) {
           pideWrapper.startIsabelleProcess(
-            cwd = wd.toAbsolutePath.toFile,
+            cwd = wd.toAbsolutePath,
             logic = setup.logic,
             mlCode = mlCode,
-            sessionDirs = setup.sessionRoots.map(cygwinAbs).toArray,
+            sessionRoots = setup.sessionRoots.map(absPath).toArray,
             build = setup.build)
         }
       }
       destroyActions.add(() => pideWrapper.killProcess(process))
 
       Utils.runAsDaemonThread(s"Wait for Isabelle process ${process}", { () =>
-        pideWrapper.waitForProcess(process, logLine(_, Debug), logLine(_, Warn))
-        processTerminated()
+        val normalTermination = pideWrapper.waitForProcess(process, logLine(_, Debug), logLine(_, Warn))
+        processTerminated(normalTermination)
       })
 
       process
@@ -459,18 +459,16 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
       callCallback(cb)
   }
 
-  private def processTerminated() : Unit = {
-//    logger.debug("Isabelle process terminated")
-//    val exitValue = process.exitValue
-//    if (exitValue == 0)
-//      destroy(IsabelleDestroyedException(s"Isabelle process terminated normally"))
-//    else {
-//      Thread.sleep(500) // To ensure the error processing thread has time to store lastMessage
-//      destroy(IsabelleDestroyedException(
-//        (s"Isabelle process failed with exit value $exitValue, last lines of output:" ::
-//          lastMessages.toList.map("> "+_)).mkString("\n")))
-//    }
-    // TODO
+  private def processTerminated(normalTermination: Boolean) : Unit = {
+    logger.debug("Isabelle process terminated")
+    if (normalTermination)
+      destroy(IsabelleDestroyedException(s"Isabelle process terminated normally"))
+    else {
+      Thread.sleep(500) // To ensure the error processing thread has time to store lastMessage
+      destroy(IsabelleDestroyedException(
+        (s"Isabelle process failed, last lines of output:" ::
+          lastMessages.toList.map("> "+_)).mkString("\n")))
+    }
   }
 
   /** Throws an [[IsabelleDestroyedException]] if this Isabelle process has been destroyed.
@@ -745,6 +743,7 @@ object Isabelle {
    * @throws IsabelleJEditException if jEdit fails (returns return code ≠0)
    */
   // TODO: Implement using PIDEWrapper
+  // TODO: move to PIDEWrapperCommandline
   def jedit(setup: Setup, files: Seq[Path]) : Unit = {
     implicit val s = setup
     def wd = setup.workingDirectory
@@ -766,7 +765,8 @@ object Isabelle {
 
     logger.debug(s"Cmd line: ${cmd.mkString(" ")}")
 
-    val processBuilder = scala.sys.process.Process(cmd.toSeq, wd.toAbsolutePath.toFile, makeIsabelleEnvironment :_*)
+    val processBuilder = scala.sys.process.Process(cmd.toSeq, wd.toAbsolutePath.toFile,
+      makeIsabelleEnvironment(setup.userDir.map(absPath)) :_*)
 
     val lock = buildLocks.get(absPath(setup.isabelleHome).normalize).readLock
     lock.lockInterruptibly()
@@ -778,10 +778,10 @@ object Isabelle {
       lock.unlock()
   }
 
-  private def makeIsabelleEnvironment(implicit setup: Setup): List[(String, String)] = {
+  private[control] def makeIsabelleEnvironment(userDir: Option[Path]): List[(String, String)] = {
     val env = ListBuffer[(String, String)]()
-    setup.userDir match {
-      case Some(path) => env += "USER_HOME" -> cygwinAbs(path.getParent)
+    userDir match {
+      case Some(path) => env += "USER_HOME" -> cygwinIfWin(path.getParent)
       case None =>
     }
     /* Things copied from Isabelle's Cygwin-Terminal.bat, they seem necessary for correct startup:
@@ -808,14 +808,15 @@ object Isabelle {
     env.toList
   }
 
-  private def cygwinIfWin(path: Path) =
+  private[control] def cygwinIfWin(path: Path) =
     if (SystemUtils.IS_OS_WINDOWS) Utils.cygwinPath(path) else path.toString
   /** Path to absolute string, interpreted relative to wd */
   private def absPath(path: Path)(implicit setup: Setup) = setup.workingDirectory.resolve(path).toAbsolutePath
   /** Path to absolute string, interpreted relative to wd */
   private def cygwinAbs(path: Path)(implicit setup: Setup) = cygwinIfWin(absPath(path))
 
-  private def makeIsabelleCommandLine(isabelleHome: Path, arguments: Seq[String]) : Seq[String]= {
+  // TODO: move to PIDEWrapperCommandline
+  private[control] def makeIsabelleCommandLine(isabelleHome: Path, arguments: Seq[String]) : Seq[String]= {
     if (SystemUtils.IS_OS_WINDOWS) {
       val bash = isabelleHome.resolve("contrib").resolve("cygwin").resolve("bin").resolve("bash").toString
       val isabelle = Utils.cygwinPath(isabelleHome.resolve("bin").resolve("isabelle"))

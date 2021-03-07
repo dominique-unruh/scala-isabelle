@@ -8,10 +8,10 @@ import scala.sys.process._
 
 lazy val component = RootProject(file("component"))
 
-def pideWrapper(version: String) = Project(s"pidewrapper$version", file(s"pidewrappers/$version"))
+def pideWrapper(version: String, scala: String) = Project(s"pidewrapper$version", file(s"pidewrappers/$version"))
   .settings(
     Compile / sourceDirectories += baseDirectory.value,
-    scalaVersion := "2.13.4",
+    scalaVersion := scala,
     Compile / unmanagedJars := {
       val isabelleHome = file("/opt") / s"Isabelle$version"
       assert(isabelleHome.canRead)
@@ -29,7 +29,7 @@ def pideWrapper(version: String) = Project(s"pidewrapper$version", file(s"pidewr
     }
   )
 
-lazy val pidewrapper2021 = pideWrapper("2021")
+lazy val pidewrapper2021 = pideWrapper("2021", scala="2.13.4")
 
 lazy val root = (project in file("."))
   .withId("scala-isabelle")
@@ -79,16 +79,6 @@ libraryDependencies += "org.jetbrains" % "annotations" % "20.1.0"
 libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value
 
 libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value % "test"
-
-lazy val circleCIRandomize = taskKey[Unit]("Randomize which test is run on CircleCI next time")
-circleCIRandomize := {
-    if (!SystemUtils.IS_OS_WINDOWS) // On my machine, Windows doesn't have enough tools installed.
-        if (Process("git diff --quiet", cwd=baseDirectory.value).! != 0) {
-            print(Process("scripts/circleci-randomize.py", cwd=baseDirectory.value).!!)
-        }
-}
-compile in Compile := (compile in Compile).dependsOn(circleCIRandomize).value
-doc in Compile := (doc in Compile).dependsOn(circleCIRandomize).value
 
 lazy val makeGitrevision = taskKey[File]("Create gitrevision.txt")
 Compile / resourceGenerators += makeGitrevision.map(Seq(_))

@@ -34,7 +34,7 @@ class Test extends AnyFunSuite {
   test("temporary experiments") {
     val mlCode = """tracing "1""""
 
-    val pideWrapper = PIDEWrapper.getPIDEWrapper(IsabelleTest.isabelleHome)
+    val pideWrapper = PIDEWrapper.getDefaultPIDEWrapper(IsabelleTest.isabelleHome)
 
     val process = pideWrapper.startIsabelleProcess(mlCode=mlCode)
 

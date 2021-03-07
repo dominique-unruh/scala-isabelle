@@ -7,14 +7,11 @@ import isabelle.{Bash, Build, Isabelle_System, Isabelle_Thread, ML_Process, Opti
 import java.util.concurrent.Callable
 import java.util.function.Consumer
 
-class PIDEWrapperImpl(val isabelleRoot: Path) extends PIDEWrapper {
+class PIDEWrapperImpl(val isabelleRoot: Path) extends PIDEWrapperViaClassloader {
   override type Process = Bash.Process
 
   override def killProcess(process: Bash.Process): Unit =
     process.terminate()
-
-//  override def stdout(process: Process): BufferedReader = process.stdout
-//  override def stderr(process: Process): BufferedReader = process.stdout
 
   override def startIsabelleProcess(cwd: File, mlCode: String, logic: String,
                                     sessionDirs: Array[String], build: Boolean): Process = {
