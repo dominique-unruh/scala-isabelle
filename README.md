@@ -65,7 +65,7 @@ val ctxt = Context("Main")
 // Create a term by parsing a string
 val term = Term(ctxt, "x+0 = (y::nat)*1")
 
-// A function to replace occurrences of X+1 by X (for all X)
+// A function to replace occurrences of X+0 by X (for all X)
 def replace(term: Term): Term = term match {
   case App(App(Const("Groups.plus_class.plus", _), x), Const("Groups.zero_class.zero", _)) => replace(x)
   case Abs(name, typ, body) => Abs(name, typ, replace(body))
