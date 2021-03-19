@@ -22,6 +22,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import de.unruh.isabelle.mlvalue.Implicits._
 import de.unruh.isabelle.pure.Implicits._
 
+import _root_.java.util.Optional
+
 class Test extends AnyFunSuite {
   test("README example") {
     Example.main(Array(IsabelleTest.isabelleHome.toString))
@@ -36,7 +38,9 @@ class Test extends AnyFunSuite {
 
     val pideWrapper = PIDEWrapper.getDefaultPIDEWrapper(IsabelleTest.isabelleHome)
 
-    val process = pideWrapper.startIsabelleProcess(mlCode=mlCode)
+    val process = pideWrapper.startIsabelleProcess(mlCode=mlCode,
+      cwd = Path.of(""), logic="HOL", sessionRoots = Array(),
+      build=false, userDir = Optional.empty())
 
     println(1,process)
 

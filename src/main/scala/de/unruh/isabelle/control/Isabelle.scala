@@ -11,6 +11,7 @@ import com.google.common.escape.Escaper
 import com.google.common.util.concurrent.Striped
 import de.unruh.isabelle.control.Isabelle.SetupGeneral
 import de.unruh.isabelle.misc.SMLCodeUtils.mlInteger
+import de.unruh.isabelle.misc.Utils.optionAsJava
 import de.unruh.isabelle.misc.{FutureValue, SMLCodeUtils, SharedCleaner, Utils}
 import de.unruh.isabelle.mlvalue.MLValue
 import de.unruh.isabelle.pure.Term
@@ -381,7 +382,8 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
             logic = setup.logic,
             mlCode = mlCode,
             sessionRoots = setup.sessionRoots.map(absPath).toArray,
-            build = setup.build)
+            build = setup.build,
+            userDir = optionAsJava(setup.userDir))
         }
       }
       destroyActions.add(() => pideWrapper.killProcess(process))
@@ -744,38 +746,15 @@ object Isabelle {
    */
   // TODO: Implement using PIDEWrapper
   // TODO: move to PIDEWrapperCommandline
+  // There is no automated test case to check this. Run JEdit.main to test.
   def jedit(setup: Setup, files: Seq[Path]) : Unit = {
-    implicit val s = setup
-    def wd = setup.workingDirectory
-
-//    val isabelleBinary = setup.isabelleHome.resolve("bin").resolve("isabelle")
-    val isabelleArguments = ListBuffer[String]()
-
-    isabelleArguments += "jedit"
-
-    for (root <- setup.sessionRoots)
-      isabelleArguments += "-d" += cygwinAbs(root)
-
-    isabelleArguments += "-l" += setup.logic
-
-    isabelleArguments += "--"
-    isabelleArguments ++= files.map(cygwinAbs)
-
-    val cmd = makeIsabelleCommandLine(absPath(setup.isabelleHome), isabelleArguments.toSeq)
-
-    logger.debug(s"Cmd line: ${cmd.mkString(" ")}")
-
-    val processBuilder = scala.sys.process.Process(cmd.toSeq, wd.toAbsolutePath.toFile,
-      makeIsabelleEnvironment(setup.userDir.map(absPath)) :_*)
-
-    val lock = buildLocks.get(absPath(setup.isabelleHome).normalize).readLock
-    lock.lockInterruptibly()
-    try {
-      if (0 != processBuilder.!(ProcessLogger(line => logger.debug(s"Isabelle jedit: $line"),
-        { line => logger.warn(s"Isabelle jedit: $line") })))
-        throw IsabelleJEditException("Could not start Isabelle/jEdit")
-    } finally
-      lock.unlock()
+    implicit val s: Setup = setup
+    val isabelleRoot = absPath(setup.isabelleHome).normalize()
+//    val pideWrapper = PIDEWrapper.getDefaultPIDEWrapper(isabelleRoot)
+    val pideWrapper = new PIDEWrapperCommandline(isabelleRoot)
+    pideWrapper.jedit(cwd = setup.workingDirectory.toAbsolutePath,
+      logic = setup.logic, sessionRoots = setup.sessionRoots.toArray.map(absPath),
+      userDir = optionAsJava(setup.userDir), files.toArray.map(absPath))
   }
 
   private[control] def makeIsabelleEnvironment(userDir: Option[Path]): List[(String, String)] = {

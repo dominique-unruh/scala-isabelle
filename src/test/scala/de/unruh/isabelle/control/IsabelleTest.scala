@@ -187,4 +187,8 @@ object IsabelleTest {
   }
 }
 
-
+object JEdit {
+  def main(args: Array[String]): Unit = {
+    Isabelle.jedit(setup, args.map(Path.of(_)))
+  }
+}

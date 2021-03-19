@@ -1,7 +1,8 @@
 package de.unruh.isabelle.control
 
-import de.unruh.isabelle.control.Isabelle.cygwinIfWin
+import de.unruh.isabelle.control.Isabelle.{cygwinIfWin, makeIsabelleCommandLine, makeIsabelleEnvironment}
 import de.unruh.isabelle.misc.Utils
+import de.unruh.isabelle.misc.Utils.optionalAsScala
 import org.log4s
 
 import java.io.{BufferedReader, InputStream, InputStreamReader, UncheckedIOException}
@@ -21,9 +22,12 @@ abstract class PIDEWrapper {
 
   type Process <: AnyRef
 
-  def startIsabelleProcess(cwd: Path = Path.of("").toAbsolutePath, mlCode: String = "",
-                           logic: String = "HOL", sessionRoots: Array[Path] = Array(),
-                           build: Boolean = false, userDir: Optional[Path] = Optional.empty()): Process
+  def startIsabelleProcess(cwd: Path, mlCode: String,
+                           logic: String, sessionRoots: Array[Path],
+                           build: Boolean, userDir: Optional[Path]): Process
+
+  def jedit(cwd: Path, logic: String, sessionRoots: Array[Path],
+            userDir: Optional[Path], files: Array[Path]) : Unit
 
   // DOCUMENT
   /** @return true if the process terminated normally (without error) */
@@ -153,6 +157,41 @@ class PIDEWrapperCommandline(val isabelleRoot: Path) extends PIDEWrapper {
     val process = processBuilder.start()
 
     process
+  }
+
+
+  /** DOCUMENT
+   *
+   *  All paths must be absolute. */
+  def jedit(cwd: Path, logic: String, sessionRoots: Array[Path],
+            userDir: Optional[Path], files: Array[Path]) : Unit = {
+    val isabelleArguments = ListBuffer[String]()
+
+    isabelleArguments += "jedit"
+
+    for (root <- sessionRoots)
+      isabelleArguments += "-d" += cygwinIfWin(root)
+
+    isabelleArguments += "-l" += logic
+
+    isabelleArguments += "--"
+    isabelleArguments ++= files.map(cygwinIfWin)
+
+    val cmd = makeIsabelleCommandLine(isabelleRoot, isabelleArguments)
+
+    logger.debug(s"Cmd line: ${cmd.mkString(" ")}")
+
+    val processBuilder = scala.sys.process.Process(cmd, cwd.toFile,
+      makeIsabelleEnvironment(optionalAsScala(userDir)) :_*)
+
+//    val lock = buildLocks.get(absPath(setup.isabelleHome).normalize).readLock
+//    lock.lockInterruptibly()
+//    try {
+    if (0 != processBuilder.!(ProcessLogger(line => logger.debug(s"Isabelle jedit: $line"),
+      { line => logger.warn(s"Isabelle jedit: $line") })))
+      throw IsabelleJEditException("Could not start Isabelle/jEdit")
+//    } finally
+//      lock.unlock()
   }
 
   /** Runs the Isabelle build process to build the session heap image `setup.logic`

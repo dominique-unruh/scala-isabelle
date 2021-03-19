@@ -43,6 +43,11 @@ class PIDEWrapperImpl(val isabelleRoot: Path) extends PIDEWrapperViaClassloader 
     ML_Process(channel_options, sessions_structure, store, eval_main = mlCode, logic = logic, cwd = cwd.toFile)
   }
 
+  override def jedit(cwd: Path, logic: String, sessionRoots: Array[Path],
+            userDir: Optional[Path], files: Array[Path]) : Unit =
+    throw new RuntimeException("Starting jEdit not supported through PIDE")
+
+
   override def waitForProcess(process: Process, progress_stdout: Consumer[String], progress_stderr: Consumer[String]): Boolean = {
     val result = process.result(progress_stderr = progress_stderr.accept, progress_stdout = progress_stdout.accept)
     result.ok

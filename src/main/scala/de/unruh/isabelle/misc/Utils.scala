@@ -17,6 +17,11 @@ object Utils {
     if (option.isEmpty) None
     else Some(option.get)
 
+  def optionAsJava[A](option: Option[A]): Optional[A] = option match {
+    case Some(x) => Optional.of(x)
+    case None => Optional.empty()
+  }
+
   /** Destroys the process `process`. Unlike `process.destroy()`,
    * this also invokes `.destroy()` on all child processes. And one second later,
    * it invokes `.destroyForcibly()` in case they didn't terminate yet. */
