@@ -96,8 +96,8 @@ jobs:
             esac
 
             # This makes sure only support for Isabelle@{isabelle} is built (otherwise we need to download all Isabelle's)
-            sed -i 's/^val buildOnlyFor.*/val buildOnlyFor = Some(List("@{isabelle}"))/' build.sbt
-            sed -i 's/^val isabelleHomeDirectories.*/val isabelleHomeDirectories = file("@{isabellehome}").getParentFile/' build.sbt
+            sed -i -e 's/^val buildOnlyFor.*/val buildOnlyFor = Some(List("@{isabelle}"))/' build.sbt
+            # sed -i 's/^val isabelleHomeDirectories.*/val isabelleHomeDirectories = file("@{isabellehome}").getParentFile/' build.sbt
             cat build.sbt
 
             ~/install/sbt -@{scala} "testOnly -- -u scalatest-reports" </dev/null
