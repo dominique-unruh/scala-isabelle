@@ -1,5 +1,4 @@
-import java.io.PrintWriter
-
+import java.io.{FileNotFoundException, PrintWriter}
 import org.apache.commons.lang3.SystemUtils
 import sbt.io
 import sbt.io.Path.relativeTo
@@ -8,12 +7,25 @@ import scala.sys.process._
 
 lazy val component = RootProject(file("component"))
 
-/** This should be the directory that contains all Isabelle installations (needed for compiling)
- * If support for only some Isabelle versions should be built, set [buildOnlyFor] below
+/** This should be the directory that contains all Isabelle installations (needed for compiling).
+ * If support for only some Isabelle versions should be built, set [buildOnlyFor] below.
+ * If several directories are given, the build looks in each of them.
  */
-val isabelleHomeDirectories = file("/opt")
+val isabelleHomeDirectories = List(
+  file("/opt"),
+  file(sys.env("user.home")) / "install" // In CircleCI
+)
 /** Set to Some(List(version, version, ...)) to select which Isabelle versions to support. */
 val buildOnlyFor: Option[List[String]] = None
+
+def findIsabelleRoot(version: String) =
+  { for (dir <- isabelleHomeDirectories;
+               root = dir / s"Isabelle$version";
+               if root.isDirectory)
+    yield root }
+    .headOption.getOrElse {
+    throw new FileNotFoundException(s"No Isabelle root director found for Isabelle$version, searched $isabelleHomeDirectories")
+  }
 
 def pideWrapper(version: String, scala: String) = {
   if (buildOnlyFor.exists(!_.contains(version))) { // version not in buildOnlyFor (and buildOnlyFor != None)
@@ -25,7 +37,7 @@ def pideWrapper(version: String, scala: String) = {
       Compile / sourceDirectories += baseDirectory.value,
       scalaVersion := scala,
       Compile / unmanagedJars := {
-        val isabelleHome = isabelleHomeDirectories / s"Isabelle$version"
+        val isabelleHome = findIsabelleRoot(version)
         assert(isabelleHome.canRead, isabelleHome)
         val cp = ((isabelleHome / "lib" / "classes" +++ isabelleHome / "contrib") ** "*.jar").classpath
         assert(cp.nonEmpty)
