@@ -20,8 +20,8 @@ val buildOnlyFor: Option[List[String]] = None
 
 def findIsabelleRoot(version: String) =
   { for (dir <- isabelleHomeDirectories;
-               root = dir / s"Isabelle$version";
-               if root.isDirectory)
+         root <- List(dir / s"Isabelle$version", dir / s"Isabelle$version.app");
+         if root.isDirectory)
     yield root }
     .headOption.getOrElse {
     throw new FileNotFoundException(s"No Isabelle root director found for Isabelle$version, searched $isabelleHomeDirectories")
