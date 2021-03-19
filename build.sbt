@@ -13,13 +13,14 @@ lazy val component = RootProject(file("component"))
  */
 val isabelleHomeDirectories = file("/opt")
 /** Set to Some(List(version, version, ...)) to select which Isabelle versions to support. */
-val buildOnlyFor = None
+val buildOnlyFor: Option[List[String]] = None
 
 def pideWrapper(version: String, scala: String) = {
-  if (buildOnlyFor.exists(!_.contains(version))) // version not in buildOnlyFor (and buildOnlyFor != None)
+  if (buildOnlyFor.exists(!_.contains(version))) { // version not in buildOnlyFor (and buildOnlyFor != None)
+    print(s"Skipping compilation of pidewrapper$version")
     Project(s"pidewrapper$version-dummy", file(s"pidewrappers/$version")).
       settings(Compile / sources := List())
-  else
+  } else
     Project(s"pidewrapper$version", file(s"pidewrappers/$version")).settings(
       Compile / sourceDirectories += baseDirectory.value,
       scalaVersion := scala,
@@ -61,8 +62,8 @@ version := "master-SNAPSHOT"
 
 crossScalaVersions := List("2.13.3", "2.12.12")
 
-//scalaVersion := "2.13.3"
-scalaVersion := "2.12.12"
+scalaVersion := "2.13.3"
+//scalaVersion := "2.12.12"
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 

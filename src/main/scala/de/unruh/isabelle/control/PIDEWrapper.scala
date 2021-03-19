@@ -145,7 +145,7 @@ class PIDEWrapperCommandline(val isabelleRoot: Path) extends PIDEWrapper {
     for (root <- sessionRoots)
       isabelleArguments += "-d" += cygwinIfWin(root)
 
-    val cmd = Isabelle.makeIsabelleCommandLine(isabelleRoot, isabelleArguments)
+    val cmd = Isabelle.makeIsabelleCommandLine(isabelleRoot, isabelleArguments.toSeq)
 
     logger.debug(s"Cmd line: ${cmd.mkString(" ")}")
 
@@ -177,7 +177,7 @@ class PIDEWrapperCommandline(val isabelleRoot: Path) extends PIDEWrapper {
     isabelleArguments += "--"
     isabelleArguments ++= files.map(cygwinIfWin)
 
-    val cmd = makeIsabelleCommandLine(isabelleRoot, isabelleArguments)
+    val cmd = makeIsabelleCommandLine(isabelleRoot, isabelleArguments.toSeq)
 
     logger.debug(s"Cmd line: ${cmd.mkString(" ")}")
 
@@ -210,7 +210,7 @@ class PIDEWrapperCommandline(val isabelleRoot: Path) extends PIDEWrapper {
 
     isabelleArguments += logic
 
-    val cmd = Isabelle.makeIsabelleCommandLine(isabelleRoot, isabelleArguments)
+    val cmd = Isabelle.makeIsabelleCommandLine(isabelleRoot, isabelleArguments.toSeq)
 
     logger.debug(s"Cmd line: ${cmd.mkString(" ")}")
 
