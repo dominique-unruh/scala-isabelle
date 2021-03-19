@@ -744,8 +744,6 @@ object Isabelle {
    * @param files Files to open in jEdit
    * @throws IsabelleJEditException if jEdit fails (returns return code ≠0)
    */
-  // TODO: Implement using PIDEWrapper
-  // TODO: move to PIDEWrapperCommandline
   // There is no automated test case to check this. Run JEdit.main to test.
   def jedit(setup: Setup, files: Seq[Path]) : Unit = {
     implicit val s: Setup = setup
@@ -792,19 +790,6 @@ object Isabelle {
   /** Path to absolute string, interpreted relative to wd */
   private def absPath(path: Path)(implicit setup: Setup) = setup.workingDirectory.resolve(path).toAbsolutePath
   /** Path to absolute string, interpreted relative to wd */
-  // TODO remove
-  private def cygwinAbs(path: Path)(implicit setup: Setup) = cygwinIfWin(absPath(path))
-
-  // TODO: move to PIDEWrapperCommandline
-  private[control] def makeIsabelleCommandLine(isabelleHome: Path, arguments: Seq[String]) : Seq[String]= {
-    if (SystemUtils.IS_OS_WINDOWS) {
-      val bash = isabelleHome.resolve("contrib").resolve("cygwin").resolve("bin").resolve("bash").toString
-      val isabelle = Utils.cygwinPath(isabelleHome.resolve("bin").resolve("isabelle"))
-      List(bash, "--login", "-c",
-        (List(isabelle) ++ arguments).map(StringEscapeUtils.escapeXSI).mkString(" "))
-    } else
-      List(isabelleHome.resolve("bin").resolve("isabelle").toString) ++ arguments
-  }
 
   /** An algebraic datatype that allows to encode trees of data containing integers ([[DInt]]), strings ([[DString]]), and IDs of
    * objects ([[DObject]]) in the object store of the Isabelle process. A constructor [[DList]] is used to create a tree

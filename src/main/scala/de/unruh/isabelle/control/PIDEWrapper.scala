@@ -1,8 +1,11 @@
 package de.unruh.isabelle.control
 
-import de.unruh.isabelle.control.Isabelle.{cygwinIfWin, makeIsabelleCommandLine, makeIsabelleEnvironment}
+import de.unruh.isabelle.control.Isabelle.{cygwinIfWin, makeIsabelleEnvironment}
+import de.unruh.isabelle.control.PIDEWrapperCommandline.makeIsabelleCommandLine
 import de.unruh.isabelle.misc.Utils
 import de.unruh.isabelle.misc.Utils.optionalAsScala
+import org.apache.commons.lang3.SystemUtils
+import org.apache.commons.text.StringEscapeUtils
 import org.log4s
 
 import java.io.{BufferedReader, InputStream, InputStreamReader, UncheckedIOException}
@@ -145,7 +148,7 @@ class PIDEWrapperCommandline(val isabelleRoot: Path) extends PIDEWrapper {
     for (root <- sessionRoots)
       isabelleArguments += "-d" += cygwinIfWin(root)
 
-    val cmd = Isabelle.makeIsabelleCommandLine(isabelleRoot, isabelleArguments.toSeq)
+    val cmd = makeIsabelleCommandLine(isabelleRoot, isabelleArguments.toSeq)
 
     logger.debug(s"Cmd line: ${cmd.mkString(" ")}")
 
@@ -210,7 +213,7 @@ class PIDEWrapperCommandline(val isabelleRoot: Path) extends PIDEWrapper {
 
     isabelleArguments += logic
 
-    val cmd = Isabelle.makeIsabelleCommandLine(isabelleRoot, isabelleArguments.toSeq)
+    val cmd = makeIsabelleCommandLine(isabelleRoot, isabelleArguments.toSeq)
 
     logger.debug(s"Cmd line: ${cmd.mkString(" ")}")
 
@@ -249,4 +252,14 @@ class PIDEWrapperCommandline(val isabelleRoot: Path) extends PIDEWrapper {
 
 object PIDEWrapperCommandline {
   private val logger = log4s.getLogger
+
+  private[control] def makeIsabelleCommandLine(isabelleHome: Path, arguments: Seq[String]) : Seq[String]= {
+    if (SystemUtils.IS_OS_WINDOWS) {
+      val bash = isabelleHome.resolve("contrib").resolve("cygwin").resolve("bin").resolve("bash").toString
+      val isabelle = Utils.cygwinPath(isabelleHome.resolve("bin").resolve("isabelle"))
+      List(bash, "--login", "-c",
+        (List(isabelle) ++ arguments).map(StringEscapeUtils.escapeXSI).mkString(" "))
+    } else
+      List(isabelleHome.resolve("bin").resolve("isabelle").toString) ++ arguments
+  }
 }
