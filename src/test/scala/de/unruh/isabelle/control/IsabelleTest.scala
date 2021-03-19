@@ -155,7 +155,7 @@ object IsabelleTest {
     val path = if (Files.exists(config))
       new BufferedReader(new FileReader(config.toFile)).readLine()
     else if (SystemUtils.IS_OS_WINDOWS)
-      s"""c:\Isabelle$isabelleVersion"""
+      s"""c:\\Isabelle$isabelleVersion"""
     else
       s"/opt/Isabelle$isabelleVersion"
     Paths.get(path)
