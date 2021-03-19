@@ -8,26 +8,37 @@ import scala.sys.process._
 
 lazy val component = RootProject(file("component"))
 
-def pideWrapper(version: String, scala: String) = Project(s"pidewrapper$version", file(s"pidewrappers/$version"))
-  .settings(
-    Compile / sourceDirectories += baseDirectory.value,
-    scalaVersion := scala,
-    Compile / unmanagedJars := {
-      val isabelleHome = file("/opt") / s"Isabelle$version"
-      assert(isabelleHome.canRead)
-      val cp = ((isabelleHome / "lib" / "classes" +++ isabelleHome / "contrib") ** "*.jar").classpath
-      assert(cp.nonEmpty)
-//      println(cp)
-      cp
-    },
-    // Add classes from root project to classpath (need PIDEWrapper.class)
-    Compile / managedClasspath += {
-      val classes = (Compile/classDirectory).in(root).value
-      // This makes sure the directory "classes" contains up-to-date classes from the root project
-      (Compile/compile).in(root).value
-      classes
-    }
-  )
+/** This should be the directory that contains all Isabelle installations (needed for compiling)
+ * If support for only some Isabelle versions should be built, set [buildOnlyFor] below
+ */
+val isabelleHomeDirectories = file("/opt")
+/** Set to Some(List(version, version, ...)) to select which Isabelle versions to support. */
+val buildOnlyFor = None
+
+def pideWrapper(version: String, scala: String) = {
+  if (buildOnlyFor.exists(!_.contains(version))) // version not in buildOnlyFor (and buildOnlyFor != None)
+    Project(s"pidewrapper$version-dummy", file(s"pidewrappers/$version")).
+      settings(Compile / sources := List())
+  else
+    Project(s"pidewrapper$version", file(s"pidewrappers/$version")).settings(
+      Compile / sourceDirectories += baseDirectory.value,
+      scalaVersion := scala,
+      Compile / unmanagedJars := {
+        val isabelleHome = isabelleHomeDirectories / s"Isabelle$version"
+        assert(isabelleHome.canRead, isabelleHome)
+        val cp = ((isabelleHome / "lib" / "classes" +++ isabelleHome / "contrib") ** "*.jar").classpath
+        assert(cp.nonEmpty)
+        cp
+      },
+      // Add classes from root project to classpath (need PIDEWrapper.class)
+      Compile / managedClasspath += {
+        val classes = (Compile/classDirectory).in(root).value
+        // This makes sure the directory "classes" contains up-to-date classes from the root project
+        (Compile/compile).in(root).value
+        classes
+      }
+    )
+}
 
 lazy val pidewrapper2021 = pideWrapper("2021", scala="2.13.4")
 

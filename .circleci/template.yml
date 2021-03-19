@@ -95,6 +95,9 @@ jobs:
                 echo @{isabellehome} > .isabelle-home;;
             esac
 
+            # This makes sure only support for Isabelle@{isabelle} is built (otherwise we need to download all Isabelle's)
+            sed -i 's/^val buildOnlyFor .*/val buildOnlyFor = Some(List("@{isabelle}"))/' build.sbt
+
             ~/install/sbt -@{scala} "testOnly -- -u scalatest-reports" </dev/null
 
       - store_test_results:
