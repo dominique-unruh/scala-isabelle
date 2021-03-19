@@ -34,6 +34,7 @@ class Test extends AnyFunSuite {
   }
 
   test("temporary experiments") {
+/*
     val mlCode = """tracing "1""""
 
     val pideWrapper = PIDEWrapper.getDefaultPIDEWrapper(IsabelleTest.isabelleHome)
@@ -49,5 +50,6 @@ class Test extends AnyFunSuite {
       progress_stderr = { line => print(s"* $line\n") })
 
     println(2,process)
+*/
   }
 }
