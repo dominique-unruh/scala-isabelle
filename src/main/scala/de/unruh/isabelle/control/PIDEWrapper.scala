@@ -59,23 +59,25 @@ object PIDEWrapper {
     val isabelleVersion =
       for (file <- Files.list(isabelleRoot).iterator().asScala.toSeq;
            name = file.getFileName.toString;
-           matcher <- regex.findFirstMatchIn(name))
-        yield matcher
+           matcher <- regex.findFirstMatchIn(name);
+           year = matcher.group("year").toInt;
+           step = matcher.group("step") match { case null => 0; case step => step.toInt })
+        yield (name, (year, step))
 
     if (isabelleVersion.isEmpty)
       throw IsabelleSetupException(s"$isabelleRoot is not a valid Isabelle installation (does not contain a file named 'IsabelleVERSION')")
-    if (isabelleVersion.length > 1)
-      throw IsabelleSetupException(s"$isabelleRoot is not a valid Isabelle installation (contains multiple files named 'IsabelleVERSION': ${isabelleVersion map {_.matched} mkString ", "})")
 
-    val year = isabelleVersion.head.group("year").toInt
-    val step = isabelleVersion.head.group("step") match { case null => 0; case step => step.toInt }
+    val isabelleVersion2 = isabelleVersion.map(_._2).toSet
+
+    if (isabelleVersion2.size > 1)
+      throw IsabelleSetupException(s"$isabelleRoot is not a valid Isabelle installation (contains multiple files named 'IsabelleVERSION': ${isabelleVersion map {_._1} mkString ", "})")
 
     def fallbackPIDE() = {
-      logger.warn(s"Isabelle version ${isabelleVersion.head.matched} unknown. Using PIDE wrapper code for Isabelle2021")
+      logger.warn(s"Isabelle version ${isabelleVersion.head._1} unknown. Using PIDE wrapper code for Isabelle2021")
       getPIDEWrapperFromJar(isabelleRoot, pideWrapperJar2021)
     }
 
-    (year, step) match {
+    isabelleVersion2.head match {
       case (2021, 0) => getPIDEWrapperFromJar(isabelleRoot, pideWrapperJar2021)
       case (year, _) if year < 2021 => new PIDEWrapperCommandline(isabelleRoot)
       case (2021, step) if step > 0 => fallbackPIDE()
