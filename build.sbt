@@ -13,7 +13,7 @@ lazy val component = RootProject(file("component"))
  */
 val isabelleHomeDirectories = List(
   file("/opt"),
-  file(sys.env("user.home")) / "install" // In CircleCI
+  file(System.getProperty("user.home")) / "install" // In CircleCI
 )
 /** Set to Some(List(version, version, ...)) to select which Isabelle versions to support. */
 val buildOnlyFor: Option[List[String]] = None
