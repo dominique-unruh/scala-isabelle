@@ -792,6 +792,7 @@ object Isabelle {
   /** Path to absolute string, interpreted relative to wd */
   private def absPath(path: Path)(implicit setup: Setup) = setup.workingDirectory.resolve(path).toAbsolutePath
   /** Path to absolute string, interpreted relative to wd */
+  // TODO remove
   private def cygwinAbs(path: Path)(implicit setup: Setup) = cygwinIfWin(absPath(path))
 
   // TODO: move to PIDEWrapperCommandline
