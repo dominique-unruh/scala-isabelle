@@ -17,22 +17,24 @@ class PIDEWrapperImpl(val isabelleRoot: Path) extends PIDEWrapperViaClassloader 
   override def startIsabelleProcess(cwd: Path, mlCode: String, logic: String,
                                     sessionRoots: Array[Path], build: Boolean,
                                     userDir: Optional[Path]): Process = {
-    // TODO use userDir
 
-    val channel = System_Channel()
+    if (userDir.isPresent)
+      // DOCUMENT: reference some documentation for this from error message
+      throw new IllegalArgumentException("Setting the user directory (via Setup.userDir) is not possible when starting Isabelle via Isabelle/PIDE")
+
     Isabelle_System.init(isabelle_root = isabelleRoot.toString)
+    val channel = System_Channel()
     val options = Options.init()
     val channel_options = options.string.update("system_channel_address", channel.address).
       string.update("system_channel_password", channel.password)
 
-    val sessionRoots2 = sessionRoots.map(p => isabelle.Path.explode(p.toString)).toList
+    val sessionRoots2 = sessionRoots.map(p => isabelle.File.path(p.toFile)).toList
     val sessions_structure = Sessions.load_structure(options = options, dirs = sessionRoots2)
     val store = Sessions.store(options)
 
     if (build) {
       // Build.build_logic requires to run on an Isabelle_Thread.
       // We make it a daemon thread, but we wait for it to terminate before we continue. Thus it will effectively be a daemon only if the current thread is.
-      // TODO: Does "build_logic" scan all sessions again? Can we avoid that?
       Isabelle_Thread.fork(name = "Build Isabelle", daemon = true) {
         Build.build_logic(options = options, logic = logic, build_heap = true, dirs = sessionRoots2)
       }.join()

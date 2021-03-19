@@ -14,7 +14,7 @@ import scala.collection.JavaConverters.asScalaIteratorConverter
 import scala.collection.mutable.ListBuffer
 import scala.sys.process.ProcessLogger
 
-// TODO document
+// DOCUMENT
 // DOCUMENT must not reference any scala classes
 abstract class PIDEWrapper {
   def killProcess(process: Process): Unit
@@ -22,8 +22,8 @@ abstract class PIDEWrapper {
   type Process <: AnyRef
 
   def startIsabelleProcess(cwd: Path = Path.of("").toAbsolutePath, mlCode: String = "",
-                           logic: String = "HOL", sessionRoots: Array[Path] = Array(), build: Boolean = false,
-                           userDir: Optional[Path] = Optional.empty()): Process
+                           logic: String = "HOL", sessionRoots: Array[Path] = Array(),
+                           build: Boolean = false, userDir: Optional[Path] = Optional.empty()): Process
 
   // DOCUMENT
   /** @return true if the process terminated normally (without error) */

@@ -700,7 +700,7 @@ object Isabelle {
                    workingDirectory : Path = Paths.get(""),
                    sessionRoots : Seq[Path] = Nil,
                    build : Boolean = true,
-                   verbose : Boolean = false, // TODO: remove (is ignored)
+                   @deprecated("This flag is ignored and will be removed", "0.7") verbose : Boolean = false,
                    isabelleCommandHandler: Data => Unit = Isabelle.defaultCommandHandler) extends SetupGeneral {
     /** [[isabelleHome]] as an absolute path */
     def isabelleHomeAbsolute: Path = workingDirectory.resolve(isabelleHome)
