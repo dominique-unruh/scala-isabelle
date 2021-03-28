@@ -18,17 +18,37 @@ import scala.collection.JavaConverters.asScalaIteratorConverter
 import scala.collection.mutable.ListBuffer
 import scala.sys.process.ProcessLogger
 
-// DOCUMENT
-// DOCUMENT must not reference any scala classes
+/** A class that wraps a mechanism to instantiate an Isabelle process.
+ *
+ * This class is an internal implementation detail of scala-isabelle and should not be considered part of
+ * the public facing API. In particular, the methods in this class may change without notice.
+ *
+ * An instance of this class suitable for instantiating a given Isabelle version can be created using
+ * [PIDEWrapper.getDefaultPIDEWrapper].
+ *
+ * Different implementations could either invoke the Isabelle process on the command line ([PIDEWrapperCommandline]),
+ * or directly via Isabelle/Scala methods. The latter is handled by subclasses of [PIDEWrapperViaClassloader]
+ * that are loaded through a fresh classloader that has all JARs needed by Isabelle/Scala on its classpath.
+ * (A fresh classloader is needed because Isabelle/Scala might expect a different version of the scala library that
+ * scala-isabelle is running with.)
+ *
+ * This abstract class intentionally does not refer to any classes from the Scala library. This is because the classes
+ * that access the PIDEWrapper instance may be running with a difference instance of the Scala library than
+ * the the class that implements this abstract class.
+ **/
 abstract class PIDEWrapper {
+  /** Stop the running Isabelle process. (Possibly forcefully.) */
   def killProcess(process: Process): Unit
 
+  /** A type that represents a running Isabelle process. */
   type Process <: AnyRef
 
+  // DOCUMENT
   def startIsabelleProcess(cwd: Path, mlCode: String,
                            logic: String, sessionRoots: Array[Path],
                            build: Boolean, userDir: Optional[Path]): Process
 
+  // DOCUMENT
   def jedit(cwd: Path, logic: String, sessionRoots: Array[Path],
             userDir: Optional[Path], files: Array[Path]) : Unit
 
@@ -36,9 +56,11 @@ abstract class PIDEWrapper {
   /** @return true if the process terminated normally (without error) */
   def waitForProcess(process: Process, progress_stdout: Consumer[String], progress_stderr: Consumer[String]): Boolean
 
+  // DOCUMENT
   def catchException[A](exception: (String, Throwable) => IsabelleControllerException)(function: => A): A
 }
 
+// DOCUMENT
 abstract class PIDEWrapperViaClassloader extends PIDEWrapper {
   def catchException[A](exception: (String, Throwable) => IsabelleControllerException)(function: => A): A =
     try {
@@ -50,6 +72,7 @@ abstract class PIDEWrapperViaClassloader extends PIDEWrapper {
     }
 }
 
+// DOCUMENT
 object PIDEWrapper {
   private lazy val regex = """Isabelle(?<year>[0-9]+)(-(?<step>[0-9]+))?(-RC(?<rc>[0-9]+))?(.exe)?""".r.anchored
 
@@ -255,7 +278,7 @@ class PIDEWrapperCommandline(val isabelleRoot: Path) extends PIDEWrapper {
 object PIDEWrapperCommandline {
   private val logger = log4s.getLogger
 
-  private[control] def makeIsabelleCommandLine(isabelleHome: Path, arguments: Seq[String]) : Seq[String]= {
+  private def makeIsabelleCommandLine(isabelleHome: Path, arguments: Seq[String]) : Seq[String]= {
     if (SystemUtils.IS_OS_WINDOWS) {
       val bash = isabelleHome.resolve("contrib").resolve("cygwin").resolve("bin").resolve("bash").toString
       val isabelle = Utils.cygwinPath(isabelleHome.resolve("bin").resolve("isabelle"))
