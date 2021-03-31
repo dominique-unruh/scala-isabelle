@@ -7,7 +7,7 @@ orbs:
 
 workflows:
   version: 2
-  macos2019:
+  macos2020-212:
     jobs:
       - test:
           filters:
@@ -36,32 +36,32 @@ jobs:
       # Download and cache Isabelle
       - restore_cache:
           keys:
-            - v3-isabelle-2019-macos
+            - v3-isabelle-2020-macos
       - run:
-          name: Downloading Isabelle 2019 (if needed)
+          name: Downloading Isabelle 2020 (if needed)
           shell: bash
           command: |
-            if ! [ -e "$HOME/install/Isabelle2019" ]; then
+            if ! [ -e "$HOME/install/Isabelle2020" ]; then
               mkdir -p ~/install
               case macos in
                 windows)
-                  curl "https://isabelle.in.tum.de/website-Isabelle2019/dist/Isabelle2019_macos.tar.gz" -o /tmp/isabelle.exe
+                  curl "https://isabelle.in.tum.de/website-Isabelle2020/dist/Isabelle2020_macos.tar.gz" -o /tmp/isabelle.exe
                   7z x -y -o"$HOME/install" /tmp/isabelle.exe;;
                 linux|macos)
-                  curl "https://isabelle.in.tum.de/website-Isabelle2019/dist/Isabelle2019_macos.tar.gz" | tar -x -z -C ~/install;;
+                  curl "https://isabelle.in.tum.de/website-Isabelle2020/dist/Isabelle2020_macos.tar.gz" | tar -x -z -C ~/install;;
                 *) false;;
               esac
             fi
       - save_cache:
           paths:
-            - ~/install/Isabelle2019.app/Isabelle
-          key: v3-isabelle-2019-macos
+            - ~/install/Isabelle2020.app/Isabelle
+          key: v3-isabelle-2020-macos
 
       # Download and cache dependencies
       - restore_cache:
           keys:
-            - v3-dependencies-macos-213-{{ checksum "build.sbt" }}-{{ checksum "publish.sbt" }}
-            - v3-dependencies-macos-213-
+            - v3-dependencies-macos-212-{{ checksum "build.sbt" }}-{{ checksum "publish.sbt" }}
+            - v3-dependencies-macos-212-
       - run:
           name: Downloading build dependencies (if needed)
           shell: bash
@@ -70,7 +70,7 @@ jobs:
               mkdir -p ~/install
               curl -Ls https://git.io/sbt > ~/install/sbt
               chmod +x ~/install/sbt
-              ~/install/sbt -213 update test/update </dev/null
+              ~/install/sbt -212 update test/update </dev/null
             fi
             shasum build.sbt publish.sbt > ~/dependencies-sha1sum
       - save_cache:
@@ -82,7 +82,7 @@ jobs:
             - $LOCALAPPDATA\Coursier\Cache
             - ~/.cache/coursier
             - ~/dependencies-sha1sum
-          key: v3-dependencies-macos-213-{{ checksum "build.sbt" }}-{{ checksum "publish.sbt" }}
+          key: v3-dependencies-macos-212-{{ checksum "build.sbt" }}-{{ checksum "publish.sbt" }}
 
       - run:
           name: Running tests
@@ -91,17 +91,17 @@ jobs:
             case macos in
               windows)
                 # Isabelle process calls rebaseall and then fails, unless we deactivate it
-                > ~/install/Isabelle2019.app/Isabelle/contrib/cygwin/isabelle/rebaseall
-                cygpath -w ~/install/Isabelle2019.app/Isabelle > .isabelle-home;;
+                > ~/install/Isabelle2020.app/Isabelle/contrib/cygwin/isabelle/rebaseall
+                cygpath -w ~/install/Isabelle2020.app/Isabelle > .isabelle-home;;
               linux|macos)
-                echo ~/install/Isabelle2019.app/Isabelle > .isabelle-home;;
+                echo ~/install/Isabelle2020.app/Isabelle > .isabelle-home;;
             esac
 
-            # This makes sure only support for Isabelle2019 is built (otherwise we need to download all Isabelle's)
-            sed -i -e 's/^val buildOnlyFor.*/val buildOnlyFor = Some(List("2019"))/' build.sbt
+            # This makes sure only support for Isabelle2020 is built (otherwise we need to download all Isabelle's)
+            sed -i -e 's/^val buildOnlyFor.*/val buildOnlyFor = Some(List("2020"))/' build.sbt
             # cat build.sbt
 
-            ~/install/sbt -213 "testOnly -- -u scalatest-reports" </dev/null
+            ~/install/sbt -212 "testOnly -- -u scalatest-reports" </dev/null
 
       - store_test_results:
           path: scalatest-reports
