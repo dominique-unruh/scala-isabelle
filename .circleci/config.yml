@@ -7,7 +7,7 @@ orbs:
 
 workflows:
   version: 2
-  win2021-212:
+  linux2019:
     jobs:
       - test:
           filters:
@@ -28,7 +28,7 @@ jobs:
 
   test:
 
-    executor: { name: windows/default }
+    machine: {image: ubuntu-2004:202010-01}
 
     steps:
       - checkout
@@ -36,32 +36,32 @@ jobs:
       # Download and cache Isabelle
       - restore_cache:
           keys:
-            - v3-isabelle-2021-windows
+            - v3-isabelle-2019-linux
       - run:
-          name: Downloading Isabelle 2021 (if needed)
+          name: Downloading Isabelle 2019 (if needed)
           shell: bash
           command: |
-            if ! [ -e "$HOME/install/Isabelle2021" ]; then
+            if ! [ -e "$HOME/install/Isabelle2019" ]; then
               mkdir -p ~/install
-              case windows in
+              case linux in
                 windows)
-                  curl "https://isabelle.in.tum.de/website-Isabelle2021/dist/Isabelle2021.exe" -o /tmp/isabelle.exe
+                  curl "https://isabelle.in.tum.de/website-Isabelle2019/dist/Isabelle2019_linux.tar.gz" -o /tmp/isabelle.exe
                   7z x -y -o"$HOME/install" /tmp/isabelle.exe;;
                 linux|macos)
-                  curl "https://isabelle.in.tum.de/website-Isabelle2021/dist/Isabelle2021.exe" | tar -x -z -C ~/install;;
+                  curl "https://isabelle.in.tum.de/website-Isabelle2019/dist/Isabelle2019_linux.tar.gz" | tar -x -z -C ~/install;;
                 *) false;;
               esac
             fi
       - save_cache:
           paths:
-            - ~/install/Isabelle2021
-          key: v3-isabelle-2021-windows
+            - ~/install/Isabelle2019
+          key: v3-isabelle-2019-linux
 
       # Download and cache dependencies
       - restore_cache:
           keys:
-            - v3-dependencies-windows-212-{{ checksum "build.sbt" }}-{{ checksum "publish.sbt" }}
-            - v3-dependencies-windows-212-
+            - v3-dependencies-linux-213-{{ checksum "build.sbt" }}-{{ checksum "publish.sbt" }}
+            - v3-dependencies-linux-213-
       - run:
           name: Downloading build dependencies (if needed)
           shell: bash
@@ -70,7 +70,7 @@ jobs:
               mkdir -p ~/install
               curl -Ls https://git.io/sbt > ~/install/sbt
               chmod +x ~/install/sbt
-              ~/install/sbt -212 update test/update </dev/null
+              ~/install/sbt -213 update test/update </dev/null
             fi
             sha1sum build.sbt publish.sbt > ~/dependencies-sha1sum
       - save_cache:
@@ -82,26 +82,26 @@ jobs:
             - $LOCALAPPDATA\Coursier\Cache
             - ~/.cache/coursier
             - ~/dependencies-sha1sum
-          key: v3-dependencies-windows-212-{{ checksum "build.sbt" }}-{{ checksum "publish.sbt" }}
+          key: v3-dependencies-linux-213-{{ checksum "build.sbt" }}-{{ checksum "publish.sbt" }}
 
       - run:
           name: Running tests
           shell: bash
           command: |
-            case windows in
+            case linux in
               windows)
                 # Isabelle process calls rebaseall and then fails, unless we deactivate it
-                > ~/install/Isabelle2021/contrib/cygwin/isabelle/rebaseall
-                cygpath -w ~/install/Isabelle2021 > .isabelle-home;;
+                > ~/install/Isabelle2019/contrib/cygwin/isabelle/rebaseall
+                cygpath -w ~/install/Isabelle2019 > .isabelle-home;;
               linux|macos)
-                echo ~/install/Isabelle2021 > .isabelle-home;;
+                echo ~/install/Isabelle2019 > .isabelle-home;;
             esac
 
-            # This makes sure only support for Isabelle2021 is built (otherwise we need to download all Isabelle's)
-            sed -i -e 's/^val buildOnlyFor.*/val buildOnlyFor = Some(List("2021"))/' build.sbt
+            # This makes sure only support for Isabelle2019 is built (otherwise we need to download all Isabelle's)
+            sed -i -e 's/^val buildOnlyFor.*/val buildOnlyFor = Some(List("2019"))/' build.sbt
             # cat build.sbt
 
-            ~/install/sbt -212 "testOnly -- -u scalatest-reports" </dev/null
+            ~/install/sbt -213 "testOnly -- -u scalatest-reports" </dev/null
 
       - store_test_results:
           path: scalatest-reports

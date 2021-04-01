@@ -4,6 +4,7 @@ import de.unruh.isabelle.control.Isabelle.{cygwinIfWin, makeIsabelleEnvironment}
 import de.unruh.isabelle.control.PIDEWrapperCommandline.makeIsabelleCommandLine
 import de.unruh.isabelle.misc.Utils
 import de.unruh.isabelle.misc.Utils.optionalAsScala
+import org.apache.commons.io.FileUtils
 import org.apache.commons.lang3.SystemUtils
 import org.apache.commons.text.StringEscapeUtils
 import org.log4s
@@ -112,6 +113,15 @@ object PIDEWrapper {
 
   private val logger = log4s.getLogger
 
+  private def resourceToFile(resource: URL): URL = {
+    if (resource.getProtocol == "file") return resource
+    else {
+      val tempFile = Files.createTempFile("pidewrapper-temp", ".jar")
+      FileUtils.copyURLToFile(resource, tempFile.toFile)
+      tempFile.toUri.toURL
+    }
+  }
+
   def getPIDEWrapperFromJar(isabelleRoot: Path, pideWrapperJar: URL): PIDEWrapper = {
     val id = counter.incrementAndGet()
 
@@ -120,7 +130,8 @@ object PIDEWrapper {
                     if Files.isRegularFile(file))
       yield file.toUri.toURL
 
-    val jars = (pideWrapperJar :: isabelleJars).toArray[URL]
+    // Using resourceToFile(pideWrapperJar) because URLClassLoader cannot handle jars in jars.
+    val jars = (resourceToFile(pideWrapperJar) :: isabelleJars).toArray[URL]
 
     val filteredClassloader = new ClassLoader(getClass.getClassLoader) {
       override def loadClass(name: String, resolve: Boolean): Class[_] = {
