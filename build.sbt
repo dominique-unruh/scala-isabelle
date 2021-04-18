@@ -5,27 +5,17 @@ import sbt.io.Path.relativeTo
 
 import scala.sys.process._
 
-lazy val component = RootProject(file("component"))
-
 /** This should be the directory that contains all Isabelle installations (needed for compiling).
  * If support for only some Isabelle versions should be built, set [buildOnlyFor] below.
  * If several directories are given, the build looks in each of them.
  */
-val isabelleHomeDirectories = List(
+val isabelleHomeDirectories = IsabelleHomeDirectories(
   file("/opt"),
   file(System.getProperty("user.home")) / "install" // In CircleCI
 )
+
 /** Set to Some(List(version, version, ...)) to select which Isabelle versions to support. */
 val buildOnlyFor: Option[List[String]] = None
-
-def findIsabelleRoot(version: String) =
-  { for (dir <- isabelleHomeDirectories;
-         root <- List(dir / s"Isabelle$version", dir / s"Isabelle$version.app");
-         if root.isDirectory)
-    yield root }
-    .headOption.getOrElse {
-    throw new FileNotFoundException(s"No Isabelle root director found for Isabelle$version, searched $isabelleHomeDirectories")
-  }
 
 def pideWrapper(version: String, scala: String) = {
   if (buildOnlyFor.exists(!_.contains(version))) { // version not in buildOnlyFor (and buildOnlyFor != None)
@@ -36,13 +26,7 @@ def pideWrapper(version: String, scala: String) = {
     Project(s"pidewrapper$version", file(s"pidewrappers/$version")).settings(
       Compile / sourceDirectories += baseDirectory.value,
       scalaVersion := scala,
-      Compile / unmanagedJars := {
-        val isabelleHome = findIsabelleRoot(version)
-        assert(isabelleHome.canRead, isabelleHome)
-        val cp = ((isabelleHome / "lib" / "classes" +++ isabelleHome / "contrib") ** "*.jar").classpath
-        assert(cp.nonEmpty)
-        cp
-      },
+      Compile / unmanagedJars := isabelleHomeDirectories.getClasspath(version),
       // Add classes from root project to classpath (need PIDEWrapper.class)
       Compile / managedClasspath += {
         val classes = (Compile/classDirectory).in(root).value
@@ -54,6 +38,18 @@ def pideWrapper(version: String, scala: String) = {
 }
 
 lazy val pidewrapper2021 = pideWrapper("2021", scala="2.13.4")
+
+lazy val component = project
+  .dependsOn(root)
+  .settings(
+    scalaVersion := "2.13.4",
+    Compile / packageBin / artifactPath := baseDirectory.value / "scala-isabelle-component.jar",
+    Compile / unmanagedJars := isabelleHomeDirectories.getClasspath("2021"),
+    Compile / packageBin := {
+      Build.copyClasspath(dependencyClasspath.in(Runtime).value, baseDirectory.value / "dependencies");
+      Build.copyFileInto(packageBin.in(root).in(Compile).value, baseDirectory.value / "dependencies")
+      (Compile/packageBin).value }
+  )
 
 lazy val root = (project in file("."))
   .withId("scala-isabelle")
@@ -79,49 +75,35 @@ scalaVersion := "2.13.3"
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
-libraryDependencies += "de.unruh" % "java-patterns" % "0.1.0"
-//resolvers += Resolver.sonatypeRepo("snapshots")
+libraryDependencies ++= Seq(
+  "de.unruh" % "java-patterns" % "0.1.0",
+  "org.scalatest" %% "scalatest" % "3.2.3" % "test",
+  // https://mvnrepository.com/artifact/org.log4s/log4s
+  "org.log4s" %% "log4s" % "1.9.0",
+  // https://mvnrepository.com/artifact/org.slf4j/slf4j-simple
+  "org.slf4j" % "slf4j-simple" % "1.7.30",
+  // https://mvnrepository.com/artifact/commons-io/commons-io
+  "commons-io" % "commons-io" % "2.8.0",
+  // https://mvnrepository.com/artifact/org.scalaz/scalaz-core
+  "org.scalaz" %% "scalaz-core" % "7.3.2",
+  // https://mvnrepository.com/artifact/org.apache.commons/commons-lang3
+  "org.apache.commons" % "commons-lang3" % "3.11",
+  // https://mvnrepository.com/artifact/org.apache.commons/commons-text
+  "org.apache.commons" % "commons-text" % "1.9",
+  // https://mvnrepository.com/artifact/com.google.guava/guava
+  "com.google.guava" % "guava" % "30.0-jre",
+  "org.jetbrains" % "annotations" % "20.1.0",
 
-libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.3" % "test"
-// https://mvnrepository.com/artifact/org.log4s/log4s
-libraryDependencies += "org.log4s" %% "log4s" % "1.9.0"
-// https://mvnrepository.com/artifact/org.slf4j/slf4j-simple
-libraryDependencies += "org.slf4j" % "slf4j-simple" % "1.7.30"
-// https://mvnrepository.com/artifact/commons-io/commons-io
-libraryDependencies += "commons-io" % "commons-io" % "2.8.0"
-// https://mvnrepository.com/artifact/org.scalaz/scalaz-core
-libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.3.2"
-// https://mvnrepository.com/artifact/org.apache.commons/commons-lang3
-libraryDependencies += "org.apache.commons" % "commons-lang3" % "3.11"
-// https://mvnrepository.com/artifact/org.apache.commons/commons-text
-libraryDependencies += "org.apache.commons" % "commons-text" % "1.9"
-// https://mvnrepository.com/artifact/com.google.guava/guava
-libraryDependencies += "com.google.guava" % "guava" % "30.0-jre"
-libraryDependencies += "org.jetbrains" % "annotations" % "20.1.0"
+  // TODO: mark as compile time only or something
+  "org.scala-lang" % "scala-reflect" % scalaVersion.value,
 
-// TODO: mark as compile time only or something
-libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value
-
-libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value % "test"
+  "org.scala-lang" % "scala-compiler" % scalaVersion.value % "test",
+)
 
 lazy val makeGitrevision = taskKey[File]("Create gitrevision.txt")
 Compile / resourceGenerators += makeGitrevision.map(Seq(_))
-makeGitrevision := {
-    val file = (Compile / resourceManaged).value / "de" / "unruh" / "isabelle" / "gitrevision.txt"
-    file.getParentFile.mkdirs()
-    if (SystemUtils.IS_OS_WINDOWS) {
-        val pr = new PrintWriter(file)
-        pr.println("Built under windows, not adding gitrevision.txt") // On my machine, Windows doesn't have enough tools installed.
-        pr.close()
-    } else if ((baseDirectory.value / ".git").exists())
-        Process(List("bash","-c",s"( date && git describe --tags --long --always --dirty --broken && git describe --always --all ) > ${file}")).!!
-    else {
-        val pr = new PrintWriter(file)
-        pr.println("Not built from a GIT worktree.")
-        pr.close()
-    }
-    file
-}
+makeGitrevision := Build.makeGitrevision(baseDirectory.value,
+  (Compile / resourceManaged).value / "de" / "unruh" / "isabelle" / "gitrevision.txt")
 Compile / packageSrc / mappings ++= makeGitrevision.value pair relativeTo((Compile / resourceManaged).value)
 Compile / packageDoc / mappings ++= makeGitrevision.value pair relativeTo((Compile / resourceManaged).value)
 
