@@ -299,18 +299,17 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
       }
   }
 
-  /** Invokes the Isabelle process.
-   * */
-  private def startProcessSlave(setup: Setup) : PIDEWrapper#Process = {
-    implicit val s: Setup = setup
-    def wd = setup.workingDirectory
+
+  private lazy val tempDir: Path = {
+    val dir = Files.createTempDirectory("isabellecontrol").toAbsolutePath
+    dir.toFile.deleteOnExit()
+    logger.debug(s"Temp directory: $dir")
+    dir
+  }
+
+
+  private def setupProtocol(mlFork: Boolean) = {
     val useSockets = SystemUtils.IS_OS_WINDOWS
-
-    val tempDir = Files.createTempDirectory("isabellecontrol").toAbsolutePath
-    tempDir.toFile.deleteOnExit()
-    logger.debug(s"Temp directory: $tempDir")
-
-    assert(setup.userDir.forall(_.endsWith(".isabelle")))
 
     val (inputPipe, outputPipe) =
       if (useSockets)
@@ -331,6 +330,7 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
       if (useSockets) new ServerSocket(0,0,InetAddress.getLoopbackAddress)
       else null
 
+
     lazy val (input,output) =
       if (useSockets) {
         val socket = serverSocket.accept();
@@ -338,11 +338,6 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
       } else {
         (new FileOutputStream(inputPipe.toFile), new FileInputStream(outputPipe.toFile))
       }
-
-//    val isabelleArguments = ListBuffer[String]()
-
-//    isabelleArguments += "process"
-//    isabelleArguments += "-l" += setup.logic
 
     val communicationStreams = if (useSockets) {
       val address = s"${serverSocket.getInetAddress.getHostAddress}:${serverSocket.getLocalPort}"
@@ -354,21 +349,51 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
       s"""(BinIO.openIn "$inFile", BinIO.openOut "$outFile")"""
     }
 
-//    val mlFile = filePathFromResource("control_isabelle.ml", tempDir,
-//      _.replace("COMMUNICATION_STREAMS", communicationStreams)
-//        .replace("SECRETS", s"(${mlInteger(inSecret)}, ${mlInteger(outSecret)})"))
-
     val source = Source.fromURL(getClass.getResource("control_isabelle.ml"))
     val mlCode1 =
       source.getLines().map {
         _.replace("COMMUNICATION_STREAMS", communicationStreams)
-                .replace("SECRETS", s"(${mlInteger(inSecret)}, ${mlInteger(outSecret)})")
+          .replace("SECRETS", s"(${mlInteger(inSecret)}, ${mlInteger(outSecret)})")
       } mkString ("\n")
-    val mlCode = mlCode1 + "\n;;\nControl_Isabelle.handleLines()"
+
+
+    val mlCode2 = if (!mlFork) "Control_Isabelle.handleLines()"
+    else """val control_isabelle_struct =
+           |  #allStruct ML_Env.name_space () |> find_first (fn (n,_) => n = "Control_Isabelle") |> Option.valOf |> snd
+           |val params : Isabelle_Thread.params = {name="scala-isabelle protocol", stack_limit=NONE, interrupts=false}
+           |val thread = Isabelle_Thread.fork params (fn () =>
+           |  (#enterStruct ML_Env.name_space ("Control_Isabelle", control_isabelle_struct);
+           |   Control_Isabelle.handleLines ()))
+           |""".stripMargin
+
+    val mlCode = s"$mlCode1\n;;\n$mlCode2"
     source.close()
 
     Utils.runAsDaemonThread("Send to Isabelle", () => processQueue(input))
     Utils.runAsDaemonThread("Read from Isabelle", () => parseIsabelle(output))
+
+    mlCode
+  }
+
+  /** Invokes the Isabelle process.
+   * */
+  private def startProcessSlave(setup: Setup) : PIDEWrapper#Process = {
+    implicit val s: Setup = setup
+    def wd = setup.workingDirectory
+
+    assert(setup.userDir.forall(_.endsWith(".isabelle")))
+
+
+//    val isabelleArguments = ListBuffer[String]()
+
+//    isabelleArguments += "process"
+//    isabelleArguments += "-l" += setup.logic
+
+//    val mlFile = filePathFromResource("control_isabelle.ml", tempDir,
+//      _.replace("COMMUNICATION_STREAMS", communicationStreams)
+//        .replace("SECRETS", s"(${mlInteger(inSecret)}, ${mlInteger(outSecret)})"))
+
+    val mlCode = setupProtocol(mlFork = false)
 
     val lock = Isabelle.buildLocks.get(absPath(setup.isabelleHome).normalize).readLock
 
@@ -404,6 +429,9 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
   }
 
   private def startProcessRunning(setup: SetupRunning) : Unit = {
+    val mlCode = setupProtocol(mlFork = true)
+    setup.protocolSetupMLCode.success(mlCode)
+/*
     val inputPipe = setup.inputPipe
     val outputPipe = setup.outputPipe
 
@@ -421,6 +449,7 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
       override def run(): Unit = parseIsabelle(new FileInputStream(outputPipe.toFile)) }
     parseIsabelleThread.setDaemon(true)
     parseIsabelleThread.start()
+*/
   }
 
   setup match {
@@ -713,26 +742,33 @@ object Isabelle {
     }
   }
 
-  /**
-   * Configuration for connecting to an already running Isabelle process.
-   * The Isabelle process must load `control_isabelle.ml` (available as a resource in this package)
-   * and invoke `Control_Isabelle.handleLines ()`.
-   *
-   * Before loading `control_isabelle.ml`,
-   * the values `COMMUNICATION_STREAMS` and `SECRETS` need to be initialized in ML.
-   * `SECRETS` needs to be initialized with the secrets use in the communication with the Isabelle
-   * process. These values are currently chosen by the [[Isabelle]] class itself,
-   * '''making it currently impossible to use [[SetupRunning]]'''.
-   *
-   * @param inputPipe the path of a named pipe for the protocol messages sent to the Isabelle process
-   *                  (corresponding to first component of COMMUNICATION_STREAMS)
-   * @param outputPipe the path of a named pipe for the protocol messages sent by the Isabelle process
-   *                  (corresponding to second component of COMMUNICATION_STREAMS)
-   * @param isabelleCommandHandler see [[SetupGeneral.isabelleCommandHandler]]
-   */
   @Experimental
-  case class SetupRunning(inputPipe : Path, outputPipe : Path,
-                          isabelleCommandHandler: Data => Unit = Isabelle.defaultCommandHandler) extends SetupGeneral
+  // DOCUMENT
+  case class SetupRunning(protocolSetupMLCode: Promise[String],
+                          override val isabelleCommandHandler: Data => Unit = defaultCommandHandler) extends SetupGeneral
+
+  /*
+    /**
+     * Configuration for connecting to an already running Isabelle process.
+     * The Isabelle process must load `control_isabelle.ml` (available as a resource in this package)
+     * and invoke `Control_Isabelle.handleLines ()`.
+     *
+     * Before loading `control_isabelle.ml`,
+     * the values `COMMUNICATION_STREAMS` and `SECRETS` need to be initialized in ML.
+     * `SECRETS` needs to be initialized with the secrets use in the communication with the Isabelle
+     * process. These values are currently chosen by the [[Isabelle]] class itself,
+     * '''making it currently impossible to use [[SetupRunning]]'''.
+     *
+     * @param inputPipe the path of a named pipe for the protocol messages sent to the Isabelle process
+     *                  (corresponding to first component of COMMUNICATION_STREAMS)
+     * @param outputPipe the path of a named pipe for the protocol messages sent by the Isabelle process
+     *                  (corresponding to second component of COMMUNICATION_STREAMS)
+     * @param isabelleCommandHandler see [[SetupGeneral.isabelleCommandHandler]]
+     */
+    @Experimental
+    case class SetupRunning(inputPipe : Path, outputPipe : Path,
+                            isabelleCommandHandler: Data => Unit = Isabelle.defaultCommandHandler) extends SetupGeneral
+  */
 
   //noinspection UnstableApiUsage
   private val buildLocks = Striped.lazyWeakReadWriteLock(10)

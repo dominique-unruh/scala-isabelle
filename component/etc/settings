@@ -3,7 +3,7 @@
 set -e
 
 for jar in "$COMPONENT"/dependencies/*.jar; do
-  echo $jar
+#  echo $jar
   classpath $jar
 done
 
