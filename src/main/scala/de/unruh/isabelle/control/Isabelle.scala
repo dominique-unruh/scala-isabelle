@@ -646,9 +646,13 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
       override def run(): Unit = {
         try
           new BufferedReader(new InputStreamReader(stream)).lines().forEach { line =>
-            if (lastMessages.size >= 10) lastMessages.dequeue()
-            lastMessages.enqueue(line)
-            log(line)
+            try {
+              if (lastMessages.size >= 10) lastMessages.dequeue()
+              lastMessages.enqueue(line)
+              log(line)
+            } catch {
+              case e : Throwable => log(e)("Exception thrown while logging stream")
+            }
           }
         catch {
           case _ : UncheckedIOException =>
