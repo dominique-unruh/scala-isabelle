@@ -647,9 +647,13 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
 
   private val lastMessages = new mutable.Queue[String]()
   private def logLine(line: String, level: LogLevel): Unit = {
-    if (lastMessages.size >= 10) lastMessages.dequeue()
-    lastMessages.enqueue(line)
-    logger(level = level)(msg = line)
+    try {
+      if (lastMessages.size >= 10) lastMessages.dequeue()
+      lastMessages.enqueue(line)
+      logger(level = level)(msg = line)
+    } catch {
+      case e : Throwable => log(e)("Exception thrown while logging stream")
+    }
   }
   private def logStream(stream: BufferedReader, level: LogLevel) : Unit = {
     val thread = new Thread(s"Isabelle output logger, $level") {

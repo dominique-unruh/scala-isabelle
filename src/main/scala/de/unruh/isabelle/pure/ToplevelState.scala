@@ -9,16 +9,15 @@ import scala.concurrent.ExecutionContext
 import de.unruh.isabelle.pure.Implicits.theoryConverter
 
 final class ToplevelState private (val mlValue: MLValue[ToplevelState]) extends MLValueWrapper[ToplevelState] {
+  // TODO: test case
+  // TODO document
+  def theory(implicit isabelle: Isabelle, ec: ExecutionContext): Theory =
+    Ops.getTheory(this).retrieveNow
 
   // TODO: test case
   // TODO document
   def context(implicit isabelle: Isabelle, ec: ExecutionContext): Context =
     Ops.getContext(this).retrieveNow
-
-  // TODO: test case
-  // TODO document
-  def setContext(context: Context)(implicit isabelle: Isabelle, ec: ExecutionContext): ToplevelState =
-    Ops.setContext(this, context).retrieveNow
 }
 
 object ToplevelState extends MLValueWrapper.Companion[ToplevelState] {
@@ -35,8 +34,7 @@ object ToplevelState extends MLValueWrapper.Companion[ToplevelState] {
   //noinspection TypeAnnotation
   protected class Ops(implicit isabelle: Isabelle, ec: ExecutionContext) extends super.Ops {
     lazy val getContext = compileFunction[ToplevelState, Context]("Toplevel.context_of")
-    lazy val setContext = compileFunction[ToplevelState, Context, ToplevelState](
-      "fn (st, ctxt) => Toplevel.command_exception true (Toplevel.proof (K ctxt) Toplevel.empty) st")
+    lazy val getTheory = compileFunction[ToplevelState, Theory]("Toplevel.theory_of")
     lazy val theoryToplevel = compileFunction[Theory, ToplevelState]("Toplevel.theory_toplevel")
   }
 }

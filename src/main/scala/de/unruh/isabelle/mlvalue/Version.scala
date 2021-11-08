@@ -1,6 +1,6 @@
 package de.unruh.isabelle.mlvalue
 
-import de.unruh.isabelle.control.{Isabelle, OperationCollection}
+import de.unruh.isabelle.control.{Isabelle, IsabelleException, OperationCollection}
 import org.log4s
 import org.log4s.Logger
 
@@ -28,11 +28,16 @@ object Version extends OperationCollection {
   override protected def newOps(implicit isabelle: Isabelle, ec:  ExecutionContext): Ops = new Ops
   protected class Ops(implicit isabelle: Isabelle, ec:  ExecutionContext) {
 //    MLValue.init()
-    val versionString: String = MLValue.compileValue[String]("Distribution.version").retrieveNow
+    val versionString: String =
+      try
+        MLValue.compileValue[Option[String]]("Isabelle_System.isabelle_identifier()").retrieveNow.get
+      catch {
+        case _ : IsabelleException => MLValue.compileValue[String]("Distribution.version").retrieveNow
+      }
 
     val (year, step, rc) = {
-      val regex = """Isabelle(?<year>[0-9]+)(-(?<step>[0-9]+))?(-RC(?<rc>[0-9]+))?:""".r
-      regex.findPrefixMatchOf(versionString) match {
+      val regex = """^Isabelle(?<year>[0-9]+)(-(?<step>[0-9]+))?(-RC(?<rc>[0-9]+))?(:.*)?$""".r
+      regex.findFirstMatchIn(versionString) match {
         case None => (INVALID_YEAR, 0, NOT_RC)
         case Some(matcher) =>
           val year = matcher.group("year").toInt

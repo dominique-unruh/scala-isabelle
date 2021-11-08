@@ -39,7 +39,7 @@ jobs:
           name: Downloading Isabelle @{isabelle} (if needed)
           shell: bash
           command: |
-            if ! [ -e "$HOME/install/Isabelle@{isabelle}" ]; then
+            if ! [ -e "@{isabellehome}" ]; then
               mkdir -p ~/install
               case @{os} in
                 windows)
