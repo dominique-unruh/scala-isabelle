@@ -46,6 +46,13 @@ class TheoryTest extends AnyFunSuite {
     Theory(thyPath).force
   }
 
+  // smt did, at least at some point with 2021-1-RC1, give an error when loaded here
+  test("theory with SMT call") {
+    val thyPath = Paths.get("Theory_With_Smt.thy")
+    assert(Files.exists(setup.workingDirectory.resolve(thyPath)))
+    Theory(thyPath).force
+  }
+
   test("load theory by path, nested") {
     val thyPath = Paths.get("Subdir/B.thy")
     assert(Files.exists(setup.workingDirectory.resolve(thyPath)))
