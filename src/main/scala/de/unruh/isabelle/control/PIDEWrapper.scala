@@ -7,11 +7,12 @@ import de.unruh.isabelle.misc.Utils.optionalAsScala
 import org.apache.commons.io.FileUtils
 import org.apache.commons.lang3.SystemUtils
 import org.apache.commons.text.StringEscapeUtils
+import org.jetbrains.annotations.NotNull
 import org.log4s
 
 import java.io.{BufferedReader, InputStream, InputStreamReader, UncheckedIOException}
 import java.net.{URL, URLClassLoader}
-import java.nio.file.{Files, Path}
+import java.nio.file.{FileVisitOption, Files, NoSuchFileException, Path}
 import java.util.Optional
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.function.Consumer
@@ -77,9 +78,12 @@ abstract class PIDEWrapperViaClassloader extends PIDEWrapper {
 object PIDEWrapper {
   private lazy val regex = """Isabelle(?<year>[0-9]+)(-(?<step>[0-9]+))?(-RC(?<rc>[0-9]+))?(.exe)?""".r.anchored
 
-  lazy val pideWrapperJar2021: URL = getClass.getResource("pidewrapper2021.jar")
+  @NotNull lazy val pideWrapperJar2021: URL = getClass.getResource("pidewrapper2021.jar")
+  @NotNull lazy val pideWrapperJar2021_1: URL = getClass.getResource("pidewrapper2021-1.jar")
 
   def getDefaultPIDEWrapper(isabelleRoot: Path): PIDEWrapper = {
+    if (!Files.exists(isabelleRoot))
+      throw new NoSuchFileException(isabelleRoot.toString, null, "Isabelle home not found while initializing PIDE wrapper")
     val isabelleVersion =
       for (file <- Files.list(isabelleRoot).iterator().asScala.toSeq;
            name = file.getFileName.toString;
@@ -97,12 +101,13 @@ object PIDEWrapper {
       throw IsabelleSetupException(s"$isabelleRoot is not a valid Isabelle installation (contains multiple files named 'IsabelleVERSION': ${isabelleVersion map {_._1} mkString ", "})")
 
     def fallbackPIDE() = {
-      logger.warn(s"Isabelle version ${isabelleVersion.head._1} unknown. Using PIDE wrapper code for Isabelle2021")
-      getPIDEWrapperFromJar(isabelleRoot, pideWrapperJar2021)
+      logger.warn(s"Isabelle version ${isabelleVersion.head._1} unknown. Using PIDE wrapper code for Isabelle2021-1")
+      getPIDEWrapperFromJar("2021-1", isabelleRoot, pideWrapperJar2021_1)
     }
 
     isabelleVersion2.head match {
-      case (2021, 0) => getPIDEWrapperFromJar(isabelleRoot, pideWrapperJar2021)
+      case (2021, 0) => getPIDEWrapperFromJar("2021", isabelleRoot, pideWrapperJar2021)
+      case (2021, 1) => getPIDEWrapperFromJar("2021-1", isabelleRoot, pideWrapperJar2021_1)
       case (year, _) if year < 2021 => new PIDEWrapperCommandline(isabelleRoot)
       case (2021, step) if step > 0 => fallbackPIDE()
       case (year, _) if year > 2021 => fallbackPIDE()
@@ -113,7 +118,7 @@ object PIDEWrapper {
 
   private val logger = log4s.getLogger
 
-  private def resourceToFile(resource: URL): URL = {
+  private def resourceToFile(@NotNull resource: URL): URL = {
     if (resource.getProtocol == "file") return resource
     else {
       val tempFile = Files.createTempFile("pidewrapper-temp", ".jar")
@@ -122,10 +127,13 @@ object PIDEWrapper {
     }
   }
 
-  def getPIDEWrapperFromJar(isabelleRoot: Path, pideWrapperJar: URL): PIDEWrapper = {
+  def getPIDEWrapperFromJar(@NotNull version: String, @NotNull isabelleRoot: Path, @NotNull pideWrapperJar: URL): PIDEWrapper = {
+    if (pideWrapperJar == null)
+      throw new UnsupportedOperationException(s"PIDE Wrapper for Isabelle version $version not included in scala-isabelle. Set buildOnlyFor = None in build.sbt and recompile scala-isabelle.")
+
     val id = counter.incrementAndGet()
 
-    val isabelleJars : List[URL] = for (file <- Files.walk(isabelleRoot).iterator().asScala.toList
+    val isabelleJars : List[URL] = for (file <- Files.walk(isabelleRoot, FileVisitOption.FOLLOW_LINKS).iterator().asScala.toList
                     if file.getFileName.toString.endsWith(".jar")
                     if Files.isRegularFile(file))
       yield file.toUri.toURL

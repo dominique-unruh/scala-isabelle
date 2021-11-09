@@ -652,7 +652,7 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
       lastMessages.enqueue(line)
       logger(level = level)(msg = line)
     } catch {
-      case e : Throwable => log(e)("Exception thrown while logging stream")
+      case e : Throwable => logger(level = level)(e)("Exception thrown while logging stream")
     }
   }
   private def logStream(stream: BufferedReader, level: LogLevel) : Unit = {

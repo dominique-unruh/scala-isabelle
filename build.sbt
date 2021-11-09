@@ -38,6 +38,7 @@ def pideWrapper(version: String, scala: String) = {
 }
 
 lazy val pidewrapper2021 = pideWrapper("2021", scala="2.13.4")
+lazy val pidewrapper2021_1 = pideWrapper("2021-1", scala="2.13.5")
 
 lazy val component = project
   .dependsOn(root)
@@ -56,7 +57,7 @@ lazy val root = (project in file("."))
 
 Compile / managedResources ++= {
   // This compiles all projects in inProjects(...) and returns the resulting jars
-  val jars = (Compile/packageBin).all(ScopeFilter(inProjects(pidewrapper2021))).value
+  val jars = (Compile/packageBin).all(ScopeFilter(inProjects(pidewrapper2021, pidewrapper2021_1))).value
   for (jar <- jars) yield {
     val version = jar.relativeTo(baseDirectory.value / "pidewrappers").get.toPath.getName(0)
     val target = (Compile/managedResourceDirectories).value.head / "de/unruh/isabelle/control" / s"pidewrapper$version.jar"

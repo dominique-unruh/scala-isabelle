@@ -47,7 +47,10 @@ case class IsabelleHomeDirectories(directories: File*) {
   def findIsabelleRoot(version: String): File = {
     val candidates =
       for (dir <- directories;
-           root <- List(dir / s"Isabelle$version", dir / s"Isabelle$version.app")
+           if dir.isDirectory;
+           file <- dir.list().toList;
+           if (file == s"Isabelle$version") || (file == s"Isabelle$version.app") || file.startsWith(s"Isabelle$version-RC");
+           root = dir / file;
            if root.isDirectory)
       yield root
     val isabelleHome = candidates.headOption.getOrElse {
