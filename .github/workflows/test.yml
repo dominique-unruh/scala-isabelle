@@ -1,0 +1,8 @@
+name: test-scala-isabelle
+on: [push]
+jobs:
+    test:
+      runs-on: isabelle
+      steps:
+        - uses: actions/checkout@v2
+        - run: sbt test
