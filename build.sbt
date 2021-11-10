@@ -21,7 +21,9 @@ Global / onChangedBuildSource := ReloadOnSourceChanges
 libraryDependencies += "de.unruh" % "java-patterns" % "0.1.0"
 //resolvers += Resolver.sonatypeRepo("snapshots")
 
-libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.3" % "test"
+libraryDependencies += "com.vladsch.flexmark" % "flexmark-all" % "0.62.2" % Test // Required by scala-test for HTML output
+libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.10" % Test
+
 // https://mvnrepository.com/artifact/org.log4s/log4s
 libraryDependencies += "org.log4s" %% "log4s" % "1.9.0"
 // https://mvnrepository.com/artifact/org.slf4j/slf4j-simple
