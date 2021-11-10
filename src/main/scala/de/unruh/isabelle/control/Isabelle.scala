@@ -523,9 +523,8 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
 
   /** Executes the ML code `ml` in the Isabelle process.
    *
-   * WARNING: This has a global effect on the Isabelle process because it modifies the ML name space.
-   *
-   * Definitions made in `ml` affect the global Isabelle name space.
+   * Definitions made in `ml` affect the ML name space.
+   * (This name space is shared by all invocations of [[executeMLCode]] and [[storeValue]].)
    * This is intended mostly for defining new types.
    * To create values (e.g., if `ml` is the code of a function that should be executed),
    * preferably use [[storeValue]] which creates anonymous values in the object store.

@@ -1,5 +1,9 @@
 structure Control_Isabelle : sig
+  (* Only for scala-isabelle internal use. Should only be called once, to initialize the communication protocol *)
   val handleLines : unit -> unit
+  (* Only for scala-isabelle internal use. Should only be called once, to initialize ml_compilation_context *)
+  val initialize_ml_context : theory -> unit
+
   datatype data = DString of string | DInt of int | DList of data list | DObject of exn
   
   exception E_Function of data -> data
@@ -248,8 +252,26 @@ fun runAsync seq f =
   else
     f () *)
 
+(* Context for compiling ML code in. Can be mutated when declaring new ML symbols *)
+val ml_compilation_context = Unsynchronized.ref (Context.Theory \<^theory>)
+(* Should only be called once, to initialize ml_compilation_context *)
+fun initialize_ml_context thy = ml_compilation_context := Context.Theory thy
+(* Mutex for updating the context above *)
+val ml_compilation_mutex = Mutex.mutex ()
+(* Executes ML code in the namespace of context, and updates that namespace (side effect) *)
+fun executeML_update (ml:string) = let
+  fun run_ml () = ML_Context.eval ML_Compiler.flags Position.none (ML_Lex.read ml)
+                handle ERROR msg => error (msg ^ ", when compiling " ^ ml)
+  val _ = Mutex.lock ml_compilation_mutex
+  val _ = (ml_compilation_context := ML_Context.exec run_ml (!ml_compilation_context))
+          handle e => (Mutex.unlock ml_compilation_mutex; Exn.reraise e)
+  val _ = Mutex.unlock ml_compilation_mutex
+  in () end
+
+(* Executes ML code in the namespace of context, and updates that namespace (side effect) *)
 fun executeML ml = let
-  val _ = ML_Compiler.eval ML_Compiler.flags Position.none (ML_Lex.tokenize ml)
+  val _ = Context.setmp_generic_context (SOME (!ml_compilation_context))
+          (fn _ => ML_Context.eval ML_Compiler.flags Position.none (ML_Lex.read ml)) ()
         handle ERROR msg => error (msg ^ ", when compiling " ^ ml)
   in () end
 
@@ -287,10 +309,9 @@ fun removeObjects seq (DList ids) = runAsync seq (withMutex (fn () => let
 
 fun handleLine seq = withErrorReporting seq (fn () =>
   case readByte () of
-    (* 1b|string - executes ML code xxx *)
+    (* 1b|string - executes ML code xxx, updates the name space *)
     0w1 => let val ml = readString () in 
-           runAsync seq (fn () => (executeML ml; sendReplyData seq (DList []))) end
-    (* 0w1 => (executeML (readString ()); sendReplyData seq (DList [])) *)
+           runAsync seq (fn () => (executeML_update ml; sendReplyData seq (DList []))) end
 
     (* 4b|string - Compiles string as ML code of type exn, stores result as object #seq *)
   | 0w4 => storeMLValue seq (readString ())

@@ -6,6 +6,8 @@ ML_file "control_isabelle.ml"
 
 ML \<open>OS.FileSys.chDir "WORKING_DIRECTORY"\<close>
 
+ML "Control_Isabelle.initialize_ml_context \<^theory>"
+
 ML "Control_Isabelle.handleLines()"
 
 end

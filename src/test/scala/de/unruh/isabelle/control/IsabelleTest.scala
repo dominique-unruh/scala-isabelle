@@ -2,9 +2,9 @@ package de.unruh.isabelle.control
 
 import java.io.{BufferedReader, FileInputStream, FileReader}
 import java.nio.file.{Files, Path, Paths}
-
 import de.unruh.isabelle.control.Isabelle.{DInt, DList, DString, Data, Setup, SetupGeneral}
 import de.unruh.isabelle.control.IsabelleTest.{isabelle, setup}
+import de.unruh.isabelle.misc.Utils
 import de.unruh.isabelle.mlvalue.MLValue
 import de.unruh.isabelle.mlvalue.MLValueTest.await
 import org.apache.commons.lang3.SystemUtils
@@ -37,6 +37,14 @@ class IsabelleTest extends AnyFunSuite {
     val exec = isabelle.executeMLCode("val _ = tracing \"Hello\"")
     println("Waiting for completion")
     await(exec)
+  }
+
+  test("executeMLCode – declare symbol") {
+    val variable = Utils.freshName("variable")
+    println(s"Declaring $variable")
+    isabelle.executeMLCodeNow(s"""val $variable = "hello"""")
+    println(s"Using $variable")
+    isabelle.executeMLCodeNow(s"val _ = tracing $variable")
   }
 
   lazy val identityId: Isabelle.ID = await(isabelle.storeValue("E_Function (fn x => x)"))
