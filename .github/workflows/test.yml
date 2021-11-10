@@ -2,11 +2,12 @@ name: test-scala-isabelle
 on: [push]
 jobs:
     test:
-      runs-on: isabelle
       strategy:
         matrix:
-          scala: [212, 213]
-          isabelle: [2019, 2020, 2021, 2021-1-RC2]
+          isabelle: [2021-1-RC2, 2021, 2020, 2019]
+          scala: [213, 212]
+          os: [linux, windows]
+      runs-on: [isabelle, "${{matrix.os}}"]
       steps:
         - name: Checkout repository
           uses: actions/checkout@v2
