@@ -7,10 +7,10 @@ jobs:
         - name: Checkout repository
           uses: actions/checkout@v2
         - name: Running tests
-          run: sbt testOnly -- -u scalatest-reports
+          run: sbt 'testOnly -- -h target/test-reports-html'
         - name: Upload test results
           uses: actions/upload-artifact@v2
-          if: ${{ failure() }}
+          if: ${{ true }}
           with:
-            name: scalatest-reports
-            path: scalatest-reports
+            name: test-reports-html
+            path: target/test-reports-html
