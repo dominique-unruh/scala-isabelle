@@ -1,8 +1,8 @@
 structure Control_Isabelle : sig
   (* Only for scala-isabelle internal use. Should only be called once, to initialize the communication protocol *)
   val handleLines : unit -> unit
-  (* Only for scala-isabelle internal use. Should only be called once, to initialize ml_compilation_context *)
-  val initialize_ml_context : theory -> unit
+  (* Updates the ML namespace context (atomically). Use with care (since the context is globally used) *)
+  val update_ml_compilation_context : (Context.generic -> Context.generic) -> unit
 
   datatype data = DString of string | DInt of int | DList of data list | DObject of exn
   
@@ -254,18 +254,19 @@ fun runAsync seq f =
 
 (* Context for compiling ML code in. Can be mutated when declaring new ML symbols *)
 val ml_compilation_context = Unsynchronized.ref (Context.Theory \<^theory>)
-(* Should only be called once, to initialize ml_compilation_context *)
-fun initialize_ml_context thy = ml_compilation_context := Context.Theory thy
 (* Mutex for updating the context above *)
 val ml_compilation_mutex = Mutex.mutex ()
+fun update_ml_compilation_context f = let
+  val _ = Mutex.lock ml_compilation_mutex
+  val _ = (ml_compilation_context := f (!ml_compilation_context))
+             handle e => (Mutex.unlock ml_compilation_mutex; Exn.reraise e)
+  val _ = Mutex.unlock ml_compilation_mutex
+  in () end
 (* Executes ML code in the namespace of context, and updates that namespace (side effect) *)
 fun executeML_update (ml:string) = let
   fun run_ml () = ML_Context.eval ML_Compiler.flags Position.none (ML_Lex.read ml)
                 handle ERROR msg => error (msg ^ ", when compiling " ^ ml)
-  val _ = Mutex.lock ml_compilation_mutex
-  val _ = (ml_compilation_context := ML_Context.exec run_ml (!ml_compilation_context))
-          handle e => (Mutex.unlock ml_compilation_mutex; Exn.reraise e)
-  val _ = Mutex.unlock ml_compilation_mutex
+  val _ = update_ml_compilation_context (ML_Context.exec run_ml)
   in () end
 
 (* Executes ML code in the namespace of context, and updates that namespace (side effect) *)

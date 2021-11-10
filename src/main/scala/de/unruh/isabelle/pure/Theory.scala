@@ -321,13 +321,13 @@ object Theory extends OperationCollection {
       MLValue.compileFunction[Mutex, Path, String, Theory](
         s"fn (mutex,path,name) => (${Mutex.wrapWithMutex("mutex", "Thy_Info.use_thy (Path.implode path)")}; Thy_Info.get_theory name)")
     val importMLStructure : MLFunction3[Theory, String, String, Unit] = compileFunction(
-      """fn (thy,theirName,hereStruct) => let
+      """fn (thy,theirName,ourName) => let
                   val theirAllStruct = Context.setmp_generic_context (SOME (Context.Theory thy))
                                        (#allStruct ML_Env.name_space) ()
                   val theirStruct = case List.find (fn (n,_) => n=theirName) theirAllStruct of
                            NONE => error ("Structure " ^ theirName ^ " not declared in given context")
-        | SOME (_,s) => s
-                  val _ = #enterStruct ML_Env.name_space (hereStruct, theirStruct)
+                         | SOME (_,s) => s
+                  val _ = update_ml_compilation_context (ML_Context.exec (fn _ => #enterStruct ML_Env.name_space (ourName, theirStruct)))
                   in () end""")
 
     lazy val init_global = compileFunction[Theory, Context]("Proof_Context.init_global")
