@@ -7,11 +7,10 @@ import java.net.{InetAddress, ServerSocket, Socket}
 import java.nio.charset.StandardCharsets
 import java.nio.file.{FileSystemNotFoundException, Files, Path, Paths}
 import java.util.concurrent.{ArrayBlockingQueue, BlockingQueue, ConcurrentHashMap, ConcurrentLinkedQueue}
-
 import com.google.common.escape.Escaper
 import com.google.common.util.concurrent.Striped
 import de.unruh.isabelle.control.Isabelle.SetupGeneral
-import de.unruh.isabelle.misc.SMLCodeUtils.mlInteger
+import de.unruh.isabelle.misc.SMLCodeUtils.{escapeSml, mlInteger}
 import de.unruh.isabelle.misc.{FutureValue, SMLCodeUtils, SharedCleaner, Utils}
 import de.unruh.isabelle.mlvalue.MLValue
 import de.unruh.isabelle.pure.Term
@@ -300,7 +299,7 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
   }
 
   //noinspection SameParameterValue
-  private def filePathFromResource(name: String, tmpDir: Path, replace: String => String): Path = {
+  private def filePathFromResource(name: String, tmpDir: Path, replace: String => String = identity): Path = {
     val url = getClass.getResource(name)
     val tmpPath = tmpDir.resolve(name.split('/').last)
     val tmpFile = tmpPath.toFile
@@ -356,8 +355,8 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
 
     val isabelleArguments = ListBuffer[String]()
 
-    isabelleArguments += "process"
-    isabelleArguments += "-l" += setup.logic
+    isabelleArguments += "build"
+//    isabelleArguments += "-l" += setup.logic
 
     val communicationStreams = if (useSockets) {
       val address = s"${serverSocket.getInetAddress.getHostAddress}:${serverSocket.getLocalPort}"
@@ -372,13 +371,23 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
     val mlFile = filePathFromResource("control_isabelle.ml", tempDir,
       _.replace("COMMUNICATION_STREAMS", communicationStreams)
         .replace("SECRETS", s"(${mlInteger(inSecret)}, ${mlInteger(outSecret)})"))
+    val thyFile = filePathFromResource("Scala_Isabelle_Master_Control_Program.thy", tempDir,
+      _.replace("WORKING_DIRECTORY", escapeSml(cygwinIfWin(wd.toAbsolutePath))))
+    val rootFile = filePathFromResource("ROOT", tempDir,
+      _.replace("PARENT_SESSION", setup.logic))
 
-    isabelleArguments += "-f" += mlFile.toAbsolutePath.toString.replace('\\', '/')
+//    isabelleArguments += "-f" += mlFile.toAbsolutePath.toString.replace('\\', '/')
 
-    isabelleArguments += "-e" += "Control_Isabelle.handleLines()"
+//    isabelleArguments += "-e" += "Control_Isabelle.handleLines()"
 
+    isabelleArguments += "-d" += cygwinAbs(tempDir)
     for (root <- setup.sessionRoots)
       isabelleArguments += "-d" += cygwinAbs(root)
+
+    if (setup.verbose)
+      isabelleArguments += "-v"
+
+    isabelleArguments += "Scala_Isabelle_Master_Control_Program"
 
     val cmd = makeIsabelleCommandLine(absPath(setup.isabelleHome), isabelleArguments.toSeq)
 

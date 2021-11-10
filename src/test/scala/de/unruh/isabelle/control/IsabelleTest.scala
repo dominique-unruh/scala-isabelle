@@ -106,7 +106,7 @@ class IsabelleTest extends AnyFunSuite {
       await(id)
     }
     println(exn)
-    assert(exn.message.contains("Undefined session"))
+    assert(exn.message.contains("Bad parent session"))
   }
 
   test("correct working directory") {
