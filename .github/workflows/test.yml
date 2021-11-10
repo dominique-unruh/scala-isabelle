@@ -10,7 +10,7 @@ jobs:
           run: sbt 'testOnly -- -h target/test-reports-html'
         - name: Upload test results
           uses: actions/upload-artifact@v2
-          if: ${{ true }}
+          if: always()
           with:
             name: test-reports-html
             path: target/test-reports-html
