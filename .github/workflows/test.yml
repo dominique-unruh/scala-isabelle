@@ -14,3 +14,10 @@ jobs:
           with:
             name: test-reports-html
             path: target/test-reports-html
+        - uses: testspace-com/setup-testspace@v1
+          with:
+            domain: ${{ github.repository_owner }}
+        - name: Push result to Testspace server
+          run: testspace results.xml 
+          if: always()
+          
