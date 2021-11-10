@@ -3,21 +3,17 @@ on: [push]
 jobs:
     test:
       runs-on: isabelle
+      strategy:
+        matrix:
+          scala: [212, 213]
       steps:
         - name: Checkout repository
           uses: actions/checkout@v2
         - name: Running tests
-          run: sbt 'testOnly -- -h target/test-reports-html'
+          run: sbt 'testOnly -${{matrix.scala}} -- -h target/test-reports-html'
         - name: Upload test results
           uses: actions/upload-artifact@v2
           if: always()
           with:
             name: test-reports-html
             path: target/test-reports-html
-        - uses: testspace-com/setup-testspace@v1
-          with:
-            domain: ${{ github.repository_owner }}
-        - name: Push result to Testspace server
-          run: testspace results.xml 
-          if: always()
-          
