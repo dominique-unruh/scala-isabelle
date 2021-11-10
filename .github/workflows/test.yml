@@ -14,16 +14,19 @@ jobs:
       steps:
         - name: Checkout repository
           uses: actions/checkout@v2
-        - name: Running tests
+          
+        - name: Running tests (Linux)
           if: matrix.os == 'linux'
           run: |
             echo /opt/Isabelle${{matrix.isabelle}} >.isabelle-home
             sbt 'testOnly -${{matrix.scala}} -- -h target/test-reports-html'
-        - name: Running tests
+            
+        - name: Running tests (Windows)
           if: matrix.os == 'windows'
           run: |
-            echo c:\Isabelle${{matrix.isabelle}} >.isabelle-home
+            Set-Content -Path .isabelle-home -Value 'c:\Isabelle${{matrix.isabelle}}'
             sbt 'testOnly -${{matrix.scala}} -- -h target/test-reports-html'
+            
         - name: Upload test results
           uses: actions/upload-artifact@v2
           if: always()
