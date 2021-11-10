@@ -6,11 +6,14 @@ jobs:
       strategy:
         matrix:
           scala: [212, 213]
+          isabelle: [2019, 2020, 2021, 2021-1-RC2]
       steps:
         - name: Checkout repository
           uses: actions/checkout@v2
         - name: Running tests
-          run: sbt 'testOnly -${{matrix.scala}} -- -h target/test-reports-html'
+          run: |
+            echo /opt/Isabelle${{matrix.isabelle}} >.isabelle-home
+            sbt 'testOnly -${{matrix.scala}} -- -h target/test-reports-html'
         - name: Upload test results
           uses: actions/upload-artifact@v2
           if: always()
