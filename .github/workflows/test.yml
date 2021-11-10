@@ -6,7 +6,7 @@ jobs:
         matrix:
           isabelle: [2021-1-RC2, 2021, 2020, 2019]
           scala: [213, 212]
-          os: [linux, windows]
+          os: [Linux, Windows]
       runs-on: [isabelle, "${{matrix.os}}"]
       steps:
         - name: Checkout repository
