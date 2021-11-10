@@ -10,6 +10,7 @@ jobs:
           run: sbt testOnly -- -u scalatest-reports
         - name: Upload test results
           uses: actions/upload-artifact@v2
+          if: ${{ failure() }}
           with:
             name: scalatest-reports
             path: scalatest-reports
