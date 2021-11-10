@@ -4,5 +4,12 @@ jobs:
     test:
       runs-on: isabelle
       steps:
-        - uses: actions/checkout@v2
-        - run: sbt test
+        - name: Checkout repository
+          uses: actions/checkout@v2
+        - name: Running tests
+          run: sbt testOnly -- -u scalatest-reports
+        - name: Upload test results
+          uses: actions/upload-artifact@v2
+          with:
+            name: scalatest-reports
+            path: scalatest-reports
