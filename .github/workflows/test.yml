@@ -15,12 +15,12 @@ jobs:
         - name: Checkout repository
           uses: actions/checkout@v2
         - name: Running tests
-          if: matrix.os == "linux"
+          if: matrix.os == 'linux'
           run: |
             echo /opt/Isabelle${{matrix.isabelle}} >.isabelle-home
             sbt 'testOnly -${{matrix.scala}} -- -h target/test-reports-html'
         - name: Running tests
-          if: matrix.os == "windows"
+          if: matrix.os == 'windows'
           run: |
             echo c:\Isabelle${{matrix.isabelle}} >.isabelle-home
             sbt 'testOnly -${{matrix.scala}} -- -h target/test-reports-html'
