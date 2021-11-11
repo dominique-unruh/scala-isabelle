@@ -11,10 +11,10 @@ lazy val component = RootProject(file("component"))
 name := "scala-isabelle"
 version := "master-SNAPSHOT"
 
-crossScalaVersions := List("2.13.3", "2.12.12")
+crossScalaVersions := List("2.13.7", "2.12.15")
 
-scalaVersion := "2.13.3"
-//scalaVersion := "2.12.12"
+scalaVersion := "2.13.7"
+//scalaVersion := "2.12.15"
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
@@ -25,20 +25,20 @@ libraryDependencies += "com.vladsch.flexmark" % "flexmark-all" % "0.62.2" % Test
 libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.10" % Test
 
 // https://mvnrepository.com/artifact/org.log4s/log4s
-libraryDependencies += "org.log4s" %% "log4s" % "1.9.0"
+libraryDependencies += "org.log4s" %% "log4s" % "1.10.0"
 // https://mvnrepository.com/artifact/org.slf4j/slf4j-simple
-libraryDependencies += "org.slf4j" % "slf4j-simple" % "1.7.30"
+libraryDependencies += "org.slf4j" % "slf4j-simple" % "1.7.32"
 // https://mvnrepository.com/artifact/commons-io/commons-io
-libraryDependencies += "commons-io" % "commons-io" % "2.8.0"
+libraryDependencies += "commons-io" % "commons-io" % "2.11.0"
 // https://mvnrepository.com/artifact/org.scalaz/scalaz-core
-libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.3.2"
+libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.3.5"
 // https://mvnrepository.com/artifact/org.apache.commons/commons-lang3
-libraryDependencies += "org.apache.commons" % "commons-lang3" % "3.11"
+libraryDependencies += "org.apache.commons" % "commons-lang3" % "3.12.0"
 // https://mvnrepository.com/artifact/org.apache.commons/commons-text
 libraryDependencies += "org.apache.commons" % "commons-text" % "1.9"
 // https://mvnrepository.com/artifact/com.google.guava/guava
-libraryDependencies += "com.google.guava" % "guava" % "30.0-jre"
-libraryDependencies += "org.jetbrains" % "annotations" % "20.1.0"
+libraryDependencies += "com.google.guava" % "guava" % "31.0.1-jre"
+libraryDependencies += "org.jetbrains" % "annotations" % "23.0.0"
 
 // TODO: mark as compile time only or something
 libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value

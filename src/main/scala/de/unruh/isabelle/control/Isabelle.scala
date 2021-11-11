@@ -387,6 +387,8 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
     if (setup.verbose)
       isabelleArguments += "-v"
 
+    // TODO: randomize session name so that we do not get conflicts between concurrent scala-isabelle invocations
+    // TODO: cleanup session image (delete on exit, additionally clean stale image (say, older than a day))
     isabelleArguments += "Scala_Isabelle_Master_Control_Program"
 
     val cmd = makeIsabelleCommandLine(absPath(setup.isabelleHome), isabelleArguments.toSeq)
