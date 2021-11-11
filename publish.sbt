@@ -55,5 +55,5 @@ publishMavenStyle := true
 credentials += Credentials(Path.userHome / ".sbt" / "sonatype_credentials")
 credentials += Credentials("GnuPG Key ID", "gpg", "B12742E4CC2172D894730C1AE1F9C7FA4BA66FE2", "ignored")
 
-publish := publish.dependsOn(test in Test).value
-PgpKeys.publishSigned := PgpKeys.publishSigned.dependsOn(test in Test).value
+publish := publish.dependsOn(Test / test).value
+PgpKeys.publishSigned := PgpKeys.publishSigned.dependsOn(Test / test).value
