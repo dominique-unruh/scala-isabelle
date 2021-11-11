@@ -368,13 +368,16 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
       s"""(BinIO.openIn "$inFile", BinIO.openOut "$outFile")"""
     }
 
+    val sessionName = Utils.freshName("SCALA_ISABELLE_TEMP")
+
     val mlFile = filePathFromResource("control_isabelle.ml", tempDir,
       _.replace("COMMUNICATION_STREAMS", communicationStreams)
         .replace("SECRETS", s"(${mlInteger(inSecret)}, ${mlInteger(outSecret)})"))
     val thyFile = filePathFromResource("Scala_Isabelle_Master_Control_Program.thy", tempDir,
       _.replace("WORKING_DIRECTORY", escapeSml(cygwinIfWin(wd.toAbsolutePath))))
     val rootFile = filePathFromResource("ROOT", tempDir,
-      _.replace("PARENT_SESSION", setup.logic))
+      _.replace("PARENT_SESSION", setup.logic)
+        .replace("SESSION_NAME", sessionName))
 
 //    isabelleArguments += "-f" += mlFile.toAbsolutePath.toString.replace('\\', '/')
 
@@ -387,9 +390,8 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
     if (setup.verbose)
       isabelleArguments += "-v"
 
-    // TODO: randomize session name so that we do not get conflicts between concurrent scala-isabelle invocations
-    // TODO: cleanup session image (delete on exit, additionally clean stale image (say, older than a day))
-    isabelleArguments += "Scala_Isabelle_Master_Control_Program"
+    // TODO: cleanup session image (name, log/name, log/name.gz, log/name.db, delete on exit, additionally clean stale image (say, older than a day))
+    isabelleArguments += sessionName
 
     val cmd = makeIsabelleCommandLine(absPath(setup.isabelleHome), isabelleArguments.toSeq)
 

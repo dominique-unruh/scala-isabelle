@@ -1,3 +1,3 @@
-session Scala_Isabelle_Master_Control_Program = "PARENT_SESSION" +
+session SESSION_NAME = "PARENT_SESSION" +
   options [timeout = 2000000000]
   theories Scala_Isabelle_Master_Control_Program
