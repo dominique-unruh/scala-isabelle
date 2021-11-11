@@ -20,6 +20,7 @@ import org.apache.commons.text.StringEscapeUtils
 import org.jetbrains.annotations.ApiStatus.Experimental
 import org.log4s
 import org.log4s.{Debug, LogLevel, Logger, Warn}
+import scalaz.Scalaz.ToOptionalOps
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters.collectionAsScalaIterableConverter
@@ -89,6 +90,14 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
 
   private val inSecret = Random.nextLong()
   private val outSecret = Random.nextLong()
+
+  private val cleanupFiles = try {
+    System.getenv("SCALA_ISABELLE_NO_CLEANUP") match {
+      case null => true
+      case "1" | "true" | "TRUE" => false
+      case _ => true
+    }
+  }
 
   /** This promise will be completed when initializing the Isabelle process finished (first successful communication).
    * Contains an exception if initilization fails. */
@@ -303,7 +312,8 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
     val url = getClass.getResource(name)
     val tmpPath = tmpDir.resolve(name.split('/').last)
     val tmpFile = tmpPath.toFile
-    tmpFile.deleteOnExit()
+    if (cleanupFiles)
+      tmpFile.deleteOnExit()
     val source = Source.fromURL(url)
     val writer = new FileWriter(tmpFile)
     for (line <- source.getLines())

@@ -18,12 +18,14 @@ jobs:
         - name: Running tests (Linux)
           if: matrix.os == 'linux'
           run: |
+            export SCALA_ISABELLE_NO_CLEANUP=true
             echo /opt/Isabelle${{matrix.isabelle}} >.isabelle-home
             sbt '+ testOnly -- -h target/test-reports-html'
             
         - name: Running tests (Windows)
           if: matrix.os == 'windows'
           run: |
+            $Env:SCALA_ISABELLE_NO_CLEANUP = "true"
             Set-Content -Path .isabelle-home -Value 'c:\Isabelle${{matrix.isabelle}}'
             sbt '+ testOnly -- -h target/test-reports-html'
             
