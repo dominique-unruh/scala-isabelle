@@ -376,9 +376,19 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
 
     val sessionName = Utils.freshName("SCALA_ISABELLE_TEMP")
 
-    val mlFile = filePathFromResource("control_isabelle.ml", tempDir,
+    val mlFile = filePathFromResource(if (logQueries) "control_isabelle_logged.ml" else "control_isabelle.ml",
+      tempDir,
       _.replace("COMMUNICATION_STREAMS", communicationStreams)
-        .replace("SECRETS", s"(${mlInteger(inSecret)}, ${mlInteger(outSecret)})"))
+        .replace("SECRETS", s"(${mlInteger(inSecret)}, ${mlInteger(outSecret)})"),
+      targetName = "control_isabelle.ml")
+
+    // Create variant of control_isabelle.ml with the communication deactivated
+    if (logQueries)
+      filePathFromResource("control_isabelle.ml", tempDir,
+        _.replace("COMMUNICATION_STREAMS", """(BinIO.openIn "/dev/null", BinIO.openOut "/dev/null")""")
+          .replace("SECRETS", s"(0,0)"),
+        targetName = "control_isabelle_log.ml")
+
     val thyFile = filePathFromResource("Scala_Isabelle_Master_Control_Program.thy", tempDir,
       _.replace("WORKING_DIRECTORY", escapeSml(cygwinIfWin(wd.toAbsolutePath))))
     val rootFile = filePathFromResource("ROOT", tempDir,

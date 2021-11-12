@@ -1,3 +1,6 @@
+(* A variant of control_isabelle.ml that logs all queries to Isabelle in a theory file. 
+   For debugging only. *)
+
 structure Control_Isabelle : sig
   (* Only for scala-isabelle internal use. Should only be called once, to initialize the communication protocol *)
   val handleLines : unit -> unit
@@ -39,6 +42,7 @@ end
 =
 struct
 datatype data = DString of string | DInt of int | DList of data list | DObject of exn
+datatype pre_data = PDString of string | PDInt of int | PDList of pre_data list | PDObject of int | PDWildcard
 
 exception E_Function of data -> data
 exception E_Context of Proof.context
@@ -65,6 +69,88 @@ exception E_Data of data
 
 val (inStream, outStream) = COMMUNICATION_STREAMS
 val (inSecret, outSecret) = SECRETS
+
+fun string_of_exn exn =
+  Runtime.pretty_exn exn |> Pretty.unformatted_string_of
+  handle Size => "<exn description too long>"
+
+fun string_of_data (DInt i) = string_of_int i
+  | string_of_data (DString s) = ("\"" ^ s ^ "\""
+        handle Size => "<data description too long>")
+  | string_of_data (DList l) = ("[" ^ (String.concatWith ", " (map string_of_data l)) ^ "]"
+        handle Size => "<data description too long>")
+  | string_of_data (DObject e) = string_of_exn e
+
+val logFile = TextIO.openOut (File.platform_path (Path.basic "Scala_Isabelle_Log.thy"))
+
+val _ = TextIO.output (logFile, "theory Scala_Isabelle_Log imports Pure begin\n\nML_file \<open>control_isabelle_log.ml\<close>\n\n")
+
+fun log str = TextIO.output (logFile, str)
+
+fun logStore seq id =
+  let val _ = log ("ML \<open>val obj_" ^ string_of_int id ^ " = seq_" ^ string_of_int seq ^ "\<close>\n\n")
+      val _ = TextIO.flushOut logFile
+  in () end      
+
+fun logQuery_executeML seq ml = 
+  let val _ = log ("ML (* execute ML *) \<open>" ^ ml ^ "\<close>\n")
+      val _ = log ("ML \<open>val seq_" ^ string_of_int seq ^ " = Control_Isabelle.DList []\<close>\n\n")
+      val _ = TextIO.flushOut logFile
+  in () end
+
+fun logQuery_storeMLValue seq ml = 
+  let val _ = log ("ML (* store value *) \<open>val seq_" ^ string_of_int seq ^ " = let open Control_Isabelle in\n")
+      val _ = log ml
+      val _ = log "\nend\<close>\n\n"
+      val _ = TextIO.flushOut logFile
+  in () end
+
+fun log_data (PDInt i) = log ("DInt " ^ string_of_int i)
+  | log_data (PDString s) = log ("DString \"" ^ s ^ "\"")
+  | log_data (PDList l) = 
+      (log "DList ["; log_data_list l; log "]")
+  | log_data PDWildcard = log "_"
+  | log_data (PDObject id) = log ("DObject obj_" ^ string_of_int id)
+and log_data_list [] = ()
+  | log_data_list [x] = log_data x
+  | log_data_list (x::xs) = (log_data x; log ", "; log_data_list xs)
+
+fun data_wildcard (PDInt _) = PDWildcard
+  | data_wildcard (PDString _) = PDWildcard
+  | data_wildcard (PDObject id) = PDObject id
+  | data_wildcard (PDList l) = let
+      val l2 = map data_wildcard l
+      in if List.all (fn d => d=PDWildcard) l2 then PDWildcard
+         else PDList l2
+      end
+
+fun logQuery_applyFunc seq f (x:pre_data) =  
+  let val _ = log ("ML (* apply function *) \<open>val seq_" ^ string_of_int seq ^ " = let open Control_Isabelle\n  val E_Function f = obj_" ^ string_of_int f ^ "\n  val x = ")
+      val _  = log_data x
+      val _ = log "\nin f x end\<close>\n\n"
+      val _ = TextIO.flushOut logFile
+  in () end
+
+fun logQuery_removeObjects seq (DList objs) = 
+  let val _ = log ("(* Garbage collecting (seq " ^ string_of_int seq ^ "):")
+      val _ = List.app (fn DInt i => log (" obj_" ^ string_of_int i)) objs
+      val _ = log "\n\n"
+      val _ = TextIO.flushOut logFile
+  in () end
+
+fun logReportException seq msg =
+  let val _ = log ("(**** Exception in seq_" ^ string_of_int seq ^ ": ")
+      val _ = log msg
+      val _ = log " ****)\n\n"
+      val _ = TextIO.flushOut logFile
+  in () end
+
+fun logSendReplyData seq data =
+  let val _ = log "ML (* sending reply data *) \<open>local open Control_Isabelle in val "
+      val _ = log_data (data_wildcard data)
+      val _ = log (" = seq_" ^ string_of_int seq ^ " end\<close>\n\n")
+      val _ = TextIO.flushOut logFile
+  in () end
 
 (* val (inStream, outStream) = Socket_IO.open_streams (host ^ ":" ^ string_of_int port) *)
 
@@ -172,40 +258,52 @@ fun addToObjects exn = let
   in idx end
 
 (* Only with mutex *)
-fun sendData (DInt i) = (sendByte 0w1; sendInt64 i)
-  | sendData (DString str) = (sendByte 0w2; sendString str)
-  | sendData (DList list) = let
+fun sendData (PDInt i) = (sendByte 0w1; sendInt64 i)
+  | sendData (PDString str) = (sendByte 0w2; sendString str)
+  | sendData (PDList list) = let
       val _ = sendByte 0w3
       val _ = sendInt64 (length list)
       val _ = List.app sendData list
     in () end
-  | sendData (DObject exn) = let
-      val id = addToObjects exn
+  | sendData (PDObject id) = let
       val _ = sendByte 0w4
       val _ = sendInt64 id
     in () end
 
-fun readData () : data = case readByte () of
-    0w1 => readInt64 () |> DInt
-  | 0w2 => readString () |> DString
+fun dataToPredata (DInt i) = PDInt i
+  | dataToPredata (DString i) = PDString i
+  | dataToPredata (DList l) = map dataToPredata l |> PDList
+  | dataToPredata (DObject exn) = addToObjects exn |> PDObject
+
+fun sendData' d = sendData (dataToPredata d)
+
+fun readData () : pre_data = case readByte () of
+    0w1 => readInt64 () |> PDInt
+  | 0w2 => readString () |> PDString
   | 0w3 => let
       val len = readInt64 ()
       fun readNRev 0 sofar = sofar
         | readNRev n sofar = readNRev (n-1) (readData () :: sofar)
       val list = readNRev len [] |> rev
-    in DList list end
-  | 0w4 => let val id = readInt64 () in
-    case Inttab.lookup (!objects) id of
-      NONE => error ("no object " ^ string_of_int id)
-      | SOME exn => DObject exn
-    end
+    in PDList list end
+  | 0w4 => readInt64 () |> PDObject
   | byte => error ("readData: unexpected byte " ^ string_of_int (Word8.toInt byte))
+
+fun predataToData (PDInt i) = DInt i
+  | predataToData (PDString s) = DString s
+  | predataToData (PDList l) = map predataToData l |> DList
+  | predataToData (PDObject id) = 
+      case Inttab.lookup (!objects) id of
+        NONE => error ("no object " ^ string_of_int id)
+        | SOME exn => DObject exn
 
 (* Takes mutex *)
 fun sendReplyData seq = withMutex (fn data => let
   val _ = sendInt64 seq
   val _ = sendByte 0w1
-  val _ = sendData data
+  val predata = dataToPredata data
+  val _ = logSendReplyData seq predata
+  val _ = sendData predata
   val _ = BinIO.flushOut outStream
   in () end)
 
@@ -213,7 +311,7 @@ fun sendReplyData seq = withMutex (fn data => let
 fun sendReply1 seq int = let
   val _ = sendInt64 seq
   val _ = sendByte 0w1
-  val _ = sendData (DInt int)
+  val _ = sendData' (DInt int)
   val _ = BinIO.flushOut outStream
   in () end
 
@@ -221,13 +319,15 @@ fun sendReply1 seq int = let
 val sendToScala = withMutex (fn data => let
   val _ = sendInt64 0
   val _ = sendByte 0w3
-  val _ = sendData data
+  val _ = sendData' data
+  val _ = log "(* WARNING: logging sendToScala not implemented. Some obj_... may be missing. *)"
   val _ = BinIO.flushOut outStream
   in () end)
 
 (* Takes mutex *)
 fun reportException seq = withMutex (fn exn => let
   val msg = Runtime.exn_message exn |> YXML.content_of
+  val _ = logReportException seq msg
   val _ = sendInt64 seq
   val _ = sendByte 0w2
   val _ = sendString msg
@@ -279,22 +379,14 @@ fun executeML ml = let
   in () end
 
 (* Takes mutex *)
-fun store seq = withMutex (fn exn => sendReply1 seq (addToObjects exn))
+fun store seq = withMutex (fn exn => 
+  let val id = addToObjects exn
+      val _ = logStore seq id
+  in sendReply1 seq id end)
 
 (* Asynchronous *)
 fun storeMLValue seq ml = runAsync seq (fn () =>
   executeML ("let open Control_Isabelle val result = ("^ml^") in store "^string_of_int seq^" result end"))
-
-fun string_of_exn exn = 
-  Runtime.pretty_exn exn |> Pretty.unformatted_string_of
-  handle Size => "<exn description too long>"
-
-fun string_of_data (DInt i) = string_of_int i
-  | string_of_data (DString s) = ("\"" ^ s ^ "\""
-        handle Size => "<data description too long>")
-  | string_of_data (DList l) = ("[" ^ (String.concatWith ", " (map string_of_data l)) ^ "]"
-        handle Size => "<data description too long>")
-  | string_of_data (DObject e) = string_of_exn e
 
 (* Asynchronous *)
 fun applyFunc seq f (x:data) = 
@@ -313,22 +405,28 @@ fun removeObjects seq (DList ids) = runAsync seq (withMutex (fn () => let
 fun handleLine seq = withErrorReporting seq (fn () =>
   case readByte () of
     (* 1b|string - executes ML code xxx, updates the name space *)
-    0w1 => let val ml = readString () in 
+    0w1 => let val ml = readString ()
+               val _ = logQuery_executeML seq ml in
            runAsync seq (fn () => (executeML_update ml; sendReplyData seq (DList []))) end
 
     (* 4b|string - Compiles string as ML code of type exn, stores result as object #seq *)
-  | 0w4 => storeMLValue seq (readString ())
+  | 0w4 => let val ml = readString ()
+               val _ = logQuery_storeMLValue seq ml
+           in storeMLValue seq ml end
 
     (* 7b|int64|data - Parses f,x as object#, f of type E_Function, computes f x, stores the result, response 'seq ID' *)
-  | 0w7 => let 
-        val f = readInt64 ()
-        val x = readData ()
-      in applyFunc seq f x end
+  | 0w7 => let val f = readInt64 ()
+               val x = readData ()
+               val _ = logQuery_applyFunc seq f x
+           in applyFunc seq f (predataToData x) end
 
     (* 8b|data ... - data must be list of ints, removes objects with these IDs from objects *)
-  | 0w8 => removeObjects seq (readData ())
+  | 0w8 => let val data = readData () |> predataToData
+               val _ = logQuery_removeObjects seq data
+           in removeObjects seq data end
 
-  | cmd => error ("Unknown command " ^ string_of_int (Word8.toInt cmd)))
+  | cmd => (log ("(* ERROR: Unknown command " ^ string_of_int (Word8.toInt cmd) ^")\n\n"); 
+            error ("Unknown command " ^ string_of_int (Word8.toInt cmd))))
 
 (* fun handleLine seq =
   handleLine' seq
