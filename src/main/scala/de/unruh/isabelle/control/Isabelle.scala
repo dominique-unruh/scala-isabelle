@@ -474,7 +474,7 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
   private val process: lang.Process = {
     setup match {
       case setup : Setup =>
-        if (setup.build) buildSession(setup)
+//        if (setup.build) buildSession(setup) // startProcessSlave automatically builds
         startProcessSlave(setup)
       case setup : SetupRunning => startProcessRunning(setup)
     }
@@ -745,11 +745,14 @@ object Isabelle {
    *                None (default) means to let Isabelle chose the default location.
    *                Here Isabelle stores user configuration and heap images (unless
    *                the location of the heap images is configured differently, see the Isabelle system manual)
-   * @param build Whether to build the Isabelle heap before running Isabelle. If false, the heap will never be
+   * @param build This option has currently no effect. The heap is always built. Old documentation:
+   *
+   *              Whether to build the Isabelle heap before running Isabelle. If false, the heap will never be
    *              built. (This means changes in the Isabelle theories will not be reflected. And if the heap was never
    *              built, the Isabelle process fails.) If true, the Isabelle build command will be invoked. That
    *              command automatically checks for changed dependencies but may add a noticable delay even if
    *              the heap was already built.
+   * @param verbose Makes Isabelle run in verbose mode. (Only affects debug output, and only during build.)
    * @param isabelleCommandHandler see [[SetupGeneral.isabelleCommandHandler]]
    */
   case class Setup(isabelleHome : Path,
@@ -758,7 +761,7 @@ object Isabelle {
                    workingDirectory : Path = Paths.get(""),
                    sessionRoots : Seq[Path] = Nil,
                    build : Boolean = true,
-                   verbose : Boolean = false, // TODO: make separate build options subclass // DOCUMENT
+                   verbose : Boolean = false,
                    isabelleCommandHandler: Data => Unit = Isabelle.defaultCommandHandler) extends SetupGeneral {
     /** [[isabelleHome]] as an absolute path */
     def isabelleHomeAbsolute: Path = workingDirectory.resolve(isabelleHome)
