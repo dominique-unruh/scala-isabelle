@@ -2,6 +2,7 @@ package de.unruh.isabelle.misc
 
 import java.nio.file.Path
 import org.apache.commons.lang3.SystemUtils
+import org.log4s
 
 import scala.util.Random
 import scalaz.syntax.id._
@@ -12,6 +13,21 @@ import scala.concurrent.Future
 
 /** Contains miscellaneous utility functions */
 object Utils {
+  private val logger = log4s.getLogger
+
+  /** Returns true if the environment variable `variable` is "1" or "true" (case insentitive).
+   * False in all other cases (including if the variable does not exist or cannot be read for security reasons. */
+  def checkEnvironmentFlag(variable: String): Boolean = {
+    val content =
+      try System.getenv(variable)
+      catch { case e : SecurityException => logger.debug(e)(s"Cannot read environment variable $variable"); null }
+    if (content == null) false
+    else content.toLowerCase match {
+      case "1" | "true" => true
+      case _ => false
+    }
+  }
+
   /** Destroys the process `process`. Unlike `process.destroy()`,
    * this also invokes `.destroy()` on all child processes. And one second later,
    * it invokes `.destroyForcibly()` in case they didn't terminate yet. */

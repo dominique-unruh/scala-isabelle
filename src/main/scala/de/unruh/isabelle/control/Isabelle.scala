@@ -91,13 +91,8 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
   private val inSecret = Random.nextLong()
   private val outSecret = Random.nextLong()
 
-  private val cleanupFiles = try {
-    System.getenv("SCALA_ISABELLE_NO_CLEANUP") match {
-      case null => true
-      case "1" | "true" | "TRUE" => false
-      case _ => true
-    }
-  }
+  private val cleanupFiles = !Utils.checkEnvironmentFlag("SCALA_ISABELLE_NO_CLEANUP")
+  private val logQueries = Utils.checkEnvironmentFlag("SCALA_ISABELLE_LOG_QUERIES")
 
   /** This promise will be completed when initializing the Isabelle process finished (first successful communication).
    * Contains an exception if initilization fails. */
@@ -465,12 +460,13 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
     return null; // No process
   }
 
-  setup match {
-    case setup : Setup => if (setup.build) buildSession(setup)
-    case _ => }
-  private val process: lang.Process = setup match {
-    case setup : Setup => startProcessSlave(setup)
-    case setup : SetupRunning => startProcessRunning(setup)
+  private val process: lang.Process = {
+    setup match {
+      case setup : Setup =>
+        if (setup.build) buildSession(setup)
+        startProcessSlave(setup)
+      case setup : SetupRunning => startProcessRunning(setup)
+    }
   }
 
   /** Returns whether the Isabelle process has been destroyed (via [[destroy]]) */
