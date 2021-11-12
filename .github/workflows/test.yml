@@ -4,13 +4,9 @@ jobs:
     test:
       strategy:
         matrix:
-          isabelle: [2021-1-RC2, 2021, 2020, 2019]
-          #scala: [213, 212]
+          isabelle: [2021-1-RC3, 2021, 2020, 2019]
           os: [linux, windows]
-          #scala: [213]
-          #isabelle: [2021-1-RC2]
-          #os: [windows]
-      runs-on: [isabelle, "${{matrix.os}}"]
+      runs-on: [self-hosted, "${{matrix.os}}"]
       steps:
         - name: Checkout repository
           uses: actions/checkout@v2
