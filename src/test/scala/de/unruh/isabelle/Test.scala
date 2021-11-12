@@ -3,6 +3,7 @@ package de.unruh.isabelle
 import de.unruh.isabelle.control.IsabelleTest
 import de.unruh.isabelle.misc.Utils
 import de.unruh.isabelle.mlvalue.MLValue
+import de.unruh.isabelle.mlvalue.MLValueTest.await
 import de.unruh.isabelle.pure.{Context, Cterm, Term, Thm}
 import org.scalatest.funsuite.AnyFunSuite
 
@@ -25,15 +26,10 @@ class Test extends AnyFunSuite {
   }
 
   test("temporary experiments") {
-    implicit class Interpolator(sc: StringContext) {
-      def sc(args: Any*): (StringContext, List[Any]) = (sc, args.toList)
-    }
-
-
-
-    f"${1}%02d"
-
-    val list = for (i <- List(1,2)) yield sc"x${i}y"
-    list
+    val future = isabelle.storeValue("E_Function (fn DObject x => (I) ((fn E_Data data => data) x))")
+    val id = await(future)
+    println(id)
+//    val mlValue = MLValue(1)
+    Thread.sleep(1000)
   }
 }

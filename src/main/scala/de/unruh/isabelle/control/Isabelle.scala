@@ -303,9 +303,10 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
   }
 
   //noinspection SameParameterValue
-  private def filePathFromResource(name: String, tmpDir: Path, replace: String => String = identity): Path = {
+  private def filePathFromResource(name: String, tmpDir: Path, replace: String => String = identity, targetName : String = null): Path = {
     val url = getClass.getResource(name)
-    val tmpPath = tmpDir.resolve(name.split('/').last)
+    val targetName2 = if (targetName==null) name.split('/').last else targetName
+    val tmpPath = tmpDir.resolve(targetName2)
     val tmpFile = tmpPath.toFile
     if (cleanupFiles)
       tmpFile.deleteOnExit()

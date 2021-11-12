@@ -10,22 +10,28 @@
     <option name="classBuf">
       <list>
         <option value="de.unruh.isabelle.Test" />
+        <option value="de.unruh.isabelle.mlvalue.MLValueTest" />
         <option value="de.unruh.isabelle.mlvalue.VersionTest" />
         <option value="de.unruh.isabelle.mlvalue.BigIntConverterTest" />
         <option value="de.unruh.isabelle.mlvalue.FunctionConverterTest" />
-        <option value="de.unruh.isabelle.mlvalue.MLValueTest" />
+        <option value="de.unruh.isabelle.pure.ThmTest" />
+        <option value="de.unruh.isabelle.pure.TypTest" />
+        <option value="de.unruh.isabelle.pure.TermTest" />
         <option value="de.unruh.isabelle.pure.TheoryTest" />
         <option value="de.unruh.isabelle.pure.ContextTest" />
         <option value="de.unruh.isabelle.pure.ProoftermTest" />
         <option value="de.unruh.isabelle.pure.PathConverterTest" />
         <option value="de.unruh.isabelle.pure.StringInterpolatorsTest" />
-        <option value="de.unruh.isabelle.pure.ThmTest" />
-        <option value="de.unruh.isabelle.pure.TypTest" />
-        <option value="de.unruh.isabelle.pure.TermTest" />
         <option value="de.unruh.isabelle.misc.SymbolsTest" />
         <option value="de.unruh.isabelle.misc.SMLCodeUtilsTest" />
         <option value="de.unruh.isabelle.control.IsabelleTest" />
       </list>
+    </option>
+    <option name="envs">
+      <map>
+        <entry key="SCALA_ISABELLE_LOG_QUERIES" value="true" />
+        <entry key="SCALA_ISABELLE_NO_CLEANUP" value="true" />
+      </map>
     </option>
     <option name="javaOptions" value="-Dorg.slf4j.simpleLogger.defaultLogLevel=debug -Dscala.control.noTraceSuppression=true" />
     <option name="shortenClasspath" value="NONE" />
