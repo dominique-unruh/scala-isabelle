@@ -58,4 +58,29 @@ class TermTest extends AnyFunSuite {
       Cterm(ctxt, term).force
     }
   }
+
+  test("fastype – local") {
+    def natT = Type("Nat.nat")
+    def natFunT = Type("fun", natT, natT)
+    val term = App(Free("x", natFunT), Free("y", natT))
+    val typ = term.fastType
+    assert(typ == natT)
+  }
+
+  test("fastype – remote") {
+    def natT = Type("Nat.nat")
+    val term = Term(ctxt, "1 + (2::nat)")
+    val typ = term.fastType
+    assert(typ == natT)
+  }
+
+  test("fastype – mixed") {
+    def natT = Type("Nat.nat")
+    val term1 = Term(ctxt, "%x::nat. 1 + x")
+    val term2 = Term(ctxt, "2 :: nat")
+    val term = App(term1, term2)
+    val typ = term.fastType
+    assert(typ == natT)
+  }
+
 }

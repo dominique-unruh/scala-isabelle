@@ -8,6 +8,7 @@ import scala.concurrent.ExecutionContext
 // Implicits
 import de.unruh.isabelle.pure.Implicits.theoryConverter
 
+// TODO document
 final class ToplevelState private (val mlValue: MLValue[ToplevelState]) extends MLValueWrapper[ToplevelState] {
   // TODO: test case
   // TODO document

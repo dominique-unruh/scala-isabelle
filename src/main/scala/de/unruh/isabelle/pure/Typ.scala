@@ -83,7 +83,17 @@ sealed abstract class Typ extends FutureValue with PrettyPrintable {
   /** Transforms this term into a [[ConcreteTyp]]. A [[ConcreteTyp]] guarantees
    * that the Scala-type of the [[Typ]] ([[Type]],[[TFree]],[[TVar]]) corresponds to the top-level
    * constructor on Isabelle side (`Type`, `TFree`, `TVar`). */
-  val concrete : Typ
+  val concrete : ConcreteTyp
+
+  // DOCUMENT
+  // TODO test case
+  def concreteRecursive(implicit isabelle: Isabelle, ec: ExecutionContext) : ConcreteTyp = {
+    concrete match {
+      case typ: Type => Type(typ.name, typ.args.map(_.concreteRecursive) : _*)
+      case tfree: TFree => tfree
+      case tvar: TVar => tvar
+    }
+  }
 
   /** Indicates whether [[concrete]] has already been initialized. (I.e.,
    * whether it can be accessed without delay and without incurring communication with
@@ -187,7 +197,7 @@ final class MLValueTyp(val mlValue: MLValue[Typ])(implicit val isabelle: Isabell
 
   override def toString: String =
     if (concreteLoaded) concrete.toString
-    else s"‹term${mlValue.stateString}›"
+    else s"‹typ${mlValue.stateString}›"
 
   override def someFuture: Future[Any] = mlValue.someFuture
   override def await: Unit = mlValue.await

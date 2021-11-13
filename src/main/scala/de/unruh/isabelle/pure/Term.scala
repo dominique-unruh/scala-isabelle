@@ -85,6 +85,19 @@ sealed abstract class Term extends FutureValue with PrettyPrintable {
    * constructor on Isabelle side (`$`, `Const`, `Abs`, ...). */
   val concrete : ConcreteTerm
 
+  // DOCUMENT
+  // TODO test case
+  def concreteRecursive(implicit isabelle: Isabelle, ec: ExecutionContext) : ConcreteTerm = {
+    concrete match {
+      case const: Const => Const(const.name, const.typ.concreteRecursive)
+      case free: Free => Free(free.name, free.typ.concreteRecursive)
+      case variable: Var => Var(variable.name, variable.index, variable.typ.concreteRecursive)
+      case app: App => App(app.fun.concreteRecursive, app.arg.concreteRecursive)
+      case abs: Abs => Abs(abs.name, abs.typ.concreteRecursive, abs.body.concreteRecursive)
+      case bound: Bound => bound
+    }
+  }
+
   /** Indicates whether [[concrete]] has already been initialized. (I.e.,
    * whether it can be accessed without delay and without incurring communication with
    * the Isabelle process. */
@@ -147,7 +160,6 @@ sealed abstract class Term extends FutureValue with PrettyPrintable {
    * This method is analogous to `fastype_of` in Isabelle/ML but avoids transferring the term to/from Isabelle when
    * determining the type.
    * */
-  // TODO test case
   def fastType(implicit executionContext: ExecutionContext) : Typ = {
     import Breaks._
     tryBreakable {
