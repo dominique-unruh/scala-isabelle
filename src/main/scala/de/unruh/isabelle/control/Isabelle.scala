@@ -22,7 +22,10 @@ import org.log4s
 import org.log4s.{Debug, LogLevel, Logger, Warn}
 import scalaz.Scalaz.ToOptionalOps
 
+import java.nio.file.attribute.FileTime
+import java.util.Date
 import scala.annotation.tailrec
+// Deprecated, but we use it because scala.jdk.CollectionConverters is not available in Scala 2.12
 import scala.collection.JavaConverters.collectionAsScalaIterableConverter
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -319,6 +322,42 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
     tmpPath
   }
 
+  private def cleanSessionLogs(setup: Setup/*, sessionName: String*/): Unit = {
+    try {
+      val logDirs = for (isaDir <- List(setup.isabelleHomeAbsolute, setup.isabelleHomeAbsolute);
+                         if Files.isDirectory(isaDir);
+                         heapDir <- Files.list(isaDir.resolve("heaps")).toList.asScala;
+                         if heapDir.getFileName.toString.toLowerCase.startsWith("polyml-")
+                         if Files.isDirectory(heapDir);
+                         logDir = heapDir.resolve("log");
+                         if Files.isDirectory(logDir))
+        yield logDir
+
+      // This should cleanup logfiles etc. at the end of the application using scala-isabelle.
+      // Unfortunately, it does not work: deleteOnExit deletes the file before the Isabelle process is fully gone,
+      // so the latter still writes to the file and recreates it.
+      /*if (cleanupFiles)
+        for (logDir <- logDirs;
+             name <- List(sessionName, sessionName+".gz", sessionName+".db");
+             file = heapDir.resolve(name)) {
+          logger.debug("Marking for cleanup: " + file)
+          file.toFile.deleteOnExit()
+        }*/
+
+      // Delete files from prior runs.
+      // We only delete files older than 1 hour to avoid race conditions
+      for (logDir <- logDirs;
+           file <- Files.list(logDir).toList.asScala;
+           if file.getFileName.toString.startsWith("SCALA_ISABELLE_TEMP_")
+           if file.toFile.lastModified < new Date().getTime - 3600 * 1000) {
+        logger.debug("Cleaning old session log file: " + file)
+        Files.delete(file)
+      }
+    } catch {
+      case e : IOException => logger.debug(e)("Failure while trying to clean old session log files")
+    }
+  }
+
   /** Invokes the Isabelle process.
    * */
   private def startProcessSlave(setup: Setup) : java.lang.Process = {
@@ -376,6 +415,9 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
 
     val sessionName = Utils.freshName("SCALA_ISABELLE_TEMP")
 
+    // Remove logs files from old invocations of Isabelle
+    cleanSessionLogs(setup)
+
     val mlFile = filePathFromResource(if (logQueries) "control_isabelle_logged.ml" else "control_isabelle.ml",
       tempDir,
       _.replace("COMMUNICATION_STREAMS", communicationStreams)
@@ -406,7 +448,6 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
     if (setup.verbose)
       isabelleArguments += "-v"
 
-    // TODO: cleanup session image (name, log/name, log/name.gz, log/name.db, delete on exit, additionally clean stale image (say, older than a day))
     isabelleArguments += sessionName
 
     val cmd = makeIsabelleCommandLine(absPath(setup.isabelleHome), isabelleArguments.toSeq)
