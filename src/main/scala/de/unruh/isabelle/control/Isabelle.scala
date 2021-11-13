@@ -327,7 +327,7 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
       val logDirs = for (isaDir <- List(setup.isabelleHomeAbsolute, setup.isabelleHomeAbsolute);
                          if Files.isDirectory(isaDir);
                          heapDir <- Files.list(isaDir.resolve("heaps")).toList.asScala;
-                         if heapDir.getFileName.toString.toLowerCase.startsWith("polyml-")
+                         if heapDir.getFileName.toString.toLowerCase.startsWith("polyml-");
                          if Files.isDirectory(heapDir);
                          logDir = heapDir.resolve("log");
                          if Files.isDirectory(logDir))
@@ -348,7 +348,7 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
       // We only delete files older than 1 hour to avoid race conditions
       for (logDir <- logDirs;
            file <- Files.list(logDir).toList.asScala;
-           if file.getFileName.toString.startsWith("SCALA_ISABELLE_TEMP_")
+           if file.getFileName.toString.startsWith("SCALA_ISABELLE_TEMP_");
            if file.toFile.lastModified < new Date().getTime - 3600 * 1000) {
         logger.debug("Cleaning old session log file: " + file)
         Files.delete(file)
