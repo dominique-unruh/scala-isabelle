@@ -8,15 +8,21 @@ import scala.concurrent.ExecutionContext
 // Implicits
 import de.unruh.isabelle.pure.Implicits.theoryConverter
 
-// TODO document
+
+/** Represents a toplevel state (the state when processing an Isar .thy document). ML type: `Toplevel.state`
+ *
+ * An instance of this class is merely a thin wrapper around an [[mlvalue.MLValue MLValue]],
+ * all explanations and examples given for [[Context]] also apply here.
+ *
+ * An implict [[mlvalue.MLValue.Converter MLValue.Converter]] can be imported from [[Implicits]]`._`. The representation
+ * of a toplevel state `state` as an ML exception is `E_ToplevelState state`.
+ */
 final class ToplevelState private (val mlValue: MLValue[ToplevelState]) extends MLValueWrapper[ToplevelState] {
-  // TODO: test case
-  // TODO document
+  /** Returns the theory corresponding to this toplevel state (ML function `Toplevel.theory_of`). */
   def theory(implicit isabelle: Isabelle, ec: ExecutionContext): Theory =
     Ops.getTheory(this).retrieveNow
 
-  // TODO: test case
-  // TODO document
+  /** Returns the proof context corresponding to this toplevel state (ML function `Toplevel.context_of`). */
   def context(implicit isabelle: Isabelle, ec: ExecutionContext): Context =
     Ops.getContext(this).retrieveNow
 }
@@ -26,8 +32,7 @@ object ToplevelState extends MLValueWrapper.Companion[ToplevelState] {
   override protected val predefinedException: String = "E_ToplevelState"
   override protected def instantiate(mlValue: MLValue[ToplevelState]): ToplevelState = new ToplevelState(mlValue)
 
-  // TODO: test case
-  // TODO document
+  /** Initializes a new toplevel state based on the theory `theory`. (ML function `Toplevel.theory_toplevel`). */
   def apply(theory: Theory)(implicit isabelle: Isabelle, ec: ExecutionContext): ToplevelState =
     Ops.theoryToplevel(theory).retrieveNow
 

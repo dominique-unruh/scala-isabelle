@@ -21,6 +21,7 @@
         <option value="de.unruh.isabelle.pure.ContextTest" />
         <option value="de.unruh.isabelle.pure.ProoftermTest" />
         <option value="de.unruh.isabelle.pure.PathConverterTest" />
+        <option value="de.unruh.isabelle.pure.ToplevelStateTest" />
         <option value="de.unruh.isabelle.pure.StringInterpolatorsTest" />
         <option value="de.unruh.isabelle.misc.SymbolsTest" />
         <option value="de.unruh.isabelle.misc.SMLCodeUtilsTest" />
