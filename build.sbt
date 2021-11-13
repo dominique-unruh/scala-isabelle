@@ -40,8 +40,12 @@ libraryDependencies += "org.apache.commons" % "commons-text" % "1.9"
 libraryDependencies += "com.google.guava" % "guava" % "31.0.1-jre"
 libraryDependencies += "org.jetbrains" % "annotations" % "23.0.0"
 
-// TODO: mark as compile time only or something
-libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value
+// See https://stackoverflow.com/a/21516954
+val CompileOnly = config("compileonly").hide
+ivyConfigurations += CompileOnly
+Compile / unmanagedClasspath ++= update.value.select(configurationFilter("compileonly"))
+
+libraryDependencies += "org.scala-lang" % "scala-reflect" % scalaVersion.value % CompileOnly
 
 libraryDependencies += "org.scala-lang" % "scala-compiler" % scalaVersion.value % "test"
 
