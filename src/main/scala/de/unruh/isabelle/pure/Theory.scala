@@ -142,8 +142,10 @@ final class Theory private [Theory](val name: String, val mlValue : MLValue[Theo
   override def await: Unit = mlValue.await
   override def someFuture: Future[Any] = mlValue.someFuture
 
-  // TODO document
-  // TODO document that this generates a new context each time (potentially inefficient)
+  /** Initializes a proof context (ML type `Proof.context`) based on this theory.
+   * Note: a new proof context is initialized each time this method is invoked.
+   * In time-critical situations, it may be best to invoke this method only once.
+   * */
   def context(implicit isabelle: Isabelle, executionContext: ExecutionContext): Context =
     Ops.init_global(this).retrieveNow
 }

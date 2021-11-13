@@ -70,7 +70,7 @@ object Utils {
       .into { _ + '_' + randomString() }
   }
 
-  // DOCUMENT
+  /** Returns a unique random alphanumeric string */
   def randomString(): String = Random.alphanumeric.take(12).mkString
 
   /** Converts `path` to a path understood by Cygwin.

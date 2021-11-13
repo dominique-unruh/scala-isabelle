@@ -140,7 +140,13 @@ sealed abstract class Term extends FutureValue with PrettyPrintable {
    **/
   override def toString: String
 
-  // DOCUMENT
+  /** Returns the type of this term, assuming the term is well-typed.
+   * (The function does not verify whether the term is indeed well-typed.
+   * If it is not, no guarantee is made what type is returned.)
+   *
+   * This method is analogous to `fastype_of` in Isabelle/ML but avoids transferring the term to/from Isabelle when
+   * determining the type.
+   * */
   // TODO test case
   def fastType(implicit executionContext: ExecutionContext) : Typ = {
     import Breaks._
