@@ -19,7 +19,62 @@ import scala.util.Random
 import de.unruh.isabelle.mlvalue.Implicits._
 import de.unruh.isabelle.pure.Implicits._
 
-// DOCUMENT
+/** Provides string interpolators for conveniently creating Isabelle terms and types.
+ *
+ * It allows us to write, e.g., `term"x+y"` to parse the term `x+y`.
+ * Or `typ"nat"` to parse the type `nat`
+ *
+ * In addition, subterms of terms can refer to already existing [[Term]] objects,
+ * e.g., `term"x+$term"` for a Scala variable `term` of type [[Term]].
+ *
+ * We can also refer to existing [[Typ]] objects, both in terms and types.
+ * E.g., `term"x :: $typ` or `typ"$typ => $typ"` for a Scala variable of type [[Typ]].
+ *
+ * The support for the interpolators is activated by importing the implicits `import de.unruh.isabelle.pure.Implicits._`.
+ *
+ * To use the interpolators, an implicit [[Isabelle]] instance, an implicit [[ExecutionContext]],
+ * and an implicit [[Context]] must be given.
+ * (The latter provides the theory context in which to parse the terms/types.)
+ *
+ * Parsing happens at runtime, there is no compile-time validation of the terms/types.
+ *
+ * An example how to use type and term interpolators:
+ * {{{
+ *   import de.unruh.isabelle.pure.Implicits._
+ *   import scala.concurrent.ExecutionContext.Implicits.global
+ *   implicit isabelle = new Isabelle(...)
+ *   implicit context = Context("Main") // Parsing w.r.t. Isabelle theory Main
+ *   val typ1 = typ"nat"               // type nat
+ *   val typ2 = typ"$typ1 => $typ1"    // type nat => nat
+ *   val term1 = term"f :: $typ2"      // term f :: nat => nat
+ *   val term2 = term"$term1 1"        // term (f :: nat => nat) (1 :: nat)  (by type inference)
+ * }}}
+ *
+ * The interpolators can also be used for pattern matching.
+ * That is, `term"..."` and `typ"..."` can appear in the pattern in a Scala pattern match.
+ * Example:
+ * {{{
+ *   // implicits as above
+ *   val term = term"1 + (2::nat)"
+ *   term match {
+ *     case term"$t + (_::$u::plus)" => (t,u)  // t : Term is "1::nat", u : Typ is "nat"
+ *   }
+ *   val typ = typ"nat => nat"
+ *   typ match {
+ *     case typ"$t => $dummy" => t    // t : Typ is "nat"
+ *   }
+ * }}}
+ * (Note: A subtlety is that we write `$u::plus`` instad of just `$u` in the pattern above.
+ * This is because Isabelle otherwise refuses to parse the term: a schematic type variable (into which `$u` is converted for
+ * parsing purposes) needs to be annotated with a sort that makes the overall term well-typed.)
+ *
+ * (Note: Another subtlety is that we use `$dummy` instead of `_` to indicate a wildcard in `typ"$t => $dummy"`.
+ * This is because Isabelle does not support `_` in pattern matches for types.
+ * We could also write `$_` instead of `$dummy` here because then `_` is a Scala-wildcard, not an Isabelle wildcard.)
+ *
+ * Invalid (i.e., unparseable) strings raise an [[de.unruh.isabelle.control.IsabelleException]].
+ * This also applied if `...`` in patterns `term"..."` or `typ"..."` cannot be parsed.
+ **/
 object StringInterpolators extends OperationCollection {
   private case class Hole(varName: String, isTerm: Boolean)
 
@@ -75,7 +130,7 @@ object StringInterpolators extends OperationCollection {
       (templateString.toString, holes.toList)
     }
 
-    c.info(c.enclosingPosition, s"For StringContext ${parts.mkString("•")}, template is $templateString and holes are $holes", force = true)
+//    c.info(c.enclosingPosition, s"For StringContext ${parts.mkString("•")}, template is $templateString and holes are $holes", force = true)
 
     def termApplyImpl(args: c.Expr[Any]*)
                      (context: c.Expr[Context], isabelle: c.Expr[Isabelle], executionContext: c.Expr[ExecutionContext]): c.Expr[Term] = {
@@ -142,7 +197,7 @@ object StringInterpolators extends OperationCollection {
       (templateString.toString, varNames.toList)
     }
 
-    c.info(c.enclosingPosition, s"For StringContext ${parts.mkString("•")}, template is $templateString and holes are $varNames", force = true)
+//    c.info(c.enclosingPosition, s"For StringContext ${parts.mkString("•")}, template is $templateString and holes are $varNames", force = true)
 
     def typApplyImpl(args: c.Expr[Typ]*)
                      (context: c.Expr[Context], isabelle: c.Expr[Isabelle], executionContext: c.Expr[ExecutionContext]): c.Expr[Typ] = {
@@ -221,7 +276,7 @@ object StringInterpolators extends OperationCollection {
     }
   }
 
-  // DOCUMENT
+  /** See [[StringInterpolators]] for an explanation. */
   implicit final class TermInterpolator(val stringContext: StringContext) {
     object term {
       def apply(args: TermOrTyp*)(implicit context: Context, isabelle: Isabelle, executionContext: ExecutionContext) : Term =
@@ -233,7 +288,7 @@ object StringInterpolators extends OperationCollection {
     }
   }
 
-  // DOCUMENT
+  /** See [[StringInterpolators]] for an explanation. */
   implicit final class TypInterpolator(val stringContext: StringContext) {
     object typ {
       def apply(args: Typ*)(implicit context: Context, isabelle: Isabelle, executionContext: ExecutionContext) : Typ =

@@ -69,4 +69,30 @@ class StringInterpolatorsTest extends AnyFunSuite {
       case term"TYPE($typ%type)" => assert(typ.pretty(context) == "nat")
     }
   }
+
+  test("docstring example") {
+    val typ1 = typ"nat"               // type nat
+    assert(typ1 == Type("Nat.nat"))
+    val typ2 = typ"$typ1 => $typ1"    // type nat => nat
+    assert(typ2 == Typ(context, "nat => nat"))
+    val term1 = term"f :: $typ2"      // term f :: nat => nat
+    assert(term1 == Term(context, "f :: nat => nat"))
+    val term2 = term"$term1 1"        // term (f :: nat => nat) (1 :: nat)  (by type inference)
+    assert(term2 == Term(context, "(f :: nat => nat) (1 :: nat)"))
+  }
+
+  test("docstring parse example") {
+    val term = term"1 + (2::nat)"
+    term match {
+      case term"$t + (_::$u::plus)" => (t,u)  // t : Term is "1::nat", u : Typ is "nat"
+        assert(t == Term(context, "1 :: nat"))
+        assert(u == Typ(context, "nat"))
+    }
+    val typ = typ"nat => nat"
+    print(typ)
+    typ match {
+      case typ"$t => $dummy" => t    // t : Typ is "nat"
+        assert(t == Typ(context, "nat"))
+    }
+  }
 }
