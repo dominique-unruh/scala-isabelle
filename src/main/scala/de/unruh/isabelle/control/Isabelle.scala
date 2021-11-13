@@ -26,7 +26,7 @@ import java.nio.file.attribute.FileTime
 import java.util.Date
 import scala.annotation.tailrec
 // Deprecated, but we use it because scala.jdk.CollectionConverters is not available in Scala 2.12
-import scala.collection.JavaConverters.collectionAsScalaIterableConverter
+import scala.collection.JavaConverters.{collectionAsScalaIterableConverter, asScalaIteratorConverter}
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration.Duration
@@ -326,7 +326,7 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
     try {
       val logDirs = for (isaDir <- List(setup.isabelleHomeAbsolute, setup.isabelleHomeAbsolute);
                          if Files.isDirectory(isaDir);
-                         heapDir <- Files.list(isaDir.resolve("heaps")).toList.asScala;
+                         heapDir <- Files.list(isaDir.resolve("heaps")).iterator.asScala
                          if heapDir.getFileName.toString.toLowerCase.startsWith("polyml-");
                          if Files.isDirectory(heapDir);
                          logDir = heapDir.resolve("log");
@@ -347,7 +347,7 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
       // Delete files from prior runs.
       // We only delete files older than 1 hour to avoid race conditions
       for (logDir <- logDirs;
-           file <- Files.list(logDir).toList.asScala;
+           file <- Files.list(logDir).iterator.asScala;
            if file.getFileName.toString.startsWith("SCALA_ISABELLE_TEMP_");
            if file.toFile.lastModified < new Date().getTime - 3600 * 1000) {
         logger.debug("Cleaning old session log file: " + file)
