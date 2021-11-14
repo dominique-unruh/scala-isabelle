@@ -27,6 +27,8 @@ as the discontinued [libisabelle](https://github.com/larsrh/libisabelle).
 * Java 11 or newer
 * [sbt](https://www.scala-sbt.org/) (optional)
 
+(It is also possible to use the library JVM languages other than Scala. See [JavaExample.java](https://github.com/dominique-unruh/scala-isabelle/blob/master/src/test/scala/de/unruh/isabelle/JavaExample.java) for an example.)
+
 ## Installation
 
 With sbt, use one of
@@ -40,7 +42,7 @@ to add scala-isabelle to your build.
 
 Furthermore, you need to download the Isabelle distribution and unpack it somewhere (not needed for compilation,
 so your application could also do it at runtime). In the example below, we will assume that you have installed 
-Isabelle2020 at `/opt/Isabelle2020`.
+Isabelle2021-1 at `/opt/Isabelle2021-1`.
 
 ##  Example
 
@@ -55,8 +57,8 @@ import de.unruh.isabelle.pure.Implicits._
 import scala.concurrent.ExecutionContext.Implicits.global
 
 // Initialize the Isabelle process with session HOL.
-// We assume an Isabelle installation in /opt/Isabelle2020
-val setup = Isabelle.Setup(isabelleHome = Path.of("/opt/Isabelle2020"), logic = "HOL")
+// We assume an Isabelle installation in /opt/Isabelle2021-1
+val setup = Isabelle.Setup(isabelleHome = Path.of("/opt/Isabelle2021-1"), logic = "HOL")
 implicit val isabelle: Isabelle = new Isabelle(setup)
 
 // Load the Isabelle/HOL theory "Main" and create a context object
