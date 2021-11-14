@@ -2,6 +2,8 @@ package de.unruh.isabelle.pure
 
 import de.unruh.isabelle.control.IsabelleException
 import de.unruh.isabelle.control.IsabelleTest.{isabelle => isa}
+import de.unruh.isabelle.pure.TermTest.assertRecursivelyConcrete
+import org.scalatest.Assertions
 import org.scalatest.funsuite.AnyFunSuite
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -83,4 +85,24 @@ class TermTest extends AnyFunSuite {
     assert(typ == natT)
   }
 
+  test("concrete recursive") {
+    val t = Term(ctxt, "1+2 = 3")
+    val t2 = t.concreteRecursive
+    assertRecursivelyConcrete(t2)
+    assert(t2 == t)
+    assert(t2.mlValue == t.mlValue)
+    val t3 = t2.concreteRecursive // already concrete, so it shouldn't change
+    assert(t3 eq t2)
+  }
+}
+
+object TermTest {
+  private def assertRecursivelyConcrete(t: Term): Unit = t match {
+    case t : Const => TypTest.assertRecursivelyConcrete(t.typ)
+    case t : Free => TypTest.assertRecursivelyConcrete(t.typ)
+    case t : Var => TypTest.assertRecursivelyConcrete(t.typ)
+    case t : App => assertRecursivelyConcrete(t.fun); assertRecursivelyConcrete(t.arg)
+    case _ : Bound =>
+    case _ => Assertions.fail(s"Not a concrete term: $t")
+  }
 }

@@ -2,6 +2,8 @@ package de.unruh.isabelle.pure
 
 import de.unruh.isabelle.control.{IsabelleException, IsabelleTest}
 import de.unruh.isabelle.control.IsabelleTest.{isabelle => isa}
+import de.unruh.isabelle.pure.TypTest.assertRecursivelyConcrete
+import org.scalatest.Assertions
 import org.scalatest.funsuite.AnyFunSuite
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -37,4 +39,22 @@ class TypTest extends AnyFunSuite {
     }
   }
 
+  test("concrete recursive") {
+    val t = Typ(ctxt, "nat => string")
+    val t2 = t.concreteRecursive
+    assertRecursivelyConcrete(t2)
+    assert(t2 == t)
+    assert(t2.mlValue == t.mlValue)
+    val t3 = t2.concreteRecursive // already concrete, so it shouldn't change
+    assert(t3 eq t2)
+  }
+}
+
+object TypTest {
+  def assertRecursivelyConcrete(t: Typ): Unit = t match {
+    case t : Type => for (a <- t.args) assertRecursivelyConcrete(a)
+    case _ : TVar =>
+    case _ : TFree =>
+    case _ => Assertions.fail(s"Not a concrete typ: $t")
+  }
 }

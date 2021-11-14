@@ -85,15 +85,9 @@ sealed abstract class Typ extends FutureValue with PrettyPrintable {
    * constructor on Isabelle side (`Type`, `TFree`, `TVar`). */
   val concrete : ConcreteTyp
 
-  // DOCUMENT
-  // TODO test case
-  def concreteRecursive(implicit isabelle: Isabelle, ec: ExecutionContext) : ConcreteTyp = {
-    concrete match {
-      case typ: Type => Type(typ.name, typ.args.map(_.concreteRecursive) : _*)
-      case tfree: TFree => tfree
-      case tvar: TVar => tvar
-    }
-  }
+  /** Transforms this typ into a [[ConcreteTyp]] (see [[concrete]]).
+   * In contrast to [[concrete]], it also replaces all subtypes by concrete subterms. */
+  def concreteRecursive(implicit isabelle: Isabelle, ec: ExecutionContext) : ConcreteTyp
 
   /** Indicates whether [[concrete]] has already been initialized. (I.e.,
    * whether it can be accessed without delay and without incurring communication with
@@ -193,6 +187,8 @@ final class MLValueTyp(val mlValue: MLValue[Typ])(implicit val isabelle: Isabell
     typ
   }
 
+  override def concreteRecursive(implicit isabelle: Isabelle, ec: ExecutionContext): ConcreteTyp = concrete.concreteRecursive
+
   override def hashCode(): Int = concrete.hashCode()
 
   override def toString: String =
@@ -225,9 +221,12 @@ final class MLValueTyp(val mlValue: MLValue[Typ])(implicit val isabelle: Isabell
     Ops.stringOfCtyp(MLValue((ctxt, this))).retrieveNow
 
   override lazy val concrete: ConcreteTyp = new MLValueTyp(mlValue).concrete
+
   override def concreteComputed: Boolean =
     if (mlValueLoaded) mlValueTyp.concreteComputed
     else false
+
+  def concreteRecursive(implicit isabelle: Isabelle, ec: ExecutionContext): ConcreteTyp = mlValueTyp.concreteRecursive
 
   override def hashCode(): Int = concrete.hashCode()
 
@@ -287,6 +286,19 @@ final class Type private[pure](val name: String, val args: List[Typ], val initia
   override def hashCode(): Int = new HashCodeBuilder(342534543,34774653)
     .append(name).toHashCode
 
+  override def concreteRecursive(implicit isabelle: Isabelle, ec: ExecutionContext): Type = {
+    var changed = false
+    val args = for (a <- this.args) yield {
+      val a2 = a.concreteRecursive
+      if (a ne a2) changed = true
+      a2
+    }
+    if (changed)
+      new Type(name, args, initialMlValue)
+    else
+      this
+  }
+
   override def await: Unit = Await.ready(someFuture, Duration.Inf)
   override lazy val someFuture: Future[Any] = {
     Future.traverse(args : Seq[Typ])(_.someFuture).map(_ => ())
@@ -327,6 +339,8 @@ final class TFree private[pure] (val name: String, val sort: List[String], val i
     case List(clazz) => s"$name::$clazz"
     case _ => s"$name::{${sort.mkString(",")}}"
   }
+
+  override def concreteRecursive(implicit isabelle: Isabelle, ec: ExecutionContext): this.type = this
 
   override def hashCode(): Int = new HashCodeBuilder(335434265,34255633)
     .append(name).append(sort).toHashCode
@@ -374,6 +388,8 @@ final class TVar private[pure] (val name: String, val index: Int, val sort: List
     case List(clazz) => s"?$name$index::$clazz"
     case _ => s"?$name$index::{${sort.mkString(",")}}"
   }
+
+  override def concreteRecursive(implicit isabelle: Isabelle, ec: ExecutionContext): this.type = this
 
   override def hashCode(): Int = new HashCodeBuilder(342524363,354523249)
     .append(name).append(index).append(sort).toHashCode
