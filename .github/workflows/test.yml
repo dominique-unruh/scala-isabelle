@@ -1,4 +1,4 @@
-name: test-scala-isabelle
+name: scala-isabelle
 on: [push]
 jobs:
     test:
@@ -31,3 +31,14 @@ jobs:
           with:
             name: test-reports-html
             path: target/test-reports-html
+
+    publish-snapshot:
+      runs-on: [self-hosted, linux]
+      needs: test
+      if: github.ref == 'refs/heads/master'
+      steps:
+        - name: Checkout repository
+          uses: actions/checkout@v2
+
+        - name: Publish snapshot
+          run: sbt "+ publishSigned"
