@@ -236,11 +236,23 @@ object Cterm {
 
   /** Converts a [[Term]] into a [[Cterm]]. This involves type-checking (relative to the
    * context `ctxt`). The resulting [[Cterm]] is then certified to be correctly typed. */
-  // TODO: This is problematic: if term is already a Cterm, but for a different context, we break context discipline
+  // TODO same for ctyp
+  // DOCUMENT
   def apply(ctxt: Context, term: Term)(implicit isabelle: Isabelle, ec: ExecutionContext) : Cterm = term match {
-    case cterm : Cterm => cterm
-    case term => new Cterm(Ops.ctermOfTerm(MLValue((ctxt, term))))
+    case cterm : Cterm =>
+      // We cannot just return `cterm` because it may be a cterm w.r.t. the wrong context.
+      // But re-checking the term is wasteful if the term was already checked w.r.t. this context.
+      new Cterm(Ops.ctermOfCterm(ctxt, cterm))
+    case term => new Cterm(Ops.ctermOfTerm(ctxt, term))
   }
+
+  // DOCUMENT
+  def apply(ctxt: Context, string: String)(implicit isabelle: Isabelle, ec: ExecutionContext) : Cterm =
+    Cterm(ctxt, Term(ctxt, string))
+
+  // DOCUMENT
+  def apply(ctxt: Context, string: String, typ: Typ)(implicit isabelle: Isabelle, ec: ExecutionContext) : Cterm =
+    Cterm(ctxt, Term(ctxt, string, typ))
 
   /** Representation of cterms in ML.
    *
@@ -615,6 +627,10 @@ object Term extends OperationCollection {
       compileFunction("Thm.term_of")
     val ctermOfTerm: MLFunction2[Context, Term, Cterm] =
       compileFunction("fn (ctxt, term) => Thm.cterm_of ctxt term")
+    val ctermOfCterm: MLFunction2[Context, Cterm, Cterm] =
+      compileFunction("""fn (ctxt, ct) => Thm.transfer_cterm (Proof_Context.theory_of ctxt) ct
+          handle Thm.CONTEXT _ => Thm.cterm_of ctxt (Thm.term_of ct)""")
+
     val equalsTerm: MLFunction2[Term, Term, Boolean] =
       compileFunction("op=")
 

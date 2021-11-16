@@ -3,7 +3,7 @@
 ## Snapshot
 
 * Term and type interpolators
-* Ctyp/Cterm constructors now do not reinvoke to_cterm on ctyp/cterm (?)
+* Ctyp/Cterm constructors now do not reinvoke to_cterm on ctyp/cterm unless needed
 * Term.fastType added
 * Context.setMode
 * ToplevelState.context, .apply(Theory)

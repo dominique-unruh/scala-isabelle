@@ -249,11 +249,18 @@ object Ctyp {
 
   /** Converts a [[Typ]] into a [[Ctyp]]. This involves type-checking (relative to the
    * context `ctxt`). The resulting [[Ctyp]] is then certified to be correctly formed. */
-  // TODO: This is problematic: if typ is already a Ctyp, but for a different context, we break context discipline
+  // DOCUMENT
   def apply(ctxt: Context, typ: Typ)(implicit isabelle: Isabelle, ec: ExecutionContext): Ctyp = typ match {
-    case ctyp : Ctyp => ctyp
+    case ctyp : Ctyp =>
+      // We cannot just return `cterm` because it may be a cterm w.r.t. the wrong context.
+      // But re-checking the term is wasteful if the term was already checked w.r.t. this context.
+      new Ctyp(Ops.ctypOfCtyp(ctxt, ctyp))
     case typ => new Ctyp(Ops.ctypOfTyp(MLValue((ctxt, typ))))
   }
+
+  // DOCUMENT
+  def apply(ctxt: Context, string: String)(implicit isabelle: Isabelle, ec: ExecutionContext) : Ctyp =
+    Ctyp(ctxt, Typ(ctxt, string))
 
   /** Representation of ctyps in ML.
    *
@@ -447,6 +454,9 @@ object Typ extends OperationCollection {
       compileFunction("Thm.typ_of")
     val ctypOfTyp : MLFunction2[Context, Typ, Ctyp] =
       compileFunction("fn (ctxt, typ) => Thm.ctyp_of ctxt typ")
+    val ctypOfCtyp: MLFunction2[Context, Ctyp, Ctyp] =
+      compileFunction("""fn (ctxt, ctyp) => Thm.transfer_ctyp (Proof_Context.theory_of ctxt) ctyp
+          handle Thm.CONTEXT _ => Thm.ctyp_of ctxt (Thm.typ_of ctyp)""")
 
     val destTyp : MLRetrieveFunction[Typ] =
       MLRetrieveFunction(
