@@ -91,7 +91,7 @@ class IsabelleTest extends AnyFunSuite {
     println("Roundtrip of string finished")
 
     implicit val signaler: ThreadSignaler.type = ThreadSignaler
-    failAfter(Span(5, Seconds)) {
+    failAfter(Span(30, Seconds)) {
       roundTrip(DInt(0))
     }
   }
