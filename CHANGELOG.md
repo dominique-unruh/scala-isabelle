@@ -1,5 +1,26 @@
 # Changelog
 
+## Snapshot
+
+* Term and type interpolators
+* Ctyp/Cterm constructors now do not reinvoke to_cterm on ctyp/cterm (?)
+* Term.fastType added
+* Context.setMode
+* ToplevelState.context, .apply(Theory)
+* Killing Isabelle process, issue #3
+* Theory.context
+* catching exception: f5358b6a8cf416b95169dacc2a9a8ad7eb754d05
+* Supporting Isabelle2021, 2021-1
+* Invoking with full PIDE context (should make registerSessionDirectories obsolete)
+* Not the global ML namespace anymore
+* SCALA_ISABELLE_NO_CLEANUP
+* E_Data exception
+* SCALA_ISABELLE_LOG_QUERIES
+* setup.build -> no effect 
+* Term/Typ.concreteRecursive
+* Some documentation updates
+* Symbols updated
+
 ## [0.3.0] – 2020-11-05
 
 The biggest changes include support for Windows, multi-threaded execution in the Isabelle process,

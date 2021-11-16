@@ -204,7 +204,8 @@ final class MLValueTyp(val mlValue: MLValue[Typ])(implicit val isabelle: Isabell
  * demand.)
  * A [[Ctyp]] is always well-formed relative to the context for which it was
  * created (this is ensured by the Isabelle trusted core).
- **/final class Ctyp private(val ctypMlValue: MLValue[Ctyp])(implicit val isabelle: Isabelle, ec: ExecutionContext) extends Typ {
+ **/
+final class Ctyp private(val ctypMlValue: MLValue[Ctyp])(implicit val isabelle: Isabelle, ec: ExecutionContext) extends Typ {
   /** Returns this term as an `MLValue[Typ]` (not `MLValue[Ctyp]`). The difference is crucial
    * because `MLValue[_]` is not covariant. So for invoking ML functions that expect an argument of type `typ`, you
    * need to get an `MLValue[Typ]`. In contrast, [[ctypMlValue]] returns this type as an `MLValue[Ctyp]`. */
@@ -248,6 +249,7 @@ object Ctyp {
 
   /** Converts a [[Typ]] into a [[Ctyp]]. This involves type-checking (relative to the
    * context `ctxt`). The resulting [[Ctyp]] is then certified to be correctly formed. */
+  // TODO: This is problematic: if typ is already a Ctyp, but for a different context, we break context discipline
   def apply(ctxt: Context, typ: Typ)(implicit isabelle: Isabelle, ec: ExecutionContext): Ctyp = typ match {
     case ctyp : Ctyp => ctyp
     case typ => new Ctyp(Ops.ctypOfTyp(MLValue((ctxt, typ))))
