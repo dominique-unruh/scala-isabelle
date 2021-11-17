@@ -235,9 +235,12 @@ object Cterm {
     new Cterm(mlValue)
 
   /** Converts a [[Term]] into a [[Cterm]]. This involves type-checking (relative to the
-   * context `ctxt`). The resulting [[Cterm]] is then certified to be correctly typed. */
-  // TODO same for ctyp
-  // DOCUMENT
+   * context `ctxt`). The resulting [[Cterm]] is then certified to be correctly typed.
+   *
+   * If `term` is already a [[Cterm]], then `term` is transferred to the context `ctxt`.
+   * (Which guarantees that `term` is also a valid term w.r.t. `ctxt`.)
+   * If this is not possible, `term` is re-checked to create a cterm.
+   * */
   def apply(ctxt: Context, term: Term)(implicit isabelle: Isabelle, ec: ExecutionContext) : Cterm = term match {
     case cterm : Cterm =>
       // We cannot just return `cterm` because it may be a cterm w.r.t. the wrong context.
@@ -246,11 +249,11 @@ object Cterm {
     case term => new Cterm(Ops.ctermOfTerm(ctxt, term))
   }
 
-  // DOCUMENT
+  /** Parses `string` as a term and returns the result as a [[Cterm]]. */
   def apply(ctxt: Context, string: String)(implicit isabelle: Isabelle, ec: ExecutionContext) : Cterm =
     Cterm(ctxt, Term(ctxt, string))
 
-  // DOCUMENT
+  /** Parses `string` as a term of type `typ` and returns the result as a [[Cterm]]. */
   def apply(ctxt: Context, string: String, typ: Typ)(implicit isabelle: Isabelle, ec: ExecutionContext) : Cterm =
     Cterm(ctxt, Term(ctxt, string, typ))
 

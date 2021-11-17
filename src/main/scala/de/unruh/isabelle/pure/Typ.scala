@@ -248,17 +248,21 @@ object Ctyp {
     new Ctyp(mlValue)
 
   /** Converts a [[Typ]] into a [[Ctyp]]. This involves type-checking (relative to the
-   * context `ctxt`). The resulting [[Ctyp]] is then certified to be correctly formed. */
-  // DOCUMENT
+   * context `ctxt`). The resulting [[Ctyp]] is then certified to be correctly formed. 
+   * 
+   * If `typ` is already a [[Ctyp]], then `typ` is transferred to the context `ctxt`.
+   * (Which guarantees that `typ` is also a valid typ w.r.t. `ctxt`.)
+   * If this is not possible, `typ` is re-checked to create a ctyp.
+   */
   def apply(ctxt: Context, typ: Typ)(implicit isabelle: Isabelle, ec: ExecutionContext): Ctyp = typ match {
     case ctyp : Ctyp =>
-      // We cannot just return `cterm` because it may be a cterm w.r.t. the wrong context.
-      // But re-checking the term is wasteful if the term was already checked w.r.t. this context.
+      // We cannot just return `ctyp` because it may be a ctyp w.r.t. the wrong context.
+      // But re-checking the typ is wasteful if the typ was already checked w.r.t. this context.
       new Ctyp(Ops.ctypOfCtyp(ctxt, ctyp))
     case typ => new Ctyp(Ops.ctypOfTyp(MLValue((ctxt, typ))))
   }
 
-  // DOCUMENT
+  /** Parses `string` as a typ and returns the result as a [[Ctyp]]. */
   def apply(ctxt: Context, string: String)(implicit isabelle: Isabelle, ec: ExecutionContext) : Ctyp =
     Ctyp(ctxt, Typ(ctxt, string))
 
