@@ -30,7 +30,7 @@ object Version extends OperationCollection {
 //    MLValue.init()
     val versionString: String =
       try
-        MLValue.compileValue[Option[String]]("Isabelle_System.isabelle_identifier()").retrieveNow.get
+        MLValue.compileValue[Option[String]]("Isabelle_System.isabelle_identifier()").retrieveNow.getOrElse("dev")
       catch {
         case _ : IsabelleException => MLValue.compileValue[String]("Distribution.version").retrieveNow
       }
@@ -48,7 +48,8 @@ object Version extends OperationCollection {
     }
   }
 
-  /** The Isabelle version string (e.g., `"Isabelle2020: April 2020"`) */
+  /** The Isabelle version string (e.g., `"Isabelle2020: April 2020"`).
+   * `"dev"` if the version string cannot be obtained (usually the case with Isabelle running directly from the development repository). */
   def versionString(implicit isabelle: Isabelle, ec:  ExecutionContext): String = Ops.versionString
   /** The year of this Isabelle version (e.g., 2020).
    *
