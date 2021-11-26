@@ -37,6 +37,8 @@ class VersionTest extends org.scalatest.funsuite.AnyFunSuite {
         assert(triple == (2021,1,2))
       case "Isabelle2021-1-RC3" =>
         assert(triple == (2021,1,3))
+      case "Isabelle2021-1-RC4" =>
+        assert(triple == (2021,1,4))
       case "Isabelle2021-1" =>
         assert(triple == (2021,1,NOT_RC))
       case _ =>

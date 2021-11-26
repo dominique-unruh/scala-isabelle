@@ -16,7 +16,9 @@
         <option value="de.unruh.isabelle.mlvalue.FunctionConverterTest" />
         <option value="de.unruh.isabelle.pure.ThmTest" />
         <option value="de.unruh.isabelle.pure.TypTest" />
+        <option value="de.unruh.isabelle.pure.CtypTest" />
         <option value="de.unruh.isabelle.pure.TermTest" />
+        <option value="de.unruh.isabelle.pure.CtermTest" />
         <option value="de.unruh.isabelle.pure.TheoryTest" />
         <option value="de.unruh.isabelle.pure.ContextTest" />
         <option value="de.unruh.isabelle.pure.ProoftermTest" />

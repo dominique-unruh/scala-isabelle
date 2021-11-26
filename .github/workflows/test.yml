@@ -4,7 +4,7 @@ jobs:
     test:
       strategy:
         matrix:
-          isabelle: [2019, 2020, 2021, 2021-1-RC3]
+          isabelle: [2019, 2020, 2021, 2021-1-RC4]
           os: [linux, windows, macos]
       runs-on: [self-hosted, "${{matrix.os}}"]
       steps:
