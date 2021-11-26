@@ -28,6 +28,7 @@ jobs:
         - name: Running tests (MacOS)
           if: matrix.os == 'macos'
           run: |
+            ~/keepawake.sh &    # A script to keep the Mac from falling asleep
             export SCALA_ISABELLE_NO_CLEANUP=true
             case "${{matrix.isabelle}}" in
               2019|2020) echo ~/Isabelle${{matrix.isabelle}}.app/Isabelle >.isabelle-home;;
