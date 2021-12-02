@@ -44,10 +44,10 @@ jobs:
             name: test-reports-html-${{matrix.isabelle}}-${{matrix.os}}
             path: target/test-reports-html
 
-        - name: Cleanup (MacOS)
-          if: always()
-          run: |
-            kill `cat keepawake.pid` || true
+#        - name: Cleanup (MacOS)
+#          if: matrix.os == 'macos'
+#          run: |
+#            kill `cat keepawake.pid` || true
 
     publish-snapshot:
       runs-on: [self-hosted, linux]
