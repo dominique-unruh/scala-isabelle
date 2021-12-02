@@ -474,11 +474,13 @@ object Typ extends OperationCollection {
 
   /** Creates an Isabelle type from a string (using the parser from Isabelle).
    * E.g., `Typ(context, "nat list")`.
+   *
    * @param context The context relative to which parsing takes place (contains syntax declarations etc.)
    * @param string The string to be parsed
+   * @param symbols Instance of [[Symbols]] to convert `string` to Isabelle's internal encoding
    **/
-  def apply(context: Context, string: String)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValueTyp = {
-    new MLValueTyp(Ops.readType(MLValue((context, string))))
+  def apply(context: Context, string: String, symbols : Symbols = Symbols.globalInstance)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValueTyp = {
+    new MLValueTyp(Ops.readType(context, symbols.unicodeToSymbols(string)))
   }
 
   /** Representation of types in ML.

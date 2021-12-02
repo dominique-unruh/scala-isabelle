@@ -2,6 +2,7 @@ package de.unruh.isabelle.pure
 
 import de.unruh.isabelle.control.IsabelleException
 import de.unruh.isabelle.control.IsabelleTest.{isabelle => isa}
+import de.unruh.isabelle.misc.Symbols
 import de.unruh.isabelle.pure.TermTest.assertRecursivelyConcrete
 import org.scalatest.Assertions
 import org.scalatest.funsuite.AnyFunSuite
@@ -93,6 +94,12 @@ class TermTest extends AnyFunSuite {
     assert(t2.mlValue == t.mlValue)
     val t3 = t2.concreteRecursive // already concrete, so it shouldn't change
     assert(t3 eq t2)
+  }
+
+  test("parse from unicode string") {
+    val t = Term(ctxt, "1 ≤ 2")
+    val t2 = Term(ctxt, "less_eq 1 2")
+    assert(t == t2)
   }
 }
 

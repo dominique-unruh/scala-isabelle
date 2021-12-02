@@ -130,7 +130,7 @@ public class JavaExample {
         Context ctxt = Context.apply("Main", isabelle, global());
 
         // Create a term by parsing a string
-        Term term = Term.apply(ctxt, "x+0 = (y::nat)*1", isabelle, global());
+        Term term = Term.apply(ctxt, "x+0 = (y::nat)*1", Symbols.globalInstance(), isabelle, global());
 
         // Replace x+0 by x in the term above
         Term term2 = replace(term);

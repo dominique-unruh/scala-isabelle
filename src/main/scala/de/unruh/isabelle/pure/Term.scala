@@ -658,11 +658,13 @@ object Term extends OperationCollection {
 
   /** Creates a term from a string (using the parser from Isabelle).
    * E.g., `Term(context, "1+2")`.
+   *
    * @param context The context relative to which parsing takes place (contains syntax declarations etc.)
    * @param string The string to be parsed
+   * @param symbols Instance of [[Symbols]] to convert `string` to Isabelle's internal encoding
    **/
-  def apply(context: Context, string: String)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValueTerm = {
-    new MLValueTerm(Ops.readTerm(MLValue((context, string))))
+  def apply(context: Context, string: String, symbols : Symbols = Symbols.globalInstance)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValueTerm = {
+    new MLValueTerm(Ops.readTerm(context, symbols.unicodeToSymbols(string)))
   }
 
   /** Creates a term from a string (using the parser from Isabelle), subject to a type constraint.
