@@ -11,7 +11,7 @@ import com.google.common.escape.Escaper
 import com.google.common.util.concurrent.Striped
 import de.unruh.isabelle.control.Isabelle.SetupGeneral
 import de.unruh.isabelle.misc.SMLCodeUtils.{escapeSml, mlInteger}
-import de.unruh.isabelle.misc.{FutureValue, SMLCodeUtils, SharedCleaner, Utils}
+import de.unruh.isabelle.misc.{FutureValue, SMLCodeUtils, SharedCleaner, Symbols, Utils}
 import de.unruh.isabelle.mlvalue.MLValue
 import de.unruh.isabelle.pure.Term
 import org.apache.commons.io.FileUtils
@@ -1027,6 +1027,6 @@ case class IsabelleJEditException(message: String) extends IsabelleControllerExc
 case class IsabelleBuildException(message: String, errors: List[String])
   extends IsabelleControllerException(if (errors.nonEmpty) message + ": " + errors.last else message)
 /** Thrown in case of an error in the ML process (ML compilation errors, exceptions thrown by ML code) */
-case class IsabelleException(message: String) extends IsabelleControllerException(message)
+case class IsabelleException(message: String) extends IsabelleControllerException(Symbols.symbolsToUnicode(message))
 /** Thrown in case of protocol errors in Isabelle process */
 case class IsabelleProtocolException(message: String) extends IsabelleControllerException(message)
