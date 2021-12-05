@@ -23,6 +23,7 @@ jobs:
           run: |
             $Env:SCALA_ISABELLE_NO_CLEANUP = "true"
             Set-Content -Path .isabelle-home -Value 'c:\Isabelle${{matrix.isabelle}}'
+            Set-Content -Path .afp-home -Value 'c:\afp-2021-1'
             sbt '+ testOnly -- -h target/test-reports-html'
 
         - name: Running tests (MacOS)
@@ -35,6 +36,7 @@ jobs:
               2019|2020) echo ~/Isabelle${{matrix.isabelle}}.app/Isabelle >.isabelle-home;;
               *) echo ~/Isabelle${{matrix.isabelle}}.app >.isabelle-home;;
             esac
+            echo ~/afp-2021-1 >.afp-home
             sbt '+ testOnly -- -h target/test-reports-html'
 
         - name: Upload test results
