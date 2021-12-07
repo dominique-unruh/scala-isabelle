@@ -2,7 +2,7 @@ package de.unruh.isabelle.control
 import de.unruh.isabelle.control.IsabelleComponent._
 import _root_.isabelle.Scala.{Fun, Fun_String, Fun_Strings, Functions}
 import _root_.isabelle.{Bytes, Scala_Project}
-import de.unruh.isabelle.control.Isabelle.{Setup, SetupRunning}
+import de.unruh.isabelle.control.Isabelle.{ID, Setup, SetupRunning}
 import de.unruh.isabelle.control.{Isabelle, IsabelleException, IsabelleProtocolException}
 import de.unruh.isabelle.mlvalue.MLValue
 
@@ -46,5 +46,26 @@ object IsabelleComponent {
       }
     }
   }
+
+  /** Creates an [[MLValue]] based on an underlying ID referencing the object store in the Isabelle process.
+   * The ID is given as an integer (and not as an [[ID]] object).
+   * See [[Isabelle]] for an explanation about the object store.
+   * This function is highly unsafe:
+   *
+   * * It is not checked whether the object stored at ID `id` is indeed of type `A`
+   *
+   * * It is not checked whether `id` references an object in the object store
+   *
+   * * By creating an [[MLValue]] from `id`, `id` will be owned by that [[MLValue]].
+   *   That is, if the [[MLValue]] is garbage collected, the `id` will be deallocated.
+   *   Thus `id` be an refer to an object ID used anywhere else.
+   *
+   * This function must only be used in the following way:
+   * On the Isabelle/ML side, use `Control_Isabelle.addToObjects exn` where `exn` is an exception encoding the object to be transmitted (cf.~[[Isabelle]]).
+   * This returns an integer `id`.
+   * On the Scala side, invoke `unsafeMLValueFromNumericID(id)`.
+   * Do not use `id` elsewhere (except possibly in debug outputs etc.), and do not call `unsafeMLValueFromNumericID(id)` twice with the same ID.
+   * */
+  def unsafeMLValueFromNumericID[A](id: Long): MLValue[A] = MLValue.unsafeFromId[A](new ID(id, isabelle))
 }
 

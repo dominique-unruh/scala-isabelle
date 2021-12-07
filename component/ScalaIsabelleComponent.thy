@@ -1,5 +1,5 @@
 theory ScalaIsabelleComponent
-  imports Main
+  imports Pure
 begin
 
 (* Start the de.unruh.isabelle.control.Isabelle instance (accessible in Scala as de.unruh.isabelle.control.ComponentFunctions.isabelle),
@@ -23,6 +23,7 @@ ML \<open>
 \<^scala>\<open>test\<close> "1+2"
 \<close>
 
+(* 
 (* Example *)
 ML \<open>
 val scala = \<open>
@@ -41,5 +42,6 @@ scala
 |> Input.string_of
 |> Scala_Compiler.toplevel true
 \<close>
+*)
 
 end
