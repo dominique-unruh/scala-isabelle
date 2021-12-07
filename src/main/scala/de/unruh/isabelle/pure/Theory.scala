@@ -318,7 +318,7 @@ object Theory extends OperationCollection {
 
     val loadTheoryInternal =
       MLValue.compileFunction[Mutex, String, Theory](
-        s"fn (mutex,name) => (${Mutex.wrapWithMutex("mutex", "Thy_Info.use_thy name")}; Thy_Info.get_theory name)")
+        s"fn (mutex,name) => case Thy_Info.lookup_theory name of SOME thy => thy | NONE => (${Mutex.wrapWithMutex("mutex", "Thy_Info.use_thy name")}; Thy_Info.get_theory name)")
     val loadTheoryPath =
       MLValue.compileFunction[Mutex, Path, String, Theory](
         s"fn (mutex,path,name) => (${Mutex.wrapWithMutex("mutex", "Thy_Info.use_thy (Path.implode path)")}; Thy_Info.get_theory name)")
