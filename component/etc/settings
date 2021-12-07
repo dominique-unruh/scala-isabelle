@@ -1,0 +1,12 @@
+# -*- shell-script -*- :mode=shellscript:
+
+EXAMPLE_COMPONENT_HOME="$COMPONENT"
+
+for jar in "$COMPONENT"/dependencies/*.jar; do
+#  echo $jar
+  classpath $jar
+done
+
+classpath "$COMPONENT/scala-isabelle-component.jar"
+
+isabelle_scala_service de.unruh.isabelle.control.IsabelleComponent

@@ -360,16 +360,17 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
 
   /** Invokes the Isabelle process.
    * */
-  private def startProcessSlave(setup: Setup) : java.lang.Process = {
-    implicit val s: Setup = setup
-    def wd = setup.workingDirectory
+  private def startProcess(setup: SetupGeneral) : java.lang.Process = {
     val useSockets = SystemUtils.IS_OS_WINDOWS
 
     val tempDir = Files.createTempDirectory("isabellecontrol").toAbsolutePath
     tempDir.toFile.deleteOnExit()
     logger.debug(s"Temp directory: $tempDir")
 
-    assert(setup.userDir.forall(_.endsWith(".isabelle")))
+    setup match {
+      case s: Setup => assert(s.userDir.forall(_.endsWith(".isabelle")))
+      case _ =>
+    }
 
     val (inputPipe, outputPipe) =
       if (useSockets)
@@ -398,11 +399,6 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
         (new FileOutputStream(inputPipe.toFile), new FileInputStream(outputPipe.toFile))
       }
 
-    val isabelleArguments = ListBuffer[String]()
-
-    isabelleArguments += "build"
-//    isabelleArguments += "-l" += setup.logic
-
     val communicationStreams = if (useSockets) {
       val address = s"${serverSocket.getInetAddress.getHostAddress}:${serverSocket.getLocalPort}"
       s"""Socket_IO.open_streams ("$address")"""
@@ -412,11 +408,6 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
       val outFile = escapeSml(outputPipe.toString)
       s"""(BinIO.openIn "$inFile", BinIO.openOut "$outFile")"""
     }
-
-    val sessionName = Utils.freshName("SCALA_ISABELLE_TEMP")
-
-    // Remove logs files from old invocations of Isabelle
-    cleanSessionLogs(setup)
 
     val mlFile = filePathFromResource(if (logQueries) "control_isabelle_logged.ml" else "control_isabelle.ml",
       tempDir,
@@ -431,33 +422,6 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
           .replace("SECRETS", s"(0,0)"),
         targetName = "control_isabelle_log.ml")
 
-    val thyFile = filePathFromResource("Scala_Isabelle_Master_Control_Program.thy", tempDir,
-      _.replace("WORKING_DIRECTORY", escapeSml(cygwinIfWin(wd.toAbsolutePath))))
-    val rootFile = filePathFromResource("ROOT", tempDir,
-      _.replace("PARENT_SESSION", setup.logic)
-        .replace("SESSION_NAME", sessionName))
-
-//    isabelleArguments += "-f" += mlFile.toAbsolutePath.toString.replace('\\', '/')
-
-//    isabelleArguments += "-e" += "Control_Isabelle.handleLines()"
-
-    isabelleArguments += "-d" += cygwinAbs(tempDir)
-    for (root <- setup.sessionRoots)
-      isabelleArguments += "-d" += cygwinAbs(root)
-
-    if (setup.verbose)
-      isabelleArguments += "-v"
-
-    isabelleArguments += sessionName
-
-    val cmd = makeIsabelleCommandLine(absPath(setup.isabelleHome), isabelleArguments.toSeq)
-
-    logger.debug(s"Cmd line: ${cmd.mkString(" ")}")
-
-    val processBuilder = new java.lang.ProcessBuilder(cmd :_*)
-    processBuilder.directory(wd.toAbsolutePath.toFile)
-    for ((k,v) <- makeIsabelleEnvironment) processBuilder.environment().put(k,v)
-
     val processQueueThread = new Thread("Send to Isabelle") {
       override def run(): Unit = processQueue(input) }
     processQueueThread.setDaemon(true)
@@ -468,58 +432,74 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
     parseIsabelleThread.setDaemon(true)
     parseIsabelleThread.start()
 
-    val lock = Isabelle.buildLocks.get(absPath(setup.isabelleHome).normalize).readLock
-
-    lock.lockInterruptibly()
-    try {
-      val process = processBuilder.start()
-      destroyActions.add(() => Utils.destroyProcessThoroughly(process))
-
-      logStream(process.getErrorStream, Warn) // stderr
-      logStream(process.getInputStream, Debug) // stdout
-
-      process.onExit.thenRun(() => processTerminated())
-
-      process
-    } finally {
-      // This happens almost immediately, so it would be possible that a build process starts *after*
-      // we initiated the Isabelle process. So ideally, the lock.unlock() should be delayed until we know that
-      // the current Isabelle process has loaded any files that would be written by a build. But this is
-      // a very exotic situation, so we just release the lock right away.
-      lock.unlock()
-    }
-  }
-
-  private def startProcessRunning(setup: SetupRunning) : java.lang.Process = {
-    val inputPipe = setup.inputPipe
-    val outputPipe = setup.outputPipe
-
-    if (!Files.exists(inputPipe))
-      throw IsabelleProtocolException(s"Input pipe $inputPipe does not exist")
-    if (!Files.exists(outputPipe))
-      throw IsabelleProtocolException(s"Output pipe $outputPipe does not exist")
-
-    val processQueueThread = new Thread("Send to Isabelle") {
-      override def run(): Unit = processQueue(new FileOutputStream(inputPipe.toFile)) }
-    processQueueThread.setDaemon(true)
-    processQueueThread.start()
-
-    val parseIsabelleThread = new Thread("Read from Isabelle") {
-      override def run(): Unit = parseIsabelle(new FileInputStream(outputPipe.toFile)) }
-    parseIsabelleThread.setDaemon(true)
-    parseIsabelleThread.start()
-
-    return null; // No process
-  }
-
-  private val process: lang.Process = {
     setup match {
-      case setup : Setup =>
-//        if (setup.build) buildSession(setup) // startProcessSlave automatically builds
-        startProcessSlave(setup)
-      case setup : SetupRunning => startProcessRunning(setup)
+      // Invoking a new Isabelle process
+      case setup: Setup =>
+        implicit val s: Setup = setup
+
+        def wd = setup.workingDirectory
+
+        val sessionName = Utils.freshName("SCALA_ISABELLE_TEMP")
+
+        // Remove logs files from old invocations of Isabelle
+        cleanSessionLogs(setup)
+
+        val thyFile = filePathFromResource("Scala_Isabelle_Master_Control_Program.thy", tempDir,
+          _.replace("WORKING_DIRECTORY", escapeSml(cygwinIfWin(wd.toAbsolutePath))))
+
+        val rootFile =
+          filePathFromResource("ROOT", tempDir,
+            _.replace("PARENT_SESSION", setup.logic)
+              .replace("SESSION_NAME", sessionName))
+
+        val isabelleArguments = ListBuffer[String]()
+
+        isabelleArguments += "build"
+        isabelleArguments += "-d" += cygwinAbs(tempDir)
+        for (root <- setup.sessionRoots)
+          isabelleArguments += "-d" += cygwinAbs(root)
+
+        if (setup.verbose)
+          isabelleArguments += "-v"
+
+        isabelleArguments += sessionName
+
+        val cmd = makeIsabelleCommandLine(absPath(setup.isabelleHome), isabelleArguments.toSeq)
+
+        logger.debug(s"Cmd line: ${cmd.mkString(" ")}")
+
+        val processBuilder = new java.lang.ProcessBuilder(cmd: _*)
+        processBuilder.directory(wd.toAbsolutePath.toFile)
+        for ((k, v) <- makeIsabelleEnvironment) processBuilder.environment().put(k, v)
+
+        val lock = Isabelle.buildLocks.get(absPath(setup.isabelleHome).normalize).readLock
+
+        lock.lockInterruptibly()
+        try {
+          val process = processBuilder.start()
+          destroyActions.add(() => Utils.destroyProcessThoroughly(process))
+
+          logStream(process.getErrorStream, Warn) // stderr
+          logStream(process.getInputStream, Debug) // stdout
+
+          process.onExit.thenRun(() => processTerminated())
+
+          process
+        } finally {
+          // This happens almost immediately, so it would be possible that a build process starts *after*
+          // we initiated the Isabelle process. So ideally, the lock.unlock() should be delayed until we know that
+          // the current Isabelle process has loaded any files that would be written by a build. But this is
+          // a very exotic situation, so we just release the lock right away.
+          lock.unlock()
+        }
+
+      case setup : SetupRunning =>
+        setup.controlIsabelleLocation.success(cygwinIfWin(mlFile.toAbsolutePath))
+        null
     }
   }
+
+  private val process: lang.Process = startProcess(setup)
 
   /** Returns whether the Isabelle process has been destroyed (via [[destroy]]) */
   def isDestroyed: Boolean = destroyed != null
@@ -556,7 +536,7 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
 
   private def processTerminated() : Unit = {
     logger.debug("Isabelle process terminated")
-    val exitValue = process.exitValue
+    val exitValue = if (process!=null) process.exitValue else 0 // process can be 0 if we connected to a running Isabelle
     if (exitValue == 0)
       destroy(IsabelleDestroyedException(s"Isabelle process terminated normally"))
     else {
@@ -814,6 +794,8 @@ object Isabelle {
   }
 
   /**
+   * DOCUMENT update this
+   *
    * Configuration for connecting to an already running Isabelle process.
    * The Isabelle process must load `control_isabelle.ml` (available as a resource in this package)
    * and invoke `Control_Isabelle.handleLines ()`.
@@ -831,7 +813,7 @@ object Isabelle {
    * @param isabelleCommandHandler see [[SetupGeneral.isabelleCommandHandler]]
    */
   @Experimental
-  case class SetupRunning(inputPipe : Path, outputPipe : Path,
+  case class SetupRunning(controlIsabelleLocation : Promise[String],
                           isabelleCommandHandler: Data => Unit = Isabelle.defaultCommandHandler) extends SetupGeneral
 
   //noinspection UnstableApiUsage

@@ -1,4 +1,4 @@
-package example
+package de.unruh.isabelle.control
 
 import javax.swing.WindowConstants.HIDE_ON_CLOSE
 import javax.swing.text.DefaultCaret

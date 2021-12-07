@@ -6,7 +6,22 @@ import sbt.io.Path.relativeTo
 
 import scala.sys.process._
 
-lazy val component = RootProject(file("component"))
+lazy val root = project in file(".")
+
+/** Candidates for searching Isabelle distributions in */
+val isabelleHomeDirectories = IsabelleHomeDirectories(file("/opt"), file(System.getProperty("user.home")), file("c:\\"))
+
+lazy val component = project
+  .dependsOn(root)
+  .settings(
+      scalaVersion := "2.13.5",
+      Compile / packageBin / artifactPath := baseDirectory.value / "scala-isabelle-component.jar",
+      Compile / unmanagedJars := isabelleHomeDirectories.getClasspath("2021-1"),
+      Compile / packageBin := {
+          Build.copyClasspath((Runtime/dependencyClasspath).value, baseDirectory.value / "dependencies");
+          Build.copyFileInto((Compile/(root/packageBin)).value, baseDirectory.value / "dependencies")
+          (Compile/packageBin).value }
+  )
 
 name := "scala-isabelle"
 version := "master-SNAPSHOT"
