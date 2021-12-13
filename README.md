@@ -1,6 +1,6 @@
 # scala-isabelle
 
-[![Build Status](https://travis-ci.com/dominique-unruh/scala-isabelle.svg?branch=master)](https://travis-ci.com/dominique-unruh/scala-isabelle)
+[![Build status](https://img.shields.io/github/checks-status/dominique-unruh/scala-isabelle/master?label=build)](https://github.com/dominique-unruh/scala-isabelle/actions/workflows/test.yml?query=branch%3Amaster)
 [![Scaladoc](https://javadoc.io/badge2/de.unruh/scala-isabelle_2.13/scaladoc.svg)](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/index.html)
 [![Scaladoc snapshot](https://img.shields.io/badge/scaladoc-snapshot-brightgreen.svg)](https://oss.sonatype.org/service/local/repositories/snapshots/archive/de/unruh/scala-isabelle_2.13/master-SNAPSHOT/scala-isabelle_2.13-master-SNAPSHOT-javadoc.jar/!/de/unruh/isabelle/index.html)
 [![Gitter chat](https://img.shields.io/badge/gitter-chat-brightgreen.svg)](https://gitter.im/dominique-unruh/scala-isabelle?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
