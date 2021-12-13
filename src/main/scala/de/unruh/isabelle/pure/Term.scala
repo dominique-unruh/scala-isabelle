@@ -674,9 +674,19 @@ object Term extends OperationCollection {
    * @param string The string to be parsed
    * @param typ The type constraint. I.e., the returned term will have type `typ`
    **/
-  def apply(context: Context, string: String, typ: Typ)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValueTerm = {
-    new MLValueTerm(Ops.readTermConstrained(MLValue((context, string, typ))))
-  }
+  def apply(context: Context, string: String, typ: Typ)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValueTerm =
+    Term(context, string, typ, Symbols.globalInstance)
+
+  // DOCUMENT: disambiguate following link
+  /** Same as [[de.unruh.isabelle.pure.Term Term.apply(Context,String,Typ)]] but allows to specify the [[Symbols]] translation table.
+   *
+   * @param context The context relative to which parsing takes place (contains syntax declarations etc.)
+   * @param string The string to be parsed
+   * @param typ The type constraint. I.e., the returned term will have type `typ`
+   * @param symbols Instance of [[Symbols]] to convert `string` to Isabelle's internal encoding
+   **/
+  def apply(context: Context, string: String, typ: Typ, symbols : Symbols)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValueTerm =
+    new MLValueTerm(Ops.readTermConstrained(MLValue((context, symbols.unicodeToSymbols(string), typ))))
 
   /** Representation of terms in ML.
    *

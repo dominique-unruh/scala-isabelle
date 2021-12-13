@@ -1,5 +1,13 @@
 (* A variant of control_isabelle.ml that logs all queries to Isabelle in a theory file. 
-   For debugging only. *)
+ For debugging only.
+
+ To activate the use of this variant, set the environment variable SCALA_ISABELLE_LOG_QUERIES (to true or 1).
+
+ The resulting log is stored in the temporary directory, file Scala_Isabelle_Log.thy.
+ This file is an Isabelle theory that documents and replays all queries sent from scala-isabelle to the Isabelle process.
+ (Replaying succeeds under the assumption that all queries give deterministic results.)
+
+*)
 
 structure Control_Isabelle : sig
   (* Only for scala-isabelle internal use. Should only be called once, to initialize the communication protocol *)

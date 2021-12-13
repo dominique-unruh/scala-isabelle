@@ -585,6 +585,8 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
 
   /** Executes the ML code `ml` in the Isabelle process.
    *
+   * WARNING: This has a global side effect on the current Isabelle process because it modifies the ML name space.
+   *
    * Definitions made in `ml` affect the ML name space.
    * (This name space is shared by all invocations of [[executeMLCode]] and [[storeValue]].)
    * This is intended mostly for defining new types.
@@ -592,6 +594,9 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
    * preferably use [[storeValue]] which creates anonymous values in the object store.
    * The ML code is executed in a context where the structure `Control_Isabelle` is not opened
    * (i.e., you have to write `Control_Isabelle.E_Int` instead of `E_Int`).
+   *
+   * Example: `executeMLCode("exception E_Term of term")` would declare an exception to store terms.
+   * (Not actually needed because this specific exception is predeclared.)
    *
    * @return A future that completes when the code was executed.
    *         (Or throws an [[IsabelleControllerException]] if the ML code compilation/execution fails.)
@@ -608,14 +613,10 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
 
   /** Executes the ML expression `ml` in the Isabelle process.
    *
-   * WARNING: This has a global effect on the Isabelle process because it modifies the ML name space.
-   *
    * The expression must be of ML type `exn`.
    * The result of evaluating the expression is added to the object store.
    * The ML code is executed in a context where the structure `Control_Isabelle` is opened
    * (i.e., you can write `E_Int` instead of `Control_Isabelle.E_Int`).
-   *
-   * Example: `storeValue("exception E_Term of term")` (this is actually done by [[de.unruh.isabelle.pure.Term]]).
    *
    * In code that is supposed to support multiple instances of Isabelle, it can be cumbersome to
    * keep track in which instances a given ML code fragment was already executed. See [[OperationCollection]]
