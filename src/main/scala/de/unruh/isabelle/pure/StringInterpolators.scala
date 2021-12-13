@@ -25,14 +25,14 @@ import de.unruh.isabelle.pure.Implicits._
  * Or `typ"nat"` to parse the type `nat`
  *
  * In addition, subterms of terms can refer to already existing [[Term]] objects,
- * e.g., `term"x+$term"` for a Scala variable `term` of type [[Term]].
+ * e.g., `term"x+\$term"` for a Scala variable `term` of type [[Term]].
  *
  * We can also refer to existing [[Typ]] objects, both in terms and types.
- * E.g., `term"x :: $typ` or `typ"$typ => $typ"` for a Scala variable of type [[Typ]].
+ * E.g., `term"x :: \$typ` or `typ"\$typ => \$typ"` for a Scala variable of type [[Typ]].
  *
  * The support for the interpolators is activated by importing the implicits `import de.unruh.isabelle.pure.Implicits._`.
  *
- * To use the interpolators, an implicit [[Isabelle]] instance, an implicit [[ExecutionContext]],
+ * To use the interpolators, an implicit [[control.Isabelle Isabelle]] instance, an implicit [[scala.concurrent.ExecutionContext ExecutionContext]],
  * and an implicit [[Context]] must be given.
  * (The latter provides the theory context in which to parse the terms/types.)
  *
@@ -45,9 +45,9 @@ import de.unruh.isabelle.pure.Implicits._
  *   implicit isabelle = new Isabelle(...)
  *   implicit context = Context("Main") // Parsing w.r.t. Isabelle theory Main
  *   val typ1 = typ"nat"               // type nat
- *   val typ2 = typ"$typ1 => $typ1"    // type nat => nat
- *   val term1 = term"f :: $typ2"      // term f :: nat => nat
- *   val term2 = term"$term1 1"        // term (f :: nat => nat) (1 :: nat)  (by type inference)
+ *   val typ2 = typ"\$typ1 => \$typ1"    // type nat => nat
+ *   val term1 = term"f :: \$typ2"      // term f :: nat => nat
+ *   val term2 = term"\$term1 1"        // term (f :: nat => nat) (1 :: nat)  (by type inference)
  * }}}
  *
  * The interpolators can also be used for pattern matching.
@@ -57,22 +57,22 @@ import de.unruh.isabelle.pure.Implicits._
  *   // implicits as above
  *   val term = term"1 + (2::nat)"
  *   term match {
- *     case term"$t + (_::$u::plus)" => (t,u)  // t : Term is "1::nat", u : Typ is "nat"
+ *     case term"\$t + (_::\$u::plus)" => (t,u)  // t : Term is "1::nat", u : Typ is "nat"
  *   }
  *   val typ = typ"nat => nat"
  *   typ match {
- *     case typ"$t => $dummy" => t    // t : Typ is "nat"
+ *     case typ"\$t => \$dummy" => t    // t : Typ is "nat"
  *   }
  * }}}
- * (Note: A subtlety is that we write `$u::plus`` instad of just `$u` in the pattern above.
- * This is because Isabelle otherwise refuses to parse the term: a schematic type variable (into which `$u` is converted for
+ * (Note: A subtlety is that we write `\$u::plus`` instad of just `\$u` in the pattern above.
+ * This is because Isabelle otherwise refuses to parse the term: a schematic type variable (into which `\$u` is converted for
  * parsing purposes) needs to be annotated with a sort that makes the overall term well-typed.)
  *
- * (Note: Another subtlety is that we use `$dummy` instead of `_` to indicate a wildcard in `typ"$t => $dummy"`.
+ * (Note: Another subtlety is that we use `\$dummy` instead of `_` to indicate a wildcard in `typ"\$t => \$dummy"`.
  * This is because Isabelle does not support `_` in pattern matches for types.
- * We could also write `$_` instead of `$dummy` here because then `_` is a Scala-wildcard, not an Isabelle wildcard.)
+ * We could also write `$_` instead of `\$dummy` here because then `_` is a Scala-wildcard, not an Isabelle wildcard.)
  *
- * Invalid (i.e., unparseable) strings raise an [[de.unruh.isabelle.control.IsabelleException]].
+ * Invalid (i.e., unparseable) strings raise an [[de.unruh.isabelle.control.IsabelleException IsabelleException]].
  * This also applied if `...`` in patterns `term"..."` or `typ"..."` cannot be parsed.
  **/
 object StringInterpolators extends OperationCollection {

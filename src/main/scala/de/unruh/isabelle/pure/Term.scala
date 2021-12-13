@@ -102,7 +102,7 @@ sealed abstract class Term extends FutureValue with PrettyPrintable {
 
   /** Equality of terms. Returns true iff the two [[Term]] instances represent the same term in
    * the Isabelle process. (E.g., a [[Cterm]] and a [[Const]] can be equal.) May throw an exception
-   * if the computation of the terms fails. (But will not fail if [[await]] or a related [[mlvalue.FutureValue FutureValue]] method has
+   * if the computation of the terms fails. (But will not fail if [[await]] or a related [[misc.FutureValue FutureValue]] method has
    * returned successfully on both terms.)
    */
   override def equals(that: Any): Boolean = (this, that) match {
@@ -661,7 +661,7 @@ object Term extends OperationCollection {
    *
    * @param context The context relative to which parsing takes place (contains syntax declarations etc.)
    * @param string The string to be parsed
-   * @param symbols Instance of [[Symbols]] to convert `string` to Isabelle's internal encoding
+   * @param symbols Instance of [[misc.Symbols Symbols]] to convert `string` to Isabelle's internal encoding
    **/
   def apply(context: Context, string: String, symbols : Symbols = Symbols.globalInstance)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValueTerm = {
     new MLValueTerm(Ops.readTerm(context, symbols.unicodeToSymbols(string)))
@@ -677,13 +677,12 @@ object Term extends OperationCollection {
   def apply(context: Context, string: String, typ: Typ)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValueTerm =
     Term(context, string, typ, Symbols.globalInstance)
 
-  // DOCUMENT: disambiguate following link
-  /** Same as [[de.unruh.isabelle.pure.Term Term.apply(Context,String,Typ)]] but allows to specify the [[Symbols]] translation table.
+  /** Same as [[de.unruh.isabelle.pure.Term#apply(context:de\.unruh\.isabelle\.pure\.Context,string:String,typ:de\.unruh\.isabelle\.pure\.Typ,symbols:de\.unruh\.isabelle\.misc\.Symbols)* apply(Context,String,Typ)]] but allows to specify the [[misc.Symbols Symbols]] translation table.
    *
    * @param context The context relative to which parsing takes place (contains syntax declarations etc.)
    * @param string The string to be parsed
    * @param typ The type constraint. I.e., the returned term will have type `typ`
-   * @param symbols Instance of [[Symbols]] to convert `string` to Isabelle's internal encoding
+   * @param symbols Instance of [[misc.Symbols Symbols]] to convert `string` to Isabelle's internal encoding
    **/
   def apply(context: Context, string: String, typ: Typ, symbols : Symbols)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValueTerm =
     new MLValueTerm(Ops.readTermConstrained(MLValue((context, symbols.unicodeToSymbols(string), typ))))

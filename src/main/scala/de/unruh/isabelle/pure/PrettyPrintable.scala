@@ -10,8 +10,8 @@ trait PrettyPrintable {
   /** Produces a string representation of this object.
    * Uses the Isabelle pretty printer.
    * @param ctxt The Isabelle proof context to use (this contains syntax declarations etc.)
-   * @param symbols Instance of [[Symbols]] for converting to Unicode. Default: global default instance
-   *                [[Symbols.globalInstance]]. Use [[prettyRaw]] to avoid conversion to Unicode.
+   * @param symbols Instance of [[misc.Symbols Symbols]] for converting to Unicode. Default: global default instance
+   *                [[misc.Symbols.globalInstance Symbols.globalInstance]]. Use [[prettyRaw]] to avoid conversion to Unicode.
    * */
   @NotNull def pretty(@NotNull ctxt: Context, @NotNull symbols: Symbols = Symbols.globalInstance)(implicit ec: ExecutionContext): String =
     symbols.symbolsToUnicode(prettyRaw(ctxt))

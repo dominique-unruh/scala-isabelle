@@ -79,8 +79,8 @@ import scala.util.{Failure, Random, Success, Try}
   * @constructor The constructor initialize the Isabelle instance partly asynchronously. That is, when the
   *              constructor returns successfully, it is not guaranteed that the Isabelle process was initialized
   *              successfully. To check and wait for successful initialization, use the methods from
-  *              [[mlvalue.FutureValue FutureValue]] (supertrait of this class), e.g.,
-  *              `new Isabelle(...).`[[mlvalue.FutureValue.force force]].
+  *              [[misc.FutureValue FutureValue]] (supertrait of this class), e.g.,
+  *              `new Isabelle(...).`[[misc.FutureValue.force force]].
   *
   * @param setup Configuration object that specifies the path of the Isabelle binary etc. See [[de.unruh.isabelle.control.Isabelle.SetupGeneral]]. This also
   *              specifies with Isabelle heap to load.

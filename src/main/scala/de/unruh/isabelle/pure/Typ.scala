@@ -103,7 +103,7 @@ sealed abstract class Typ extends FutureValue with PrettyPrintable {
   /** Equality of types. Returns true iff the two [[Typ]] instances represent the same type in
    * the Isabelle process. (E.g., a [[Ctyp]] and a [[TFree]] can be equal.) May throw an exception
    * if the computation of the terms fails. (But will not fail if [[await]] or a related
-   * [[mlvalue.FutureValue FutureValue]] method has returned successfully on both terms.)
+   * [[misc.FutureValue FutureValue]] method has returned successfully on both terms.)
    */
   override def equals(that: Any): Boolean = (this, that) match {
     case (t1, t2: AnyRef) if t1 eq t2 => true
@@ -477,7 +477,7 @@ object Typ extends OperationCollection {
    *
    * @param context The context relative to which parsing takes place (contains syntax declarations etc.)
    * @param string The string to be parsed
-   * @param symbols Instance of [[Symbols]] to convert `string` to Isabelle's internal encoding
+   * @param symbols Instance of [[misc.Symbols Symbols]] to convert `string` to Isabelle's internal encoding
    **/
   def apply(context: Context, string: String, symbols : Symbols = Symbols.globalInstance)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValueTyp = {
     new MLValueTyp(Ops.readType(context, symbols.unicodeToSymbols(string)))

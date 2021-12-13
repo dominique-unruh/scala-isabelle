@@ -56,7 +56,7 @@ import scala.concurrent.{ExecutionContext, Future}
  *
  * The class `Something` represents an asynchronous value. That is, it is possible to have get an instance
  * of `Something` even if the computation computing the corresponding ML value is still ongoing or has failed.
- * To wait for that computation to terminate successfully, use the methods from [[FutureValue]] which `Something`
+ * To wait for that computation to terminate successfully, use the methods from [[misc.FutureValue FutureValue]] which `Something`
  * inherits.
  *
  * Note: Another possibility for defining wrapper classes for [[MLValue]]s is [[AdHocConverter]]. Classes derived
@@ -64,11 +64,11 @@ import scala.concurrent.{ExecutionContext, Future}
  *
  **/
 trait MLValueWrapper[A <: MLValueWrapper[A]] extends FutureValue {
-  /** An [[MLValue]] referencing `this` (in the Isabelle process). Since `this` is just a thin
-   * wrapper around an [[MLValue]], [[mlValue]] carries exactly the same data as `this` and can be converted back
+  /** An [[mlvalue.MLValue MLValue]] referencing `this` (in the Isabelle process). Since `this` is just a thin
+   * wrapper around an [[mlvalue.MLValue MLValue]], [[mlValue]] carries exactly the same data as `this` and can be converted back
    * and forth quickly (no transfer of data to/from the Isabelle process involved).
    *
-   * Same as [[MLValue.apply MLValue]]`(this)`, assuming the correct [[MLValue.Converter]] from the
+   * Same as [[mlvalue.MLValue.apply MLValue]]`(this)`, assuming the correct [[mlvalue.MLValue.Converter MLValue.Converter]] from the
    * companion object for `A` is imported.
    * */
   val mlValue : MLValue[A]

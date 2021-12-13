@@ -143,7 +143,7 @@ trait OperationCollection {
 
   /** Returns an instance of type [[Ops]]. It is guaranteed that for each instance `isabelle`, exactly one
    * instance of `Obs` is created (using the `ec` from the first such invocation).
-   * (If you see this doc string in a class different from [[OperationCollection]] but no definition of the
+   * (If you see this doc string in a class different from [[control.OperationCollection OperationCollection]] but no definition of the
    * class [[Ops]], treat this function as if it was private.)
    */
   def Ops(implicit isabelle: Isabelle, ec: ExecutionContext): Ops = {
@@ -160,7 +160,7 @@ trait OperationCollection {
 
   /** Makes sure an [[Ops]] instance for the instance `isabelle` is initialized.
    * This is useful when code needs to be sure that the global initialization inside the [[Ops]] class
-   * has happened (e.g., declarations of ML types via [[Isabelle.executeMLCodeNow]]) even if it does not access
+   * has happened (e.g., declarations of ML types via [[control.Isabelle.executeMLCodeNow Isabelle.executeMLCodeNow]]) even if it does not access
    * any of the fields in the [[Ops]] class.
    *
    * Can safely be called several times with the same `isabelle` and/or `executionContext`.

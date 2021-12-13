@@ -63,14 +63,14 @@ import scala.util.{Failure, Success}
   *    sense that it is created before the computation defining it has finished. Thus exceptions thrown in the
   *    computation of the [[MLValue]] may be delayed even further and only show upon later computations with the
   *    returned object. To make sure that the computation of the [[MLValue]] has completed, use the methods of
-  *    [[FutureValue]] (which [[MLValue]] inherits), such as [[FutureValue.force force]].
-  *  - We have the convention that if `A` is '''not''' a subtype of [[FutureValue]], then [[retrieveNow]]
+  *    [[misc.FutureValue FutureValue]] (which [[MLValue]] inherits), such as [[misc.FutureValue.force force]].
+  *  - We have the convention that if `A` is '''not''' a subtype of [[misc.FutureValue FutureValue]], then [[retrieveNow]]
   *    must throw the exceptions raised during the computation of the `MLValue`, and [[retrieve]] must
   *    return a future that holds those exceptions. (That is, in this case the considerations of the preceding
   *    bullet point do not apply.) For example, if `MLValue[Unit].retrieveNow` or `MLValue[Int].retrieveNow` guarantee
   *    that all exceptions are thrown (i.e., if those function calls complete without exception, the underlying
   *    computation is guaranteed to be have completed without exception). If `MLValue[Term].retrieveNow`
-  *    completes without exception, this is not guaranteed (because [[pure.Term Term]] is a subtype of [[FutureValue]]).
+  *    completes without exception, this is not guaranteed (because [[pure.Term Term]] is a subtype of [[misc.FutureValue FutureValue]]).
   *    But `MLValue[Term].force.retrieveNow` and `MLValue[Term].retrieveNow.force` both guarantee that all exceptions
   *    are thrown.
   *
