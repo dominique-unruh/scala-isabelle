@@ -33,7 +33,7 @@ as the discontinued [libisabelle](https://github.com/larsrh/libisabelle).
 
 With sbt, use one of
 ```sbt
-libraryDependencies += "de.unruh" %% "scala-isabelle" % "0.3.0"  // release
+libraryDependencies += "de.unruh" %% "scala-isabelle" % "0.4.0"  // release
 
 libraryDependencies += "de.unruh" %% "scala-isabelle" % "master-SNAPSHOT"  // development snapshot
 resolvers += Resolver.sonatypeRepo("snapshots")
