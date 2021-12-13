@@ -1,6 +1,6 @@
 # Changelog
 
-## Snapshot
+## [0.4.0]
 
 The main changes are support up to Isabelle2021-1, and better invocation of the Isabelle process (takes into account `ROOT` files etc.).
 
