@@ -87,6 +87,7 @@ sealed abstract class Term extends FutureValue with PrettyPrintable {
 
   /** Transforms this term into a [[ConcreteTerm]] (see [[concrete]]).
    * In contrast to [[concrete]], it also replaces all subterms by concrete subterms. */
+  // TODO: why do we expect an isabelle-argument here and don't use this.isabelle? Same for Typ.concreteRecursive
   def concreteRecursive(implicit isabelle: Isabelle, ec: ExecutionContext) : ConcreteTerm
 
   /** Indicates whether [[concrete]] has already been initialized. (I.e.,
@@ -159,7 +160,7 @@ sealed abstract class Term extends FutureValue with PrettyPrintable {
         case Const(_, t) => t
         case Var(_, _, t) => t
         case Abs(_, t, body) => t -->: typ(body, t::env)
-        case Bound(i) => env(i)
+        case Bound(i) => env(i) // TODO: raise a meaningful exception if i is out of bounds
         case App(f,u) =>
           val fType = typ(f, env)
           if (!fType.concreteComputed) break()
