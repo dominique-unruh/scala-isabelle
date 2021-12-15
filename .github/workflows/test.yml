@@ -30,7 +30,8 @@ jobs:
           if: matrix.os == 'macos'
           run: |
             ~/keepawake.sh &    # A script to keep the Mac from falling asleep
-            echo $! >keepawake.pid
+            while LOAD="`uptime | sed -e 's/.*averages://' | cut -d ' ' -f 2`"; [ "`echo "$LOAD >= 1" | bc -l`" = 1 ]; do echo "Waiting for system load to go down (currently $LOAD)"; sleep 60; done
+            ~/keepawake.sh &    # A script to keep the Mac from falling asleep
             export SCALA_ISABELLE_NO_CLEANUP=true
             case "${{matrix.isabelle}}" in
               2019|2020) echo ~/Isabelle${{matrix.isabelle}}.app/Isabelle >.isabelle-home;;
