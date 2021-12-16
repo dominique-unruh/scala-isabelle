@@ -12,7 +12,7 @@
  - git commit
  - sbt clean
  - sbt +publishSigned (don't forget the +) (should run tests!)
- - gpg -v --keyserver hkp://pool.sks-keyservers.net --send-keys e1f9c7fa4ba66fe2
+ - gpg -v --keyserver hkp://keys.openpgp.org --send-keys e1f9c7fa4ba66fe2
  - sbt sonatypeBundleRelease
  - git tag vXXX (XXX is the version)
  - git push origin vXXX
