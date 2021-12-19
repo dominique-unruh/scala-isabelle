@@ -1,7 +1,7 @@
 package de.unruh.isabelle.pure
 
 import de.unruh.isabelle.control.Isabelle.{DInt, DList, DObject, DString}
-import de.unruh.isabelle.control.{Isabelle, OperationCollection}
+import de.unruh.isabelle.control.{Isabelle, IsabelleException, OperationCollection}
 import de.unruh.isabelle.misc.{FutureValue, Symbols, Utils}
 import de.unruh.isabelle.mlvalue.MLValue.Converter
 import de.unruh.isabelle.mlvalue.Implicits._
@@ -87,7 +87,7 @@ sealed abstract class Term extends FutureValue with PrettyPrintable {
 
   /** Transforms this term into a [[ConcreteTerm]] (see [[concrete]]).
    * In contrast to [[concrete]], it also replaces all subterms by concrete subterms. */
-  def concreteRecursive(implicit isabelle: Isabelle, ec: ExecutionContext) : ConcreteTerm
+  def concreteRecursive(implicit ec: ExecutionContext) : ConcreteTerm
 
   /** Indicates whether [[concrete]] has already been initialized. (I.e.,
    * whether it can be accessed without delay and without incurring communication with
@@ -159,7 +159,10 @@ sealed abstract class Term extends FutureValue with PrettyPrintable {
         case Const(_, t) => t
         case Var(_, _, t) => t
         case Abs(_, t, body) => t -->: typ(body, t::env)
-        case Bound(i) => env(i)
+        case Bound(i) => env.lift(i) match {
+          case Some(t) => t
+          case None => throw IsabelleException("Term.fastType: Term contains loose bound variable")
+        }
         case App(f,u) =>
           val fType = typ(f, env)
           if (!fType.concreteComputed) break()
@@ -211,7 +214,7 @@ final class Cterm private(val ctermMlValue: MLValue[Cterm])(implicit val isabell
   override def prettyRaw(ctxt: Context)(implicit ec: ExecutionContext): String =
     Ops.stringOfCterm(MLValue((ctxt, this))).retrieveNow
   lazy val concrete: ConcreteTerm = mlValueTerm.concrete
-  def concreteRecursive(implicit isabelle: Isabelle, ec: ExecutionContext): ConcreteTerm = mlValueTerm.concreteRecursive
+  override def concreteRecursive(implicit ec: ExecutionContext): ConcreteTerm = mlValueTerm.concreteRecursive
   override def hashCode(): Int = concrete.hashCode()
   override def force : this.type = { ctermMlValue.force; this }
   override def someFuture: Future[Any] = ctermMlValue.someFuture
@@ -314,7 +317,7 @@ final class MLValueTerm(val mlValue: MLValue[Term])(implicit val isabelle: Isabe
     term
   }
 
-  override def concreteRecursive(implicit isabelle: Isabelle, ec: ExecutionContext): ConcreteTerm = concrete.concreteRecursive
+  override def concreteRecursive(implicit ec: ExecutionContext): ConcreteTerm = concrete.concreteRecursive
 
   override def toString: String =
     if (concreteLoaded) concrete.toString
@@ -331,7 +334,7 @@ final class Const private[pure](val name: String, val typ: Typ, initialMlValue: 
     else Ops.makeConst(MLValue((name,typ)))
   override def toString: String = name
 
-  override def concreteRecursive(implicit isabelle: Isabelle, ec: ExecutionContext): Const = {
+  override def concreteRecursive(implicit ec: ExecutionContext): Const = {
     val typ = this.typ.concreteRecursive
     if (typ eq this.typ)
       this
@@ -379,7 +382,7 @@ final class Free private[pure](val name: String, val typ: Typ, initialMlValue: M
   override def hashCode(): Int = new HashCodeBuilder(384673423,678423475)
     .append(name).toHashCode
 
-  override def concreteRecursive(implicit isabelle: Isabelle, ec: ExecutionContext): Free = {
+  override def concreteRecursive(implicit ec: ExecutionContext): Free = {
     val typ = this.typ.concreteRecursive
     if (typ eq this.typ)
       this
@@ -431,7 +434,7 @@ final class Var private[pure](val name: String, val index: Int, val typ: Typ, in
   override def hashCode(): Int = new HashCodeBuilder(3474285, 342683425)
     .append(name).append(index).toHashCode
 
-  override def concreteRecursive(implicit isabelle: Isabelle, ec: ExecutionContext): Var = {
+  override def concreteRecursive(implicit ec: ExecutionContext): Var = {
     val typ = this.typ.concreteRecursive
     if (typ eq this.typ)
       this
@@ -481,7 +484,7 @@ final class App private[pure] (val fun: Term, val arg: Term, initialMlValue: MLV
   override def hashCode(): Int = new HashCodeBuilder(334234237,465634533)
     .append(arg).toHashCode
 
-  override def concreteRecursive(implicit isabelle: Isabelle, ec: ExecutionContext): App = {
+  override def concreteRecursive(implicit ec: ExecutionContext): App = {
     val fun = this.fun.concreteRecursive
     val arg = this.arg.concreteRecursive
     if ((fun eq this.fun) && (arg eq this.arg))
@@ -532,7 +535,7 @@ final class Abs private[pure] (val name: String, val typ: Typ, val body: Term, i
   override def hashCode(): Int = new HashCodeBuilder(342345635,564562379)
     .append(name).append(body).toHashCode
 
-  override def concreteRecursive(implicit isabelle: Isabelle, ec: ExecutionContext): Abs = {
+  override def concreteRecursive(implicit ec: ExecutionContext): Abs = {
     val typ = this.typ.concreteRecursive
     val body = this.body.concreteRecursive
     if ((typ eq this.typ) && (body eq this.body))
@@ -585,7 +588,7 @@ final class Bound private[pure] (val index: Int, initialMlValue: MLValue[Term]=n
   override def await: Unit = {}
   override def forceFuture(implicit ec: ExecutionContext): Future[this.type] = Future.successful(this)
 
-  override def concreteRecursive(implicit isabelle: Isabelle, ec: ExecutionContext): this.type = this
+  override def concreteRecursive(implicit ec: ExecutionContext): this.type = this
 }
 
 object Bound {
