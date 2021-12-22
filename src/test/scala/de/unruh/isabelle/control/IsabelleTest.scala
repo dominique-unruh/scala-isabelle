@@ -153,6 +153,35 @@ class IsabelleTest extends AnyFunSuite {
 
     isabelle.destroy()
   }
+
+  test("exception arguments are preserved in 'executeMLCodeNow'") {
+    val exn = intercept[IsabelleException] {
+      isabelle.executeMLCodeNow("""raise TERM ("magic"^"string", [Free("magic"^"var", dummyT)])""")
+    }
+    println(exn.message)
+    assert(exn.message.contains("magicstring"))
+    assert(exn.message.contains("magicvar"))
+  }
+
+  test("exception arguments are preserved in 'storeValue'") {
+    val exn = intercept[IsabelleException] {
+      await(isabelle.storeValue("""raise TERM ("magic"^"string", [Free("magic"^"var", dummyT)])"""))
+    }
+    println(exn.message)
+    assert(exn.message.contains("magicstring"))
+    assert(exn.message.contains("magicvar"))
+  }
+
+  test("exception arguments are preserved in 'applyFunction'") {
+    val exn = intercept[IsabelleException] {
+      val fun = await(isabelle.storeValue("""E_Function (fn _ => raise TERM ("magic"^"string", [Free("magic"^"var", dummyT)]))"""))
+      val _ = await(isabelle.applyFunction(fun, DList()))
+    }
+    println(exn.message)
+    assert(exn.message.contains("magicstring"))
+    assert(exn.message.contains("magicvar"))
+  }
+
 }
 
 object IsabelleTest {

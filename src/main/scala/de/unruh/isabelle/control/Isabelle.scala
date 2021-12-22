@@ -631,6 +631,7 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
     send({ stream => stream.writeByte(4); writeString(stream, ml) },
       { result => promise.complete(result.map {
         case DInt(id) => new ID(id, this)
+        // TODO: should be another subclass of IsabelleControllerException, probably. IsabelleProtocolException?
         case data => throw IsabelleException(s"Internal error: expected DInt, not $data")}) })
     promise.future
   }
@@ -1028,6 +1029,9 @@ case class IsabelleJEditException(message: String) extends IsabelleControllerExc
 case class IsabelleBuildException(message: String, errors: List[String])
   extends IsabelleControllerException(if (errors.nonEmpty) message + ": " + errors.last else message)
 /** Thrown in case of an error in the ML process (ML compilation errors, exceptions thrown by ML code) */
+// TODO: store the actually Isabelle exception, make the message lazy
+// TODO: also rename to IsabelleMLException?
+// TODO: Make sure this one is only used for Isabelle/ML wrapped exceptions
 case class IsabelleException(message: String) extends IsabelleControllerException(Symbols.symbolsToUnicode(message))
 /** Thrown in case of protocol errors in Isabelle process */
 case class IsabelleProtocolException(message: String) extends IsabelleControllerException(message)

@@ -227,7 +227,7 @@ val sendToScala = withMutex (fn data => let
 
 (* Takes mutex *)
 fun reportException seq = withMutex (fn exn => let
-  val msg = Runtime.exn_message exn |> YXML.content_of
+  val msg = exn |> Runtime.exn_context (SOME \<^context>) |> Runtime.exn_message |> YXML.content_of
   val _ = sendInt64 seq
   val _ = sendByte 0w2
   val _ = sendString msg
