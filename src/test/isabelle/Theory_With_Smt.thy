@@ -3,6 +3,7 @@ theory Theory_With_Smt
 begin
 
 lemma True
+  using [[smt_timeout=120]]
   by smt
 
 end
