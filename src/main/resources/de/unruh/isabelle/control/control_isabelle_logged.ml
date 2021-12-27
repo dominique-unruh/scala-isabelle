@@ -1,4 +1,4 @@
-(* A variant of control_isabelle.ml that logs all queries to Isabelle in a theory file. 
+(* A variant of control_isabelle.ml that logs all queries to Isabelle in a theory file.
  For debugging only.
 
  To activate the use of this variant, set the environment variable SCALA_ISABELLE_LOG_QUERIES (to true or 1).
@@ -334,7 +334,7 @@ val sendToScala = withMutex (fn data => let
 
 (* Takes mutex *)
 fun reportException seq = withMutex (fn exn => let
-  val msg = Runtime.exn_message exn |> YXML.content_of
+  val msg = exn |> Runtime.exn_context (SOME \<^context>) |> Runtime.exn_message |> YXML.content_of
   val _ = logReportException seq msg
   val _ = sendInt64 seq
   val _ = sendByte 0w2
