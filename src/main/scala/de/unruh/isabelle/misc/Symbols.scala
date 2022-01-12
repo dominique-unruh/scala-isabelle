@@ -161,7 +161,7 @@ object Symbols {
       }
     }
 
-    (immutable.HashMap.from(fromSubSuper), immutable.HashMap.from(toSub), immutable.HashMap.from(toSuper))
+    (fromSubSuper.toMap, toSub.toMap, toSuper.toMap)
   }
 
   private def processSubSuperFromUnicode(str: String): String = {
@@ -182,14 +182,14 @@ object Symbols {
       c match {
         case `subSymbol` | `superSymbol` =>
           val table = if (c == subSymbol) toSub else toSuper
-          it.nextOption() match {
-            case Some(c2) =>
-              table.get(c2) match {
-                case Some(replacement) => sb.append(replacement.toChar)
-                case None => sb.append(c).append(c2)
-              }
-            case None => sb.append(c)
-          }
+          if (it.hasNext) {
+            val c2 = it.next()
+            table.get(c2) match {
+              case Some(replacement) => sb.append(replacement.toChar)
+              case None => sb.append(c).append(c2)
+            }
+          } else
+            sb.append(c)
         case _ => sb.append(c)
       }
     }
