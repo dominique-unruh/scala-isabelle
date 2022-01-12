@@ -39,6 +39,7 @@ libraryDependencies += "org.apache.commons" % "commons-text" % "1.9"
 // https://mvnrepository.com/artifact/com.google.guava/guava
 libraryDependencies += "com.google.guava" % "guava" % "31.0.1-jre"
 libraryDependencies += "org.jetbrains" % "annotations" % "23.0.0"
+libraryDependencies += "com.ibm.icu" % "icu4j" % "70.1"
 
 // See https://stackoverflow.com/a/21516954
 val CompileOnly = config("compileonly").hide

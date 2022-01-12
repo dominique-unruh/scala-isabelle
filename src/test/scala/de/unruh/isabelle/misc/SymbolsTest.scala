@@ -27,4 +27,34 @@ class SymbolsTest extends AnyFunSuite {
       Symbols.unicodeToSymbols(string, failUnknown = true)
     }
   }
+
+  test("superscript") {
+    val string = "x²"
+    val symbolString = Symbols.unicodeToSymbols(string)
+    assert(symbolString == raw"x\<^sup>2")
+    val unicodeString = Symbols.symbolsToUnicode(symbolString)
+    assert(unicodeString == string)
+  }
+
+  test("superscript a") {
+    // different Unicode superscript a's
+    val string1 = "xª" // FEMININE ORDINAL INDICATOR
+    val string2 = "xᵃ" // MODIFIER LETTER SMALL A
+    assert(string1 != string2)
+    val symbolString1 = Symbols.unicodeToSymbols(string1)
+    val symbolString2 = Symbols.unicodeToSymbols(string2)
+    assert(symbolString1 == raw"x\<^sup>a")
+    assert(symbolString2 == raw"x\<^sup>a")
+    assert(symbolString1 == symbolString2)
+    val unicodeString = Symbols.symbolsToUnicode(symbolString1)
+    assert(unicodeString == string2)
+  }
+
+  test("subscript") {
+    val string = "xᵣ"
+    val symbolString = Symbols.unicodeToSymbols(string)
+    assert(symbolString == raw"x\<^sub>r")
+    val unicodeString = Symbols.symbolsToUnicode(symbolString)
+    assert(unicodeString == string)
+  }
 }
