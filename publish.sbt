@@ -23,7 +23,7 @@
 
 */
 
-homepage := Some(url("https://github.com/dominique-unruh/scala-isabelle"))
+homepage := Some(url("https://dominique-unruh.github.io/scala-isabelle"))
 
 scmInfo := Some(ScmInfo(
   homepage.value.get,
@@ -41,7 +41,7 @@ organization := "de.unruh"
 description :=
   """This library allows to control an Isabelle process (https://isabelle.in.tum.de/) from a Scala program.
     |It allows to execute ML code inside the Isabelle process, and to operate on theories, theorems, terms, etc.
-    |See the README (https://github.com/dominique-unruh/scala-isabelle/blob/master/README.md) for more information.""".stripMargin
+    |See the webpage (https://dominique-unruh.github.io/scala-isabelle) for more information.""".stripMargin
 
 licenses += "MIT" -> url("https://raw.githubusercontent.com/dominique-unruh/scala-isabelle/5f28d8e6248f39dd7a31649d92c9850498e3985c/LICENSE")
 licenses += "Isabelle" -> url("https://raw.githubusercontent.com/dominique-unruh/scala-isabelle/5f28d8e6248f39dd7a31649d92c9850498e3985c/COPYRIGHT.Isabelle")
