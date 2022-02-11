@@ -13,8 +13,8 @@ version := "master-SNAPSHOT"
 
 crossScalaVersions := List("2.13.7", "2.12.15")
 
-//scalaVersion := "2.13.7"
-scalaVersion := "2.12.15"
+scalaVersion := "2.13.7"
+//scalaVersion := "2.12.15"
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
