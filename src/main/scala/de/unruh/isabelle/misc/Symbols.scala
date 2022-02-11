@@ -25,11 +25,15 @@ import scala.util.matching.Regex
  * @param symbolsFile Location of the `symbols` that specifies the correspondence.
  *                    Default: `symbols` file from Isabelle2020 (bundled with this library).
  * @param extraSymbols Additional symbol name / codepoint pairs to use in addition to those in the `symbols` file.
+ *                     When converting from Unicode to symbols, these mappings have higher priority than the ones from `symbolsFile`.
+ * @param extraSymbolsLowPri Additional symbol name / codepoint pairs to use in addition to those in the `symbols` file.
+ *                     When converting from Unicode to symbols, these mappings have lower priority than the ones from `symbolsFile`.
  * @param processSubSuper Whether to process ⇩ and ⇧ symbols (on the Isabelle side) into/from subscript/superscript symbols in Unicode.
  *                        (for those letters that have Unicode subscript/superscript symbols)
  */
 class Symbols(symbolsFile: URL = classOf[Symbols].getResource("symbols"),
               extraSymbols: Iterable[(String,Int)] = Nil,
+              extraSymbolsLowPri: Iterable[(String,Int)] = Nil,
               processSubSuper: Boolean = true) {
 
   import Symbols._
@@ -44,6 +48,9 @@ class Symbols(symbolsFile: URL = classOf[Symbols].getResource("symbols"),
     val lineRegex = """^\\<([a-zA-Z0-9^_]+)>\s+code:\s+0x([0-9a-fA-F]+)\b.*""".r
     val reader = new BufferedReader(new InputStreamReader(symbolsFile.openStream()))
     val results = new ListBuffer[(String, Int)]
+
+    results.appendAll(extraSymbolsLowPri)
+
     for (line <- reader.lines().iterator.asScala) {
       line match {
         case lineRegex(name, codepoint) => results.append((name, Integer.parseInt(codepoint, 16)))

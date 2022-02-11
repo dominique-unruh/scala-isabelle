@@ -15,6 +15,32 @@ class SymbolsTest extends AnyFunSuite {
     assert(unicodeString == string)
   }
 
+  test("extraSymbols") {
+    val symbols = new Symbols(extraSymbols = List("lbrakk" -> 0x00301A))
+    val stringBuiltin = "⟦"
+    val stringExtra = "〚"
+    val symbolStringBuiltin = symbols.unicodeToSymbols(stringBuiltin)
+    val symbolStringExtra = symbols.unicodeToSymbols(stringExtra)
+    assert(symbolStringBuiltin == raw"\<lbrakk>")
+    assert(symbolStringExtra == raw"\<lbrakk>")
+    assert(symbolStringExtra == symbolStringBuiltin)
+    val stringUnicodeAgain = symbols.symbolsToUnicode(symbolStringBuiltin) // No need to check symbolStringExtra, they are the same
+    assert(stringUnicodeAgain == stringExtra)
+  }
+
+  test("extraSymbolsLowPri") {
+    val symbols = new Symbols(extraSymbolsLowPri = List("lbrakk" -> 0x00301A))
+    val stringBuiltin = "⟦"
+    val stringExtra = "〚"
+    val symbolStringBuiltin = symbols.unicodeToSymbols(stringBuiltin)
+    val symbolStringExtra = symbols.unicodeToSymbols(stringExtra)
+    assert(symbolStringBuiltin == raw"\<lbrakk>")
+    assert(symbolStringExtra == raw"\<lbrakk>")
+    assert(symbolStringExtra == symbolStringBuiltin)
+    val stringUnicodeAgain = symbols.symbolsToUnicode(symbolStringBuiltin) // No need to check symbolStringExtra, they are the same
+    assert(stringUnicodeAgain == stringBuiltin)
+  }
+
   test("unknown unicode (no fail)") {
     val string = "火"
     val symbolString = Symbols.unicodeToSymbols(string)
