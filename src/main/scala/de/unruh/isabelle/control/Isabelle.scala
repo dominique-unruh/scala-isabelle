@@ -781,7 +781,10 @@ object Isabelle {
      **/
     val isabelleCommandHandler : Data => Unit
     /** Instance of [[ExceptionManager]] to use for this Isabelle process.
-     * The supplied function is called with the [[Isabelle]] instance to create the [[ExceptionManager]]. */
+     * The supplied function is called with the [[Isabelle]] instance to create the [[ExceptionManager]].
+     *
+     * @see [[DefaultExceptionManager]] and [[de.unruh.isabelle.pure.exceptions.Exn.ExceptionManager]]
+     *      for useful implementations of [[ExceptionManager]]. */
     val exceptionManager : Isabelle => ExceptionManager
   }
 
