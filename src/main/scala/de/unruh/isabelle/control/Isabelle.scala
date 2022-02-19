@@ -18,6 +18,7 @@ import org.apache.commons.io.FileUtils
 import org.apache.commons.lang3.SystemUtils
 import org.apache.commons.text.StringEscapeUtils
 import org.jetbrains.annotations.ApiStatus.Experimental
+import org.jetbrains.annotations.Nullable
 import org.log4s
 import org.log4s.{Debug, LogLevel, Logger, Warn}
 import scalaz.Scalaz.ToOptionalOps
@@ -279,7 +280,15 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
         case 5 =>
           if (callback==null) missingCallback(seq, answerType)
           val id = output.readLong()
-          callback(Failure(exceptionManager.createException(new ID(id, this))))
+          ExecutionContext.global.execute { () =>
+            // We run this asynchronously. Because exceptionManager may try to communicate with Isabelle
+            // and if it does, and parseIsabelle is still waiting for it to return first, then we
+            // have a deadlock
+            val exception =
+              try exceptionManager.createException(new ID(id, this))
+              catch { case e : Throwable => e }
+            callback(Failure(exception))
+          }
         case 3 =>
           if (seq != 0) IsabelleProtocolException(s"Received a protocol response from Isabelle with seq# $seq and " +
             s"answerType $answerType. Seq should be 0. Probably the communication is out of sync now.")
@@ -1039,7 +1048,9 @@ case class IsabelleBuildException(message: String, errors: List[String])
 /** Thrown in case of an error in the ML process (ML compilation errors, exceptions thrown by ML code) */
 case class IsabelleMLException(isabelle: Isabelle, id: ID) extends IsabelleControllerException(message = null) {
   override def getMessage: String = message
-  lazy val message: String = isabelle.exceptionManager.messageOf(id)
+  private var _message : String = _
+  lazy val message: String = { _message = isabelle.exceptionManager.messageOf(id); _message }
+  @Nullable def messageIfAvailable: String = _message
 }
 /** Thrown in case of protocol errors in Isabelle process */
 case class IsabelleProtocolException(message: String) extends IsabelleControllerException(message)

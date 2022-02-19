@@ -222,7 +222,6 @@ object IsabelleTest {
   implicit lazy val isabelle: Isabelle = {
     println("Starting Isabelle")
     val isa = new Isabelle(setup)
-    println("Started. Initializing Term/Typ/Context")
     println("Initialized.")
     isa
   }
