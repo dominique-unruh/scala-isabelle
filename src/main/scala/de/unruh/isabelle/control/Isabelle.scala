@@ -279,7 +279,7 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
         case 5 =>
           if (callback==null) missingCallback(seq, answerType)
           val id = output.readLong()
-          callback(Failure(IsabelleMLException(this, new ID(id, this))))
+          callback(Failure(exceptionManager.createException(new ID(id, this))))
         case 3 =>
           if (seq != 0) IsabelleProtocolException(s"Received a protocol response from Isabelle with seq# $seq and " +
             s"answerType $answerType. Seq should be 0. Probably the communication is out of sync now.")
@@ -512,6 +512,9 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
     return null; // No process
   }
 
+  /** [[ExceptionManager]] instance that handles exception creation in this Isabelle instance. */
+  val exceptionManager: ExceptionManager = setup.exceptionManager(this)
+
   private val process: lang.Process = {
     setup match {
       case setup : Setup =>
@@ -734,28 +737,6 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
     thread.setDaemon(true)
     thread.start()
   }
-
-  object exceptionManager {
-    protected[control] def messageOf(id: ID): String = try {
-      val future = applyFunction(messageOfException, DObject(id))
-      val result = Await.result(future, Duration.Inf)
-      result match {
-        case DString(message) => message
-        case _ => assert(assertion = false, "Unreachable code"); null
-      }
-    } catch {
-      case _ : IsabelleMLException =>
-        throw IsabelleMiscException("IsabelleMLException thrown in code for getting message of an IsabelleMLException")
-    }
-
-    private lazy val messageOfException =
-      try
-        Await.result(storeValue("E_Function (fn DObject exn => DString (message_of_exn NONE exn))"), Duration.Inf)
-      catch {
-        case _ : IsabelleMLException =>
-          throw IsabelleMiscException("IsabelleMLException thrown in code for getting message of an IsabelleMLException")
-      }
-  }
 }
 
 object Isabelle {
@@ -790,6 +771,9 @@ object Isabelle {
      * and converting `data` to type [[Data]].)
      **/
     val isabelleCommandHandler : Data => Unit
+    /** Instance of [[ExceptionManager]] to use for this Isabelle process.
+     * The supplied function is called with the [[Isabelle]] instance to create the [[ExceptionManager]]. */
+    val exceptionManager : Isabelle => ExceptionManager
   }
 
   /** Configuration for initializing an [[Isabelle]] instance.
@@ -816,8 +800,9 @@ object Isabelle {
    *              built, the Isabelle process fails.) If true, the Isabelle build command will be invoked. That
    *              command automatically checks for changed dependencies but may add a noticable delay even if
    *              the heap was already built.
+   * @param exceptionManager See [[SetupGeneral.exceptionManager]]
    * @param verbose Makes Isabelle run in verbose mode. (Only affects debug output, and only during build.)
-   * @param isabelleCommandHandler see [[SetupGeneral.isabelleCommandHandler]]
+   * @param isabelleCommandHandler See [[SetupGeneral.isabelleCommandHandler]]
    */
   case class Setup(isabelleHome : Path,
                    logic : String = "HOL",
@@ -826,6 +811,7 @@ object Isabelle {
                    sessionRoots : Seq[Path] = Nil,
                    build : Boolean = true,
                    verbose : Boolean = false,
+                   exceptionManager: Isabelle => ExceptionManager = new DefaultExceptionManager(_),
                    isabelleCommandHandler: Data => Unit = Isabelle.defaultCommandHandler) extends SetupGeneral {
     /** [[isabelleHome]] as an absolute path */
     def isabelleHomeAbsolute: Path = workingDirectory.resolve(isabelleHome)
@@ -855,6 +841,7 @@ object Isabelle {
    */
   @Experimental
   case class SetupRunning(inputPipe : Path, outputPipe : Path,
+                          exceptionManager: Isabelle => ExceptionManager = new DefaultExceptionManager(_),
                           isabelleCommandHandler: Data => Unit = Isabelle.defaultCommandHandler) extends SetupGeneral
 
   //noinspection UnstableApiUsage
