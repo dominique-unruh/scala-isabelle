@@ -33,6 +33,7 @@ structure Control_Isabelle : sig
   (* For diagnostics. Linear time *)
   val numObjects : unit -> int
   val string_of_exn : exn -> string
+  val message_of_exn : Proof.context option -> exn -> string
   val string_of_data : data -> string
   val sendToScala : data -> unit
 end
@@ -227,10 +228,10 @@ val sendToScala = withMutex (fn data => let
 
 (* Takes mutex *)
 fun reportException seq = withMutex (fn exn => let
-  val msg = exn |> Runtime.exn_context (SOME \<^context>) |> Runtime.exn_message |> YXML.content_of
+  val id = addToObjects exn
   val _ = sendInt64 seq
-  val _ = sendByte 0w2
-  val _ = sendString msg
+  val _ = sendByte 0w5
+  val _ = sendInt64 id
   val _ = BinIO.flushOut outStream
   in () end)
 
@@ -288,6 +289,10 @@ fun storeMLValue seq ml = runAsync seq (fn () =>
 fun string_of_exn exn = 
   Runtime.pretty_exn exn |> Pretty.unformatted_string_of
   handle Size => "<exn description too long>"
+
+fun message_of_exn ctxt exn =
+  exn |> Runtime.exn_context (SOME (the_default \<^context> ctxt)) |> Runtime.exn_message |> YXML.content_of
+  handle Size => "<exn message too long>"
 
 fun string_of_data (DInt i) = string_of_int i
   | string_of_data (DString s) = ("\"" ^ s ^ "\""

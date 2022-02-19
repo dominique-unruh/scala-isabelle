@@ -1,6 +1,6 @@
 package de.unruh.isabelle.mlvalue
 
-import de.unruh.isabelle.control.{Isabelle, IsabelleException}
+import de.unruh.isabelle.control.{Isabelle, IsabelleMiscException, IsabelleMLException}
 import de.unruh.isabelle.control.Isabelle.{DList, DObject, Data, ID}
 import de.unruh.isabelle.mlvalue.MLValue.{Converter, Ops, matchFailExn}
 
@@ -30,7 +30,7 @@ import Implicits._
     for (DList(listObj@_*) <- Ops.retrieveList(value.asInstanceOf[MLValue[List[MLValue[Nothing]]]]);
          listMLValue = listObj map {
            case DObject(id) => MLValue.unsafeFromId[A](Future.successful(id))
-           case _ => throw IsabelleException("In ListConverter.retrieve: function result is not a DObject (internal error)")
+           case _ => throw IsabelleMiscException("In ListConverter.retrieve: function result is not a DObject (internal error)")
          };
          list <- Future.traverse(listMLValue) {
            converter.retrieve(_)

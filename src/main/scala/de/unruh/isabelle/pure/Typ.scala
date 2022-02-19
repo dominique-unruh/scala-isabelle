@@ -1,7 +1,7 @@
 package de.unruh.isabelle.pure
 
 import de.unruh.isabelle.control.Isabelle.{DInt, DList, DObject, DString}
-import de.unruh.isabelle.control.{Isabelle, IsabelleException, OperationCollection}
+import de.unruh.isabelle.control.{Isabelle, IsabelleMLException, IsabelleMiscException, OperationCollection}
 import de.unruh.isabelle.misc.{FutureValue, Symbols}
 import de.unruh.isabelle.mlvalue.MLValue.Converter
 import de.unruh.isabelle.mlvalue.{MLFunction, MLFunction2, MLFunction3, MLRetrieveFunction, MLValue}
@@ -169,17 +169,17 @@ final class MLValueTyp(val mlValue: MLValue[Typ])(implicit val isabelle: Isabell
       case (1,List(DString(name), args@_*)) =>
         val args2 = args.map {
           case DObject(id) => MLValue.unsafeFromId[Typ](id).retrieveNow
-          case data => throw IsabelleException(s"Internal error: expected DObject, not $data") }.toList
+          case data => throw IsabelleMiscException(s"Internal error: expected DObject, not $data") }.toList
         new Type(name, args2, mlValue)
       case (2,List(DString(name), sort@_*)) =>
         val sort2 = sort.map {
           case DString(clazz) => clazz
-          case data => throw IsabelleException(s"Internal error: expected DString, not $data") }.toList
+          case data => throw IsabelleMiscException(s"Internal error: expected DString, not $data") }.toList
         new TFree(name,sort2,mlValue)
       case (3,List(DString(name), DInt(index), sort@_*)) =>
         val sort2 = sort.map {
           case DString(clazz) => clazz
-          case data => throw IsabelleException(s"Internal error: expected DObject, not $data")
+          case data => throw IsabelleMiscException(s"Internal error: expected DObject, not $data")
         }.toList
         new TVar(name,index.toInt,sort2,mlValue)
     }

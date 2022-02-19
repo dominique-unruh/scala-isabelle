@@ -1,7 +1,7 @@
 package de.unruh.isabelle.mlvalue
 
 import de.unruh.isabelle.control.Isabelle.{DInt, DList, DObject, DString, Data, ID}
-import de.unruh.isabelle.control.{Isabelle, IsabelleException, OperationCollection}
+import de.unruh.isabelle.control.{Isabelle, IsabelleMiscException, IsabelleMLException, OperationCollection}
 import de.unruh.isabelle.mlvalue.Implicits._
 import MLValue.{Converter, Ops, logger}
 import de.unruh.isabelle.misc.FutureValue
@@ -233,7 +233,7 @@ class MLStoreFunction[A] private (val id: Future[ID]) {
   def apply(data: Data)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[A] = {
     MLValue.unsafeFromId(isabelle.applyFunction(this.id, data).map {
       case DObject(id) => id
-      case _ => throw IsabelleException("MLStoreFunction")
+      case _ => throw IsabelleMiscException("MLStoreFunction")
     })
   }
 

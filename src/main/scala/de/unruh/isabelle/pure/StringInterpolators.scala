@@ -72,7 +72,7 @@ import de.unruh.isabelle.pure.Implicits._
  * This is because Isabelle does not support `_` in pattern matches for types.
  * We could also write `$_` instead of `\$dummy` here because then `_` is a Scala-wildcard, not an Isabelle wildcard.)
  *
- * Invalid (i.e., unparseable) strings raise an [[de.unruh.isabelle.control.IsabelleException IsabelleException]].
+ * Invalid (i.e., unparseable) strings raise an [[de.unruh.isabelle.control.IsabelleMLException IsabelleException]].
  * This also applied if `...`` in patterns `term"..."` or `typ"..."` cannot be parsed.
  **/
 object StringInterpolators extends OperationCollection {

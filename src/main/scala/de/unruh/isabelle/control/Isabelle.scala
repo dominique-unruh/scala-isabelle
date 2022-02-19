@@ -9,7 +9,7 @@ import java.nio.file.{FileSystemNotFoundException, Files, Path, Paths}
 import java.util.concurrent.{ArrayBlockingQueue, BlockingQueue, ConcurrentHashMap, ConcurrentLinkedQueue}
 import com.google.common.escape.Escaper
 import com.google.common.util.concurrent.Striped
-import de.unruh.isabelle.control.Isabelle.SetupGeneral
+import de.unruh.isabelle.control.Isabelle.{ID, SetupGeneral}
 import de.unruh.isabelle.misc.SMLCodeUtils.{escapeSml, mlInteger}
 import de.unruh.isabelle.misc.{FutureValue, SMLCodeUtils, SharedCleaner, Symbols, Utils}
 import de.unruh.isabelle.mlvalue.MLValue
@@ -276,10 +276,10 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
           if (callback==null) missingCallback(seq, answerType)
           val payload = readData(output)
           callback(Success(payload))
-        case 2 =>
+        case 5 =>
           if (callback==null) missingCallback(seq, answerType)
-          val msg = readString(output)
-          callback(Failure(IsabelleException(msg)))
+          val id = output.readLong()
+          callback(Failure(IsabelleMLException(this, new ID(id, this))))
         case 3 =>
           if (seq != 0) IsabelleProtocolException(s"Received a protocol response from Isabelle with seq# $seq and " +
             s"answerType $answerType. Seq should be 0. Probably the communication is out of sync now.")
@@ -631,8 +631,7 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
     send({ stream => stream.writeByte(4); writeString(stream, ml) },
       { result => promise.complete(result.map {
         case DInt(id) => new ID(id, this)
-        // TODO: should be another subclass of IsabelleControllerException, probably. IsabelleProtocolException?
-        case data => throw IsabelleException(s"Internal error: expected DInt, not $data")}) })
+        case data => throw IsabelleMiscException(s"Internal error: expected DInt, not $data")}) })
     promise.future
   }
 
@@ -734,6 +733,28 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
     }
     thread.setDaemon(true)
     thread.start()
+  }
+
+  object exceptionManager {
+    protected[control] def messageOf(id: ID): String = try {
+      val future = applyFunction(messageOfException, DObject(id))
+      val result = Await.result(future, Duration.Inf)
+      result match {
+        case DString(message) => message
+        case _ => assert(assertion = false, "Unreachable code"); null
+      }
+    } catch {
+      case _ : IsabelleMLException =>
+        throw IsabelleMiscException("IsabelleMLException thrown in code for getting message of an IsabelleMLException")
+    }
+
+    private lazy val messageOfException =
+      try
+        Await.result(storeValue("E_Function (fn DObject exn => DString (message_of_exn NONE exn))"), Duration.Inf)
+      catch {
+        case _ : IsabelleMLException =>
+          throw IsabelleMiscException("IsabelleMLException thrown in code for getting message of an IsabelleMLException")
+      }
   }
 }
 
@@ -1012,7 +1033,7 @@ object Isabelle {
 }
 
 /** Ancestor of all exceptions specific to [[Isabelle]] */
-abstract class IsabelleControllerException(message: String) extends IOException(message)
+abstract class IsabelleControllerException(message: String) extends Exception(message)
 
 /** Thrown if an operation cannot be executed because [[Isabelle.destroy]] has already been invoked. */
 case class IsabelleDestroyedException(message: String) extends IsabelleControllerException(message)
@@ -1029,9 +1050,10 @@ case class IsabelleJEditException(message: String) extends IsabelleControllerExc
 case class IsabelleBuildException(message: String, errors: List[String])
   extends IsabelleControllerException(if (errors.nonEmpty) message + ": " + errors.last else message)
 /** Thrown in case of an error in the ML process (ML compilation errors, exceptions thrown by ML code) */
-// TODO: store the actually Isabelle exception, make the message lazy
-// TODO: also rename to IsabelleMLException?
-// TODO: Make sure this one is only used for Isabelle/ML wrapped exceptions
-case class IsabelleException(message: String) extends IsabelleControllerException(Symbols.symbolsToUnicode(message))
+case class IsabelleMLException(isabelle: Isabelle, id: ID) extends IsabelleControllerException(message = null) {
+  override def getMessage: String = message
+  lazy val message: String = isabelle.exceptionManager.messageOf(id)
+}
 /** Thrown in case of protocol errors in Isabelle process */
 case class IsabelleProtocolException(message: String) extends IsabelleControllerException(message)
+case class IsabelleMiscException(message: String) extends IsabelleControllerException(message)

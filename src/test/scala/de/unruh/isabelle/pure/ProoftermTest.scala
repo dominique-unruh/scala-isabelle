@@ -1,6 +1,6 @@
 package de.unruh.isabelle.pure
 
-import de.unruh.isabelle.control.IsabelleException
+import de.unruh.isabelle.control.IsabelleMLException
 import de.unruh.isabelle.control.IsabelleTest.isabelle
 import de.unruh.isabelle.mlvalue.Version
 import de.unruh.isabelle.pure.Proofterm.PThm
@@ -12,7 +12,7 @@ class ProoftermTest extends AnyFunSuite {
 
   test("old version") {
     if (!Version.from2020) {
-      val exn = intercept[IsabelleException] { PThm(Thm(Context("Main"), "HOL.refl")).proof }
+      val exn = intercept[IsabelleMLException] { PThm(Thm(Context("Main"), "HOL.refl")).proof }
       assert(exn.message.startsWith("Proofterms are supported only for Isabelle >=2020, not "))
     }
   }

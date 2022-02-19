@@ -3,7 +3,7 @@ package de.unruh.isabelle.pure
 import java.nio.file.{Path, Paths}
 
 import de.unruh.isabelle.control.Isabelle.DString
-import de.unruh.isabelle.control.{Isabelle, IsabelleException, OperationCollection}
+import de.unruh.isabelle.control.{Isabelle, IsabelleMLException, OperationCollection}
 import de.unruh.isabelle.misc.Utils
 import de.unruh.isabelle.mlvalue.{MLRetrieveFunction, MLStoreFunction, MLValue}
 import org.apache.commons.lang3.SystemUtils

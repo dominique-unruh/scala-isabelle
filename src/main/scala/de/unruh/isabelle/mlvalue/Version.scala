@@ -1,6 +1,6 @@
 package de.unruh.isabelle.mlvalue
 
-import de.unruh.isabelle.control.{Isabelle, IsabelleException, OperationCollection}
+import de.unruh.isabelle.control.{Isabelle, IsabelleMLException, OperationCollection}
 import org.log4s
 import org.log4s.Logger
 
@@ -32,7 +32,7 @@ object Version extends OperationCollection {
       try
         MLValue.compileValue[Option[String]]("Isabelle_System.isabelle_identifier()").retrieveNow.getOrElse("dev")
       catch {
-        case _ : IsabelleException => MLValue.compileValue[String]("Distribution.version").retrieveNow
+        case _ : IsabelleMLException => MLValue.compileValue[String]("Distribution.version").retrieveNow
       }
 
     val (year, step, rc) = {

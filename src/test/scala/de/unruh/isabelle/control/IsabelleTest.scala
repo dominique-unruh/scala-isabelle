@@ -23,7 +23,7 @@ class IsabelleTest extends AnyFunSuite {
   private def await[A](f: Awaitable[A]) : A = Await.result(f, Duration.Inf)
 
   test("handle compilation error") {
-    assertThrows[IsabelleException] {
+    assertThrows[IsabelleMLException] {
       isabelle.executeMLCodeNow("1+true")
     }
   }
@@ -77,7 +77,7 @@ class IsabelleTest extends AnyFunSuite {
 
   test("too long string") {
     val str = "x".repeat(70*1000*1000)
-    assertThrows[IsabelleException] {
+    assertThrows[IsabelleMLException] {
       roundTrip(DString(str))
     }
   }
@@ -85,7 +85,7 @@ class IsabelleTest extends AnyFunSuite {
   // Checks that the protocol doesn't get desynced by too long strings.
   test("too long string & continue") {
     val str = "x".repeat(70*1000*1000)
-    assertThrows[IsabelleException] {
+    assertThrows[IsabelleMLException] {
       roundTrip(DString(str))
     }
     println("Roundtrip of string finished")
@@ -155,16 +155,21 @@ class IsabelleTest extends AnyFunSuite {
   }
 
   test("exception arguments are preserved in 'executeMLCodeNow'") {
-    val exn = intercept[IsabelleException] {
+    println(1)
+    val exn = intercept[IsabelleMLException] {
+      println(2)
       isabelle.executeMLCodeNow("""raise TERM ("magic"^"string", [Free("magic"^"var", dummyT)])""")
+      println(3)
     }
+    println(4)
     println(exn.message)
+    println(5)
     assert(exn.message.contains("magicstring"))
     assert(exn.message.contains("magicvar"))
   }
 
   test("exception arguments are preserved in 'storeValue'") {
-    val exn = intercept[IsabelleException] {
+    val exn = intercept[IsabelleMLException] {
       await(isabelle.storeValue("""raise TERM ("magic"^"string", [Free("magic"^"var", dummyT)])"""))
     }
     println(exn.message)
@@ -173,7 +178,7 @@ class IsabelleTest extends AnyFunSuite {
   }
 
   test("exception arguments are preserved in 'applyFunction'") {
-    val exn = intercept[IsabelleException] {
+    val exn = intercept[IsabelleMLException] {
       val fun = await(isabelle.storeValue("""E_Function (fn _ => raise TERM ("magic"^"string", [Free("magic"^"var", dummyT)]))"""))
       val _ = await(isabelle.applyFunction(fun, DList()))
     }

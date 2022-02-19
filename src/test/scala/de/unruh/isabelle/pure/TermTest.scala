@@ -1,6 +1,6 @@
 package de.unruh.isabelle.pure
 
-import de.unruh.isabelle.control.IsabelleException
+import de.unruh.isabelle.control.IsabelleMLException
 import de.unruh.isabelle.control.IsabelleTest.{isabelle => isa}
 import de.unruh.isabelle.misc.Symbols
 import de.unruh.isabelle.pure.TermTest.assertRecursivelyConcrete
@@ -57,7 +57,7 @@ class TermTest extends AnyFunSuite {
 
   test("bad cterm") {
     val term = Const("HOL.True", Type("Nat.nat"))
-    assertThrows[IsabelleException] {
+    assertThrows[IsabelleMLException] {
       Cterm(ctxt, term).force
     }
   }

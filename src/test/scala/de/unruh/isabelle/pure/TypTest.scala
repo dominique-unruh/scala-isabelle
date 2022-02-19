@@ -1,6 +1,6 @@
 package de.unruh.isabelle.pure
 
-import de.unruh.isabelle.control.{IsabelleException, IsabelleTest}
+import de.unruh.isabelle.control.{IsabelleMLException, IsabelleTest}
 import de.unruh.isabelle.control.IsabelleTest.{isabelle => isa}
 import de.unruh.isabelle.misc.Symbols
 import de.unruh.isabelle.pure.TypTest.assertRecursivelyConcrete
@@ -35,7 +35,7 @@ class TypTest extends AnyFunSuite {
 
   test("bad ctyp") {
     val typ = Type("Nat.nat", Type("Nat.nat"))
-    assertThrows[IsabelleException] {
+    assertThrows[IsabelleMLException] {
       Ctyp(ctxt, typ).force
     }
   }

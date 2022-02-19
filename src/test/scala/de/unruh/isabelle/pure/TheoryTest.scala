@@ -2,7 +2,7 @@ package de.unruh.isabelle.pure
 
 import java.nio.file.{Files, Path, Paths}
 
-import de.unruh.isabelle.control.{IsabelleException, IsabelleTest}
+import de.unruh.isabelle.control.{IsabelleMLException, IsabelleTest}
 import de.unruh.isabelle.control.IsabelleTest.setup
 import de.unruh.isabelle.mlvalue.MLValue
 import org.scalatest.funsuite.AnyFunSuite
@@ -14,7 +14,7 @@ import de.unruh.isabelle.mlvalue.Implicits._
 
 class TheoryTest extends AnyFunSuite {
   test("import structure") {
-    assertThrows[IsabelleException] {
+    assertThrows[IsabelleMLException] {
       isabelle.executeMLCodeNow("HOLogic.boolT") }
     val thy = Theory("Main")
     val struct = thy.importMLStructureNow("HOLogic")
@@ -25,7 +25,7 @@ class TheoryTest extends AnyFunSuite {
   test("importMLStructureNow example") {
     val thy : Theory = Theory(Path.of("ImportMeThy.thy"))                         // load the theory TestThy
     val num1 : MLValue[Int] = MLValue.compileValue("ImportMe.num")     // fails
-    assertThrows[IsabelleException] { num1.retrieveNow }
+    assertThrows[IsabelleMLException] { num1.retrieveNow }
     val importMe : String = thy.importMLStructureNow("ImportMe")     // import the structure Test into the ML toplevel
     val num2 : MLValue[Int] = MLValue.compileValue(s"${importMe}.num") // access Test (under new name) in compiled ML code
     assert(num2.retrieveNow == 123)                                              // ==> 123
@@ -78,8 +78,8 @@ class TheoryTest extends AnyFunSuite {
     val gcd = Theory("HOL.GCD")
     val filter = Theory("HOL.Filter")
     Thm(Context(gcd), "gcd_lcm").force
-    assertThrows[IsabelleException] { Thm(Context(filter), "gcd_lcm").force }
-    assertThrows[IsabelleException] { Thm(Context(gcd), "eventually_Abs_filter").force }
+    assertThrows[IsabelleMLException] { Thm(Context(filter), "gcd_lcm").force }
+    assertThrows[IsabelleMLException] { Thm(Context(gcd), "eventually_Abs_filter").force }
     Thm(Context(filter), "eventually_Abs_filter").force
     val merged = Theory.mergeTheories(gcd, filter)
     Thm(Context(merged), "gcd_lcm").force

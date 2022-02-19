@@ -1,7 +1,7 @@
 package de.unruh.isabelle.pure
 
 import de.unruh.isabelle.control.Isabelle.{DInt, DList, DObject, DString}
-import de.unruh.isabelle.control.{Isabelle, IsabelleException, OperationCollection}
+import de.unruh.isabelle.control.{Isabelle, IsabelleMLException, IsabelleMiscException, OperationCollection}
 import de.unruh.isabelle.misc.{FutureValue, Symbols, Utils}
 import de.unruh.isabelle.mlvalue.MLValue.Converter
 import de.unruh.isabelle.mlvalue.Implicits._
@@ -161,7 +161,7 @@ sealed abstract class Term extends FutureValue with PrettyPrintable {
         case Abs(_, t, body) => t -->: typ(body, t::env)
         case Bound(i) => env.lift(i) match {
           case Some(t) => t
-          case None => throw IsabelleException("Term.fastType: Term contains loose bound variable")
+          case None => throw IsabelleMiscException("Term.fastType: Term contains loose bound variable")
         }
         case App(f,u) =>
           val fType = typ(f, env)
