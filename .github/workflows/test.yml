@@ -37,6 +37,9 @@ jobs:
               *) echo ~/Isabelle${{matrix.isabelle}}.app >.isabelle-home;;
             esac
             echo ~/afp-2021-1 >.afp-home
+            # My Mac is very small. So we make sure there is no other parallel GitHub action running before continuing.
+            while pgrep -l -f sbt-launch.jar; do echo "Another sbt is running. To keep load low, we wait until it finishes."; caffeinate -i -t 300; done
+            ~/keepawake.sh &    # Another invocation in case we waited very long
             sbt '+ testOnly -- -h target/test-reports-html'
 
         - name: Upload test results
