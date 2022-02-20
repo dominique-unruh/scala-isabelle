@@ -3,6 +3,7 @@ package de.unruh.isabelle.misc
 import com.ibm.icu.lang.{CharacterProperties, UCharacter, UProperty}
 import com.ibm.icu.lang.UCharacter.DecompositionType.{SUB, SUPER}
 import com.ibm.icu.text.Normalizer2
+import de.unruh.isabelle.misc.Symbols.ProcessSubSuperMode
 
 import java.io.{BufferedReader, CharConversionException, InputStreamReader}
 import java.net.URL
@@ -34,7 +35,7 @@ import scala.util.matching.Regex
 class Symbols(symbolsFile: URL = classOf[Symbols].getResource("symbols"),
               extraSymbols: Iterable[(String,Int)] = Nil,
               extraSymbolsLowPri: Iterable[(String,Int)] = Nil,
-              processSubSuper: Boolean = true) {
+              processSubSuper: ProcessSubSuperMode = ProcessSubSuperMode.Yes) {
 
   import Symbols._
 
@@ -82,7 +83,7 @@ class Symbols(symbolsFile: URL = classOf[Symbols].getResource("symbols"),
               m.matched
         }
       })
-    if (processSubSuper) processSubSuperToUnicode(result) else result
+    if (processSubSuper == ProcessSubSuperMode.Yes) processSubSuperToUnicode(result) else result
   }
 
   /** Converts a Unicode string to a string using Isabelle's symbol encoding.
@@ -92,7 +93,11 @@ class Symbols(symbolsFile: URL = classOf[Symbols].getResource("symbols"),
    **/
   def unicodeToSymbols(str: String, failUnknown: Boolean = false): String = {
     val sb = new StringBuffer(str.length() * 11 / 10)
-    val str2 = if (processSubSuper) processSubSuperFromUnicode(str) else str
+    val str2 =
+      if (processSubSuper == ProcessSubSuperMode.Yes || processSubSuper == ProcessSubSuperMode.ToIsabelle)
+        processSubSuperFromUnicode(str)
+      else
+        str
     for (cp <- codepoints(str2)) {
       if (cp <= 128) sb.append(cp.toChar)
       else symbolsInv.get(cp) match {
@@ -201,5 +206,15 @@ object Symbols {
       }
     }
     sb.toString
+  }
+
+  sealed trait ProcessSubSuperMode
+  object ProcessSubSuperMode {
+    /** Do not process sub/superscripts */
+    case object No extends ProcessSubSuperMode
+    /** Process sub/superscripts */
+    case object Yes extends ProcessSubSuperMode
+    /** Process sub/superscripts only in conversion *to* Isabelle symbols */
+    case object ToIsabelle extends ProcessSubSuperMode
   }
 }
