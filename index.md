@@ -32,4 +32,4 @@ and [Term](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/i
 ## Acknowledgments
 
 Development was supported by the Air Force Office of Scientific Research (AOARD Grant FA2386-17-1-4022),
-by the ERC consolidator grant CerQuS (819317), and by the PRG946 grant from the Estonian Research Council.
+by the [ERC consolidator grant CerQuS (819317)](https://www.ut.ee/~unruh/cerqus/), and by the PRG946 grant from the Estonian Research Council.
