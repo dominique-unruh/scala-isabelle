@@ -80,5 +80,11 @@ object Version extends OperationCollection {
    * Unspecified behavior on development versions. */
   def from2021_1(implicit isabelle: Isabelle, ec:  ExecutionContext): Boolean = year >= 2021 && step >= 1
 
+
+  /** True, if the current version is at least Isabelle2022 (including the release candidates).
+   *
+   * Unspecified behavior on development versions. */
+  def from2022(implicit isabelle: Isabelle, ec: ExecutionContext): Boolean = year >= 2022
+
   private val logger = log4s.getLogger
 }
