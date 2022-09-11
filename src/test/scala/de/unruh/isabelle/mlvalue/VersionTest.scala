@@ -49,4 +49,15 @@ class VersionTest extends org.scalatest.funsuite.AnyFunSuite {
         fail(s"Unknown version string $string. Please extend test case")
     }
   }
+
+  //noinspection SimplifyBoolean
+  test("from2021_1") {
+    val result = Version.from2021_1
+    if (Version.year > 2021)
+      assert(result == true)
+    else if (Version.year == 2021 && Version.step >= 1)
+      assert(result == true)
+    else
+      assert(result == false)
+  }
 }

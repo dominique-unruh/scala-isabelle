@@ -78,8 +78,8 @@ object Version extends OperationCollection {
   /** True, if the current version is at least Isabelle2021-1 (including the release candidates).
    *
    * Unspecified behavior on development versions. */
-  def from2021_1(implicit isabelle: Isabelle, ec:  ExecutionContext): Boolean = year >= 2021 && step >= 1
-
+  def from2021_1(implicit isabelle: Isabelle, ec:  ExecutionContext): Boolean =
+    (year == 2021 && step >= 1) || year > 2021
 
   /** True, if the current version is at least Isabelle2022 (including the release candidates).
    *
