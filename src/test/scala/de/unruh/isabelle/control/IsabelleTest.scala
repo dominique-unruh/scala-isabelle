@@ -191,12 +191,12 @@ class IsabelleTest extends AnyFunSuite {
 
 object IsabelleTest {
   val isabelleHome: Path = {
-    val version = "2022-RC0"
+    val version = "2022-RC1"
     val config = Paths.get(".isabelle-home") // For setting the Isabelle home in Github Action etc.
     val path = if (Files.exists(config))
       new BufferedReader(new FileReader(config.toFile)).readLine()
     else if (SystemUtils.IS_OS_WINDOWS)
-      s"c:\\Isabelle$version"
+      s"c:\\Programs\\Isabelle$version"
     else
       s"/opt/Isabelle$version"
     Paths.get(path)
