@@ -34,7 +34,9 @@ object Proofterm extends OperationCollection {
 
   final case class PThm(header: ThmHeader, body: ThmBody) extends Proofterm {
     def proof(implicit isabelle: Isabelle, executionContext: ExecutionContext): Proofterm =
-      body.proofOpenMlValue.retrieveNow
+      // I do not know why it needs the explicit Proofterm.converter here but I got compilation errors without it.
+      body.proofOpenMlValue.retrieveNow(Proofterm.converter, implicitly, implicitly)
+
     def fullProof(theory: Theory)(implicit isabelle: Isabelle, executionContext: ExecutionContext): Proofterm =
       Ops.reconstruct_proof(theory.mlValue, header.prop.mlValue, body.proofOpenMlValue).retrieveNow
   }
