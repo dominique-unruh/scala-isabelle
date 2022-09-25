@@ -143,8 +143,8 @@ class MLValue[A] protected (/** the ID of the referenced object in the Isabelle 
   @inline def retrieve(implicit converter: Converter[A], isabelle: Isabelle, ec: ExecutionContext): Future[A] =
     converter.retrieve(this)
 
-  /** Like retrieve but returns the Scala value directly instread of a future (blocks till the computation
-   * and transfer finish. */
+  /** Like retrieve but returns the Scala value directly instead of a future (blocks till the computation
+   * and transfer finish). */
   @inline def retrieveNow(implicit converter: Converter[A], isabelle: Isabelle, ec: ExecutionContext): A =
     Await.result(retrieve, Duration.Inf)
 
@@ -499,7 +499,7 @@ object MLValue extends OperationCollection {
    *     override def retrieve(value: MLValue[Int])
    *                          (implicit isabelle: Isabelle, ec: ExecutionContext): Future[Int] = {
    *        val retrieveInt = MLRetrieveFunction[Int]("fn i => DInt i")   // compile retrieveInt
-   *        for (data <- retrieveInt(value.id); // invoke retrieveInt to transfer from Isabelle
+   *        for (data <- retrieveInt(value); // invoke retrieveInt to transfer from Isabelle
    *             DInt(long) = data)             // decode the data (simple pattern match)
    *          yield long.toInt   // return the integer
    *     }
