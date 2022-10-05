@@ -1,14 +1,16 @@
 package de.unruh.isabelle.mlvalue
 
-import de.unruh.isabelle.control.{Isabelle, IsabelleMLException, OperationCollection}
+import de.unruh.isabelle.control.{Isabelle, IsabelleMLException, IsabelleMiscException, OperationCollection}
 import org.log4s
 import org.log4s.Logger
 
+import java.nio.file.{Files, Path}
 import scala.concurrent.ExecutionContext
 import scala.util.matching.Regex.{Groups, Match}
 
 // Implicits
 import Implicits._
+import scala.collection.JavaConverters._ // Using deprecated class to support Scala 2.12
 
 /** Version information for the Isabelle process.
  *
@@ -25,6 +27,9 @@ object Version extends OperationCollection {
    * Guaranteed to be larger than any correct year value */
   final val INVALID_YEAR = 99998
 
+  private lazy val isabelleVersionRegex = """^Isabelle(?<year>[0-9]+)(-(?<step>[0-9]+))?(-RC(?<rc>[0-9]+))?(:.*)?$""".r
+  private lazy val isabelleVersionRegexExe = """^Isabelle((?<year>[0-9]+)(-(?<step>[0-9]+))?(-RC(?<rc>[0-9]+))?)(\.exe|\.plist)?$""".r
+
   override protected def newOps(implicit isabelle: Isabelle, ec:  ExecutionContext): Ops = new Ops
   protected class Ops(implicit isabelle: Isabelle, ec:  ExecutionContext) {
 //    MLValue.init()
@@ -36,8 +41,7 @@ object Version extends OperationCollection {
       }
 
     val (year, step, rc) = {
-      val regex = """^Isabelle(?<year>[0-9]+)(-(?<step>[0-9]+))?(-RC(?<rc>[0-9]+))?(:.*)?$""".r
-      regex.findFirstMatchIn(versionString) match {
+      isabelleVersionRegex.findFirstMatchIn(versionString) match {
         case None => (INVALID_YEAR, 0, NOT_RC)
         case Some(matcher) =>
           val year = matcher.group("year").toInt
@@ -51,6 +55,37 @@ object Version extends OperationCollection {
   /** The Isabelle version string (e.g., `"Isabelle2020: April 2020"`).
    * `"dev"` if the version string cannot be obtained (usually the case with Isabelle running directly from the development repository). */
   def versionString(implicit isabelle: Isabelle, ec:  ExecutionContext): String = Ops.versionString
+
+  /** Guesses the version by inspecting the Isabelle home directory.
+   * (A string such as `"2021-1-RC2"`.)
+   * Compared from [[versionString]], this does not need the Isabelle process to start up fully.
+   * (Starting up may fail if the version is wrong because startup may build an Isabelle heap from theories for a
+   * different version first, depending on the setup.)
+   *
+   * @throws IsabelleMiscException if the version cannot be determined
+   * */
+  def versionFromIsabelleDirectory(directory: Path): String = {
+    val files1 = Files.list(directory).iterator.asScala.toSeq
+    val subdir = directory.resolve("Isabelle") // On older Mac Isabelle versions, this contains the actual program directory
+    val files2 = if (Files.isDirectory(subdir)) Files.list(subdir).iterator.asScala.toSeq else Nil
+    val files = files1 ++ files2
+
+    val matches = files.flatMap { file =>
+      val fileName = file.getFileName.toString
+      fileName match {
+        case `isabelleVersionRegexExe`(version, _*) => Some((fileName, version))
+        case _ => None
+      }
+    }
+
+    if (matches.isEmpty)
+      throw IsabelleMiscException(s"Could not determine Isabelle version in $directory: no main executable found")
+    else if (matches.length >= 2)
+      throw IsabelleMiscException(s"Could not determine Isabelle version in $directory: found ${matches.map(_._1).mkString(", ")}")
+    else
+      matches.head._2
+  }
+
   /** The year of this Isabelle version (e.g., 2020).
    *
    * If the version string could not be parsed, returns [[INVALID_YEAR]]. */

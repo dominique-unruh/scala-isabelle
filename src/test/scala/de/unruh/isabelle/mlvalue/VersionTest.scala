@@ -1,6 +1,7 @@
 package de.unruh.isabelle.mlvalue
 
 // Implicits
+import de.unruh.isabelle.control.IsabelleTest
 import de.unruh.isabelle.control.IsabelleTest.isabelle
 import de.unruh.isabelle.mlvalue.Version.NOT_RC
 
@@ -65,5 +66,12 @@ class VersionTest extends org.scalatest.funsuite.AnyFunSuite {
       assert(result == true)
     else
       assert(result == false)
+  }
+
+  test("versionFromIsabelleDirectory") {
+    val guessedVersion = Version.versionFromIsabelleDirectory(IsabelleTest.isabelleHome)
+    val versionString = Version.versionString
+    assert(guessedVersion.startsWith("20"))
+    assert(versionString.contains(guessedVersion))
   }
 }
