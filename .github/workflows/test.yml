@@ -9,7 +9,7 @@ jobs:
       runs-on: [self-hosted, "${{matrix.os}}"]
       steps:
         - name: Checkout repository
-          uses: actions/checkout@v2
+          uses: actions/checkout@v3
           
         - name: Running tests (Linux)
           if: matrix.os == 'linux'
@@ -44,7 +44,7 @@ jobs:
             sbt '+ testOnly -- -h target/test-reports-html'
 
         - name: Upload test results
-          uses: actions/upload-artifact@v2
+          uses: actions/upload-artifact@v3
           if: always()
           with:
             name: test-reports-html-${{matrix.isabelle}}-${{matrix.os}}
@@ -61,7 +61,7 @@ jobs:
       if: github.ref == 'refs/heads/master'
       steps:
         - name: Checkout repository
-          uses: actions/checkout@v2
+          uses: actions/checkout@v3
 
         - name: Publish snapshot
           run: sbt "+ publishSigned"
