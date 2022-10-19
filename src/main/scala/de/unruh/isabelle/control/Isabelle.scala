@@ -5,7 +5,7 @@ import java.lang
 import java.lang.ref.Cleaner
 import java.net.{InetAddress, ServerSocket, Socket}
 import java.nio.charset.StandardCharsets
-import java.nio.file.{FileSystemNotFoundException, Files, Path, Paths}
+import java.nio.file.{FileSystemException, FileSystemNotFoundException, Files, Path, Paths}
 import java.util.concurrent.{ArrayBlockingQueue, BlockingQueue, ConcurrentHashMap, ConcurrentLinkedQueue}
 import com.google.common.escape.Escaper
 import com.google.common.util.concurrent.Striped
@@ -360,7 +360,10 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
            if file.getFileName.toString.startsWith("SCALA_ISABELLE_TEMP_");
            if file.toFile.lastModified < new Date().getTime - 3600 * 1000) {
         logger.debug("Cleaning old session log file: " + file)
-        Files.delete(file)
+        try Files.delete(file)
+        catch {
+          case e: FileSystemException => logger.debug(s"Failed: ${e.getMessage}")
+        }
       }
     } catch {
       case e : IOException => logger.debug(e)("Failure while trying to clean old session log files")
