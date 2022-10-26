@@ -4,7 +4,7 @@ jobs:
     test-sc-isa:
       strategy:
         matrix:
-          isabelle: [2022-RC4, 2021-1, 2021, 2020, 2019]
+          isabelle: [2022, 2021-1, 2021, 2020, 2019]
           os: [linux, windows, macos]
       runs-on: [self-hosted, "${{matrix.os}}"]
       steps:
