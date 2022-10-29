@@ -1,5 +1,32 @@
 # Changelog
 
+## Snapshot
+
+Up to date till `74d693d`.
+
+* `IsabelleException` was renamed to [`IsabelleMLException`](https://javadoc.io/static/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/IsabelleMLException.html).
+  It is only used raised when exceptions occur in ML code.
+  Use [`IsabelleMiscException`](https://javadoc.io/static/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/IsabelleMiscException.html)
+  for other purposes.
+* [`IsabelleMLException`](https://javadoc.io/static/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/IsabelleMLException.html)
+  contains the actual ML exception object
+* [`IsabelleMLException`](https://javadoc.io/static/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/IsabelleMLException.html):
+  The exception message contain the associated data of the exception (e.g., a `TERM` exception will contain the terms in the message).
+  This message is lazily computed when needed.
+* [`Isabelle`](https://javadoc.io/static/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/Isabelle.html):
+  Can configure a different [`ExceptionHandler`](https://javadoc.io/static/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/ExceptionHandler.html)
+  for handling exceptions in ML code (instead of raising [`IsabelleMLException`](https://javadoc.io/static/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/IsabelleMLException.html)s).
+* [`Symbols`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/misc/Symbols.html): 
+  Supporting Unicode subscript symbols when converting between Isabelle symbols and Unicode.
+  (See [constructor](https://javadoc.io/static/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/misc/Symbols.html#%3Cinit%3E(symbolsFile:java.net.URL,extraSymbols:Iterable[(String,Int)]):de.unruh.isabelle.misc.Symbols) 
+  argument `processSubSuper`.)
+* [`Symbols`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/misc/Symbols.html):
+  Specify fallback translations for symbols (only used if the symbols table has no translation).
+  (See [constructor](https://javadoc.io/static/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/misc/Symbols.html#%3Cinit%3E(symbolsFile:java.net.URL,extraSymbols:Iterable[(String,Int)]):de.unruh.isabelle.misc.Symbols)
+  argument `extraSymbolsLowPri`.)
+
+
+
 ## [0.4.0] – 2021-12-27
 
 The main changes are support up to Isabelle2021-1, and better invocation of the Isabelle process (takes into account `ROOT` files etc.).
