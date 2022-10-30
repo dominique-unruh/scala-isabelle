@@ -4,16 +4,9 @@
 
 Up to date till `be6194a`.
 
-* Supporting Isabelle2022.
-* `IsabelleException` was renamed to [`IsabelleMLException`](https://javadoc.io/static/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/IsabelleMLException.html).
-  It is only used raised when exceptions occur in ML code.
-  Use [`IsabelleMiscException`](https://javadoc.io/static/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/IsabelleMiscException.html)
-  for other purposes.
-* [`IsabelleMLException`](https://javadoc.io/static/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/IsabelleMLException.html)
-  contains the actual ML exception object
-* [`IsabelleMLException`](https://javadoc.io/static/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/IsabelleMLException.html):
-  The exception message contain the associated data of the exception (e.g., a `TERM` exception will contain the terms in the message).
-  This message is lazily computed when needed.
+### Added
+
+* Support for Isabelle2022.
 * [`Isabelle`](https://javadoc.io/static/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/Isabelle.html):
   Can configure a different [`ExceptionHandler`](https://javadoc.io/static/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/ExceptionHandler.html)
   for handling exceptions in ML code (instead of raising [`IsabelleMLException`](https://javadoc.io/static/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/IsabelleMLException.html)s).
@@ -22,17 +15,30 @@ Up to date till `be6194a`.
 * Added an ML value converter for [`IsabelleMLException`](https://javadoc.io/static/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/IsabelleMLException.html)s,
   see [`MLException.simpleIsabelleMLExceptionConverter`](https://javadoc.io/static/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/pure/exceptions/MLException.html#simpleIsabelleMLExceptionConverter)
   and [`MLException.distinguishingIsabelleMLExceptionConverter`](https://javadoc.io/static/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/pure/exceptions/MLException.html#distinguishingIsabelleMLExceptionConverter).
-* [`Symbols`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/misc/Symbols.html): 
+* [`Symbols`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/misc/Symbols.html):
   Supporting Unicode subscript symbols when converting between Isabelle symbols and Unicode.
-  (See [constructor](https://javadoc.io/static/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/misc/Symbols.html#%3Cinit%3E(symbolsFile:java.net.URL,extraSymbols:Iterable[(String,Int)]):de.unruh.isabelle.misc.Symbols) 
+  (See [constructor](https://javadoc.io/static/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/misc/Symbols.html#%3Cinit%3E(symbolsFile:java.net.URL,extraSymbols:Iterable[(String,Int)]):de.unruh.isabelle.misc.Symbols)
   argument `processSubSuper`.)
 * [`Symbols`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/misc/Symbols.html):
   Specify fallback translations for symbols (only used if the symbols table has no translation).
   (See [constructor](https://javadoc.io/static/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/misc/Symbols.html#%3Cinit%3E(symbolsFile:java.net.URL,extraSymbols:Iterable[(String,Int)]):de.unruh.isabelle.misc.Symbols)
   argument `extraSymbolsLowPri`.)
-* Isabelle is initialized with `quick_and_dirty` flag `true`, this means imported theories can use `sorry`.
 * [`Version.versionFromIsabelleDirectory`](https://javadoc.io/static/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/mlvalue/Version.html#versionFromIsabelleDirectory):
   Guesses the version of an Isabelle distribution by looking at the Isabelle distribution directory (without initializing the Isabelle process).
+
+### Changed
+
+* `IsabelleException` was renamed to [`IsabelleMLException`](https://javadoc.io/static/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/IsabelleMLException.html).
+  It is only used raised when exceptions occur in ML code.
+  Use [`IsabelleMiscException`](https://javadoc.io/static/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/IsabelleMiscException.html)
+  for other purposes.
+* [`IsabelleMLException`](https://javadoc.io/static/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/IsabelleMLException.html)
+  contains the actual ML exception object
+* [`IsabelleMLException`](https://javadoc.io/static/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/IsabelleMLException.html):
+  The exception message contains the associated data of the exception (e.g., a `TERM` exception will contain the terms in the message).
+  This message is lazily computed when needed.
+* Isabelle is initialized with `quick_and_dirty` flag `true`, this means imported theories can use `sorry`.
+
 
 ## [0.4.0] – 2021-12-27
 
