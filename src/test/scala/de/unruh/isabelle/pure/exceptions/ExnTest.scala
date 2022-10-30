@@ -18,9 +18,9 @@ class ExnTest extends AnyFunSuite {
   implicit lazy val isabelle: Isabelle = IsabelleTest.isabelle
   val ctxt: Context = Context("Pure")
 
-  def recognizeExceptionTest[T <: Exn](code: String)(implicit classTag: ClassTag[T]) : T = {
+  def recognizeExceptionTest[T <: IsabelleMLException](code: String)(implicit classTag: ClassTag[T]) : T = {
     val id = Await.result(isabelle.storeValue(code), Duration.Inf)
-    val exn = IsabelleMLException(isabelle, id)
+    val exn = IsabelleMLException.unsafeFromId(isabelle, id)
     println(exn)
     val exn2 = Await.result(Exn.recognizeException(exn), Duration.Inf)
     println(exn2)
@@ -71,7 +71,7 @@ class ExnTest extends AnyFunSuite {
 
   test("recognizeException - unknown") {
     val id = Await.result(isabelle.storeValue("let exception E in E end"), Duration.Inf)
-    val exn = IsabelleMLException(isabelle, id)
+    val exn = IsabelleMLException.unsafeFromId(isabelle, id)
     println(exn)
     val exn2 = Await.result(Exn.recognizeException(exn, fallback = null), Duration.Inf)
     println(exn2)

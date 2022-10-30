@@ -14,33 +14,34 @@ import scala.concurrent.{Await, ExecutionContext, Future}
 import de.unruh.isabelle.mlvalue.Implicits._
 import de.unruh.isabelle.pure.Implicits._
 
-// DOCUMENT
-class Exn protected (isabelle: Isabelle, id: ID) extends IsabelleMLException(isabelle, id)
-
-// DOCUMENT
+/** Contains:
+ * <ul>
+ *   <li>[[MLValueConverter]]s for exceptions raised in ML code (represented as [[IsabelleMLException]]s), see [[Exn.simpleExnConverter]] and [[Exn.distinguishingExnConverter]])
+ *   <li>An [[control.ExceptionManager]] that makes [[Isabelle]] raise ML exceptions as subtypes of [[IsabelleMLException]] for certain well-known
+ *   exceptions such as `TERM`, `ERROR`, etc. See [[Exn.ExceptionManager]]. */
 object Exn extends OperationCollection {
-  def unsafeFromId(id: ID)(implicit isabelle: Isabelle) : Exn = new Exn(isabelle, id)
-  def apply(exception: IsabelleMLException) = new Exn(exception.isabelle, exception.id)
-
-  class ExnConverter extends Converter[Exn] {
+  // DOCUMENT
+  class ExnConverter extends Converter[IsabelleMLException] {
     final override def mlType(implicit isabelle: Isabelle, ec: ExecutionContext): String = "exn"
-    final override def retrieve(value: MLValue[Exn])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Exn] = {
+    final override def retrieve(value: MLValue[IsabelleMLException])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[IsabelleMLException] = {
       for (id <- value.id;
-           exn = Exn.unsafeFromId(id);
-           exn2 <-recognize(exn))
+           exn = IsabelleMLException.unsafeFromId(isabelle, id);
+           exn2 <- recognize(exn))
         yield exn2
     }
 
-    final override def store(value: Exn)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[Exn] = MLValue.unsafeFromId(value.id)
+    final override def store(value: IsabelleMLException)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[IsabelleMLException] = MLValue.unsafeFromId(value.id)
     final override def exnToValue(implicit isabelle: Isabelle, ec: ExecutionContext): String = "(fn e : exn => e)"
     final override def valueToExn(implicit isabelle: Isabelle, ec: ExecutionContext): String = "(fn e : exn => e)"
 
-    def recognize(exception: Exn)(implicit isabelle: Isabelle, ec: ExecutionContext) : Future[Exn] = Future.successful(exception)
+    def recognize(exception: IsabelleMLException)(implicit isabelle: Isabelle, ec: ExecutionContext) : Future[IsabelleMLException] = Future.successful(exception)
   }
 
+  // DOCUMENT
   implicit object simpleExnConverter extends ExnConverter
+  // DOCUMENT
   implicit object distinguishingExnConverter extends ExnConverter {
-    override def recognize(exception: Exn)(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Exn] =
+    override def recognize(exception: IsabelleMLException)(implicit isabelle: Isabelle, ec: ExecutionContext): Future[IsabelleMLException] =
       recognizeException(exception)
   }
 
@@ -62,8 +63,9 @@ object Exn extends OperationCollection {
         |  """.stripMargin)
   }
 
-  def recognizeException(exception: IsabelleMLException, fallback: IsabelleMLException => Exn = Exn(_))
-                        (implicit isabelle: Isabelle, ec: ExecutionContext): Future[Exn] = {
+  // DOCUMENT
+  def recognizeException(exception: IsabelleMLException, fallback: IsabelleMLException => IsabelleMLException = identity)
+                        (implicit isabelle: Isabelle, ec: ExecutionContext): Future[IsabelleMLException] = {
     val id = exception.id
     for (DList(DString(typ), args @_*) <- Ops.recognizeException(DObject(id)).retrieve)
       yield typ match {
@@ -97,6 +99,7 @@ object Exn extends OperationCollection {
       }
   }
 
+  // DOCUMENT
   class ExceptionManager(isabelle: Isabelle) extends control.ExceptionManager {
     implicit val isa: Isabelle = isabelle
     import scala.concurrent.ExecutionContext.Implicits.global
@@ -105,7 +108,7 @@ object Exn extends OperationCollection {
     def setContext(ctxt: Context): Unit = context = ctxt
 
     override def createException(id: ID): Exception =
-      Await.result(recognizeException(Exn.unsafeFromId(id)), Duration.Inf)
+      Await.result(recognizeException(IsabelleMLException.unsafeFromId(isabelle, id)), Duration.Inf)
 
     private var messageOfException: MLFunction2[Option[Context], Data, String] = _
     def messageOf(id: ID): String = try {
@@ -123,11 +126,19 @@ object Exn extends OperationCollection {
   }
 }
 
-final class ErrorMLExn private[exceptions] (override val isabelle: Isabelle, override val id: Isabelle.ID, val msg: String) extends Exn(isabelle, id)
-final class FailMLExn private[exceptions] (override val isabelle: Isabelle, override val id: Isabelle.ID, val msg: String) extends Exn(isabelle, id)
-final class TheoryMLExn private[exceptions] (override val isabelle: Isabelle, override val id: Isabelle.ID, val msg: String, val theories: Theory*) extends Exn(isabelle, id)
-final class TermMLExn private[exceptions] (override val isabelle: Isabelle, override val id: Isabelle.ID, val msg: String, val terms: Term*) extends Exn(isabelle, id)
-final class TypeMLExn private[exceptions](override val isabelle: Isabelle, override val id: Isabelle.ID, val msg: String, val typs: Seq[Typ], val terms: Seq[Term]) extends Exn(isabelle, id)
-final class CtermMLExn private[exceptions] (override val isabelle: Isabelle, override val id: Isabelle.ID, val msg: String, val cterms: Cterm*) extends Exn(isabelle, id)
-final class ThmMLExn private[exceptions] (override val isabelle: Isabelle, override val id: Isabelle.ID, val msg: String, val index: Long, val theorems: Thm*) extends Exn(isabelle, id)
-final class MatchMLExn private[exceptions] (override val isabelle: Isabelle, override val id: Isabelle.ID) extends Exn(isabelle, id)
+/** Represents an ML exception `ERROR msg`. See [[Exn.ExceptionManager]] for a way to make [[Isabelle]] raise such exceptions instead of generic [[IsabelleMLException]]s. */
+final class ErrorMLExn private[exceptions] (override val isabelle: Isabelle, override val id: Isabelle.ID, val msg: String) extends IsabelleMLException(isabelle, id)
+/** Represents an ML exception `Fail msg`. See [[Exn.ExceptionManager]] for a way to make [[Isabelle]] raise such exceptions instead of generic [[IsabelleMLException]]s. */
+final class FailMLExn private[exceptions] (override val isabelle: Isabelle, override val id: Isabelle.ID, val msg: String) extends IsabelleMLException(isabelle, id)
+/** Represents an ML exception `THEORY (msg, theories)`. See [[Exn.ExceptionManager]] for a way to make [[Isabelle]] raise such exceptions instead of generic [[IsabelleMLException]]s. */
+final class TheoryMLExn private[exceptions] (override val isabelle: Isabelle, override val id: Isabelle.ID, val msg: String, val theories: Theory*) extends IsabelleMLException(isabelle, id)
+/** Represents an ML exception `TERM (msg, terms)`. See [[Exn.ExceptionManager]] for a way to make [[Isabelle]] raise such exceptions instead of generic [[IsabelleMLException]]s. */
+final class TermMLExn private[exceptions] (override val isabelle: Isabelle, override val id: Isabelle.ID, val msg: String, val terms: Term*) extends IsabelleMLException(isabelle, id)
+/** Represents an ML exception `TYPE (msg, typs, terms)`. See [[Exn.ExceptionManager]] for a way to make [[Isabelle]] raise such exceptions instead of generic [[IsabelleMLException]]s. */
+final class TypeMLExn private[exceptions](override val isabelle: Isabelle, override val id: Isabelle.ID, val msg: String, val typs: Seq[Typ], val terms: Seq[Term]) extends IsabelleMLException(isabelle, id)
+/** Represents an ML exception `CTERM (msg, cterms)`. See [[Exn.ExceptionManager]] for a way to make [[Isabelle]] raise such exceptions instead of generic [[IsabelleMLException]]s. */
+final class CtermMLExn private[exceptions] (override val isabelle: Isabelle, override val id: Isabelle.ID, val msg: String, val cterms: Cterm*) extends IsabelleMLException(isabelle, id)
+/** Represents an ML exception `THM (msg, index, theorems)`. See [[Exn.ExceptionManager]] for a way to make [[Isabelle]] raise such exceptions instead of generic [[IsabelleMLException]]s. */
+final class ThmMLExn private[exceptions] (override val isabelle: Isabelle, override val id: Isabelle.ID, val msg: String, val index: Long, val theorems: Thm*) extends IsabelleMLException(isabelle, id)
+/** Represents an ML exception `Match`. See [[Exn.ExceptionManager]] for a way to make [[Isabelle]] raise such exceptions instead of generic [[IsabelleMLException]]s. */
+final class MatchMLExn private[exceptions] (override val isabelle: Isabelle, override val id: Isabelle.ID) extends IsabelleMLException(isabelle, id)

@@ -19,6 +19,8 @@ trait ExceptionManager {
 /** Default implementation of [[ExceptionManager]].
  * Produces messages for all exceptions by pretty printing them in Isabelle with a `Pure` context.
  * Generated exceptions are always [[IsabelleMLException]] instances (no exception specific subclasses).
+ *
+ * See [[de.unruh.isabelle.pure.Exn.ExceptionManager]] for an alternative [[ExceptionManager]] that supports subclasses.
  **/
 class DefaultExceptionManager(isabelle: Isabelle) extends ExceptionManager {
   private var messageOfException: ID = _
@@ -38,5 +40,5 @@ class DefaultExceptionManager(isabelle: Isabelle) extends ExceptionManager {
       throw IsabelleMiscException("IsabelleMLException thrown in code for getting message of an IsabelleMLException")
   }
 
-  override def createException(id: ID): Exception = IsabelleMLException(isabelle, id)
+  override def createException(id: ID): Exception = IsabelleMLException.unsafeFromId(isabelle, id)
 }

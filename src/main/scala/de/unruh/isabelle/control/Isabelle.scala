@@ -1052,12 +1052,16 @@ case class IsabelleJEditException(message: String) extends IsabelleControllerExc
 case class IsabelleBuildException(message: String, errors: List[String])
   extends IsabelleControllerException(if (errors.nonEmpty) message + ": " + errors.last else message)
 /** Thrown in case of an error in the ML process (ML compilation errors, exceptions thrown by ML code) */
-case class IsabelleMLException(isabelle: Isabelle, id: ID) extends IsabelleControllerException(message = null) {
+class IsabelleMLException protected (val isabelle: Isabelle, val id: ID, private var _message: String = null)
+  extends IsabelleControllerException(message = _message) {
   override def getMessage: String = message
-  private var _message : String = _
   lazy val message: String = { _message = isabelle.exceptionManager.messageOf(id); _message }
   @Nullable def messageIfAvailable: String = _message
 }
+object IsabelleMLException {
+  def unsafeFromId(isabelle: Isabelle, id: ID) = new IsabelleMLException(isabelle, id)
+}
+
 /** Thrown in case of protocol errors in Isabelle process */
 case class IsabelleProtocolException(message: String) extends IsabelleControllerException(message)
 case class IsabelleMiscException(message: String) extends IsabelleControllerException(message)
