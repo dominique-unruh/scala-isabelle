@@ -9,7 +9,7 @@ import scala.concurrent.duration.Duration
  * An [[ExceptionManager]] is always associated with a given [[Isabelle]] instance.
  * You can set the [[ExceptionManager]] using the [[de.unruh.isabelle.control.Isabelle.SetupGeneral.exceptionManager]] option.
  * The current instance can be accessed as [[Isabelle.exceptionManager]].
- * Own implementation can start by subclassing [[DefaultExceptionManager]] (but do not have to).
+ * Own implementations can start by subclassing [[DefaultExceptionManager]] (but do not have to).
  */
 trait ExceptionManager {
   def createException(id: ID): Exception
