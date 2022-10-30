@@ -6,8 +6,7 @@
  - If this is the first RC for a new release, reset release-candidate to master
  - Update CHANGELOG.md if needed
  - Set correct date (today) for this version in CHANGELOG.md (only for releases)
- - Edit version in README.md
- - git commit (to be able to cherry pick those into master)
+ - git commit (to be able to cherry pick those changes separately into master)
  - Set version in build.sbt
  - git commit
  - sbt clean
@@ -20,6 +19,7 @@
  - git checkout master
  - Cherry pick commit with edits to CHANGELOG.md and README.md
  - Check (a while later): https://mvnrepository.com/artifact/de.unruh/scala-isabelle
+ - If final release, edit version in https://dominique-unruh.github.io/scala-isabelle/setup.html
 
 */
 

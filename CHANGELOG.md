@@ -1,8 +1,8 @@
 # Changelog
 
-## Development version
+## [0.4.1] – 2022-10-30
 
-Up to date till `be6194a`.
+Main changes are support for Isabelle2022 and improved support for handling of ML exceptions.
 
 ### Added
 
