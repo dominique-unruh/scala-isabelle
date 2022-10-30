@@ -1,9 +1,10 @@
 # Changelog
 
-## Snapshot
+## Development version
 
-Up to date till `74d693d`.
+Up to date till `be6194a`.
 
+* Supporting Isabelle2022.
 * `IsabelleException` was renamed to [`IsabelleMLException`](https://javadoc.io/static/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/IsabelleMLException.html).
   It is only used raised when exceptions occur in ML code.
   Use [`IsabelleMiscException`](https://javadoc.io/static/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/IsabelleMiscException.html)
@@ -16,6 +17,11 @@ Up to date till `74d693d`.
 * [`Isabelle`](https://javadoc.io/static/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/Isabelle.html):
   Can configure a different [`ExceptionHandler`](https://javadoc.io/static/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/ExceptionHandler.html)
   for handling exceptions in ML code (instead of raising [`IsabelleMLException`](https://javadoc.io/static/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/IsabelleMLException.html)s).
+  See [`MLException.ExceptionHandler`](https://javadoc.io/static/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/pure/exceptions/MLException.html#ExceptionHandler)
+  for an alternative to the default.
+* Added an ML value converter for [`IsabelleMLException`](https://javadoc.io/static/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/IsabelleMLException.html)s,
+  see [`MLException.simpleIsabelleMLExceptionConverter`](https://javadoc.io/static/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/pure/exceptions/MLException.html#simpleIsabelleMLExceptionConverter)
+  and [`MLException.distinguishingIsabelleMLExceptionConverter`](https://javadoc.io/static/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/pure/exceptions/MLException.html#distinguishingIsabelleMLExceptionConverter).
 * [`Symbols`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/misc/Symbols.html): 
   Supporting Unicode subscript symbols when converting between Isabelle symbols and Unicode.
   (See [constructor](https://javadoc.io/static/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/misc/Symbols.html#%3Cinit%3E(symbolsFile:java.net.URL,extraSymbols:Iterable[(String,Int)]):de.unruh.isabelle.misc.Symbols) 
@@ -24,8 +30,9 @@ Up to date till `74d693d`.
   Specify fallback translations for symbols (only used if the symbols table has no translation).
   (See [constructor](https://javadoc.io/static/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/misc/Symbols.html#%3Cinit%3E(symbolsFile:java.net.URL,extraSymbols:Iterable[(String,Int)]):de.unruh.isabelle.misc.Symbols)
   argument `extraSymbolsLowPri`.)
-
-
+* Isabelle is initialized with `quick_and_dirty` flag `true`, this means imported theories can use `sorry`.
+* [`Version.versionFromIsabelleDirectory`](https://javadoc.io/static/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/mlvalue/Version.html#versionFromIsabelleDirectory):
+  Guesses the version of an Isabelle distribution by looking at the Isabelle distribution directory (without initializing the Isabelle process).
 
 ## [0.4.0] – 2021-12-27
 
