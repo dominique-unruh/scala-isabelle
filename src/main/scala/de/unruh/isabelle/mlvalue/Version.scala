@@ -5,7 +5,6 @@ import org.log4s
 import org.log4s.Logger
 
 import java.nio.file.{Files, Path}
-import scala.concurrent.ExecutionContext
 import scala.util.matching.Regex.{Groups, Match}
 
 // Implicits
@@ -30,8 +29,8 @@ object Version extends OperationCollection {
   private lazy val isabelleVersionRegex = """^Isabelle(?<year>[0-9]+)(-(?<step>[0-9]+))?(-RC(?<rc>[0-9]+))?(:.*)?$""".r
   private lazy val isabelleVersionRegexExe = """^Isabelle((?<year>[0-9]+)(-(?<step>[0-9]+))?(-RC(?<rc>[0-9]+))?)(\.exe|\.plist)?$""".r
 
-  override protected def newOps(implicit isabelle: Isabelle, ec:  ExecutionContext): Ops = new Ops
-  protected class Ops(implicit isabelle: Isabelle, ec:  ExecutionContext) {
+  override protected def newOps(implicit isabelle: Isabelle): Ops = new Ops
+  protected class Ops(implicit isabelle: Isabelle) {
 //    MLValue.init()
     val versionString: String =
       try
@@ -54,7 +53,7 @@ object Version extends OperationCollection {
 
   /** The Isabelle version string (e.g., `"Isabelle2020: April 2020"`).
    * `"dev"` if the version string cannot be obtained (usually the case with Isabelle running directly from the development repository). */
-  def versionString(implicit isabelle: Isabelle, ec:  ExecutionContext): String = Ops.versionString
+  def versionString(implicit isabelle: Isabelle): String = Ops.versionString
 
   /** Guesses the version by inspecting the Isabelle home directory.
    * (A string such as `"2021-1-RC2"`.)
@@ -89,37 +88,37 @@ object Version extends OperationCollection {
   /** The year of this Isabelle version (e.g., 2020).
    *
    * If the version string could not be parsed, returns [[INVALID_YEAR]]. */
-  def year(implicit isabelle: Isabelle, ec:  ExecutionContext): Int = Ops.year
+  def year(implicit isabelle: Isabelle): Int = Ops.year
   /** The version within the current year.
    *
    * E.g. `Isabelle2020` would have `step=0`, and `Isabelle2020-1` would have `step=1`. */
-  def step(implicit isabelle: Isabelle, ec:  ExecutionContext): Int = Ops.step
+  def step(implicit isabelle: Isabelle): Int = Ops.step
   /** Number of the release candidate.
    *
    * E.g., `Isabelle2020-RC4` would have `rc=4`.
    * If this is not a release candidate, `rc=`[[NOT_RC]]. */
-  def rc(implicit isabelle: Isabelle, ec:  ExecutionContext): Int = Ops.rc
+  def rc(implicit isabelle: Isabelle): Int = Ops.rc
 
   /** True, if the current version is at least Isabelle2020 (including the release candidates).
    *
    * Unspecified behavior on development versions. */
-  def from2020(implicit isabelle: Isabelle, ec:  ExecutionContext): Boolean = year >= 2020
+  def from2020(implicit isabelle: Isabelle): Boolean = year >= 2020
 
   /** True, if the current version is at least Isabelle2021 (including the release candidates).
    *
    * Unspecified behavior on development versions. */
-  def from2021(implicit isabelle: Isabelle, ec:  ExecutionContext): Boolean = year >= 2021
+  def from2021(implicit isabelle: Isabelle): Boolean = year >= 2021
 
   /** True, if the current version is at least Isabelle2021-1 (including the release candidates).
    *
    * Unspecified behavior on development versions. */
-  def from2021_1(implicit isabelle: Isabelle, ec:  ExecutionContext): Boolean =
+  def from2021_1(implicit isabelle: Isabelle): Boolean =
     (year == 2021 && step >= 1) || year > 2021
 
   /** True, if the current version is at least Isabelle2022 (including the release candidates).
    *
    * Unspecified behavior on development versions. */
-  def from2022(implicit isabelle: Isabelle, ec: ExecutionContext): Boolean = year >= 2022
+  def from2022(implicit isabelle: Isabelle): Boolean = year >= 2022
 
   private val logger = log4s.getLogger
 }

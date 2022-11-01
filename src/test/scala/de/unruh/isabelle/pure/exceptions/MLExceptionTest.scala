@@ -10,7 +10,6 @@ import scala.concurrent.duration.Duration
 import scala.reflect.ClassTag
 
 // Implicits
-import scala.concurrent.ExecutionContext.Implicits.global
 import de.unruh.isabelle.mlvalue.Implicits._
 import de.unruh.isabelle.pure.Implicits._
 

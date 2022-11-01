@@ -62,7 +62,7 @@ public class JavaExample {
             Typ typ = abs.typ();
             Term body = abs.body();
 
-            return Abs.apply(name, typ, replace(body), isabelle, global());
+            return Abs.apply(name, typ, replace(body), isabelle);
         }
 
         // case App(t1, t2) => App(replace(t1), replace(t2))
@@ -73,7 +73,7 @@ public class JavaExample {
             Term t1 = app.fun();
             Term t2 = app.arg();
 
-            return App.apply(replace(t1), replace(t2), isabelle, global());
+            return App.apply(replace(t1), replace(t2), isabelle);
         }
 
         // case _ => term
@@ -100,12 +100,10 @@ public class JavaExample {
                     () -> replace2(x.v()),
 
                     Abs(name, typ, body),
-                    () -> Abs.apply(name.v(), typ.v(), replace2(body.v()),
-                            isabelle, global()),
+                    () -> Abs.apply(name.v(), typ.v(), replace2(body.v()), isabelle),
 
                     App(t1, t2),
-                    () -> App.apply(replace2(t1.v()), replace2(t2.v()),
-                            isabelle, global()),
+                    () -> App.apply(replace2(t1.v()), replace2(t2.v()), isabelle),
 
                     Any,
                     () -> term);
@@ -127,31 +125,31 @@ public class JavaExample {
         isabelle = new Isabelle(setup);
 
         // Load the Isabelle/HOL theory "Main" and create a context object
-        Context ctxt = Context.apply("Main", isabelle, global());
+        Context ctxt = Context.apply("Main", isabelle);
 
         // Create a term by parsing a string
-        Term term = Term.apply(ctxt, "x+0 = (y::nat)*1", Symbols.globalInstance(), isabelle, global());
+        Term term = Term.apply(ctxt, "x+0 = (y::nat)*1", Symbols.globalInstance(), isabelle);
 
         // Replace x+0 by x in the term above
         Term term2 = replace(term);
 
         // And pretty print the term
-        out.println("term2: " + term2.pretty(ctxt, Symbols.globalInstance(), global()));
+        out.println("term2: " + term2.pretty(ctxt, Symbols.globalInstance()));
         // ==> term2: x = y * 1
 
         // Compile an ML function that can be executed directly in the Isabelle process
         MLFunction2<Context, Term, Term> simplify =
                 MLValue.compileFunction("fn (ctxt,t) => Thm.cterm_of ctxt t |> Simplifier.asm_full_rewrite ctxt " +
                         "|> Thm.rhs_of |> Thm.term_of",
-                        isabelle, global(),
+                        isabelle,
                         contextConverter(), termConverter(), termConverter());
 
         // Simplify term2
         Term term3 = simplify
-                .apply(ctxt, term2, isabelle, global(), contextConverter(), termConverter())
-                .retrieveNow(termConverter(), isabelle, global());
+                .apply(ctxt, term2, isabelle, contextConverter(), termConverter())
+                .retrieveNow(termConverter(), isabelle);
 
-        out.println("term3: " + term3.pretty(ctxt, Symbols.globalInstance(), global()));
+        out.println("term3: " + term3.pretty(ctxt, Symbols.globalInstance()));
         // ==> term3: x = y
 
         // Destroy to save resources. (Not needed if the application ends here anyway.)

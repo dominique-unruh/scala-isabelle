@@ -7,7 +7,6 @@ import de.unruh.isabelle.mlvalue.{MLFunction, MLValue}
 import de.unruh.isabelle.mlvalue.Implicits._
 import org.scalatest.funsuite.AnyFunSuite
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import Implicits._
 
 class PathConverterTest extends AnyFunSuite {

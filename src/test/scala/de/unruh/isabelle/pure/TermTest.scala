@@ -7,8 +7,6 @@ import de.unruh.isabelle.pure.TermTest.assertRecursivelyConcrete
 import org.scalatest.Assertions
 import org.scalatest.funsuite.AnyFunSuite
 
-import scala.concurrent.ExecutionContext.Implicits.global
-
 class TermTest extends AnyFunSuite {
   lazy val ctxt: Context = Context("Main")
 

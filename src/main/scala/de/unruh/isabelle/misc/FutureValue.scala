@@ -1,5 +1,7 @@
 package de.unruh.isabelle.misc
 
+import de.unruh.isabelle.control.Isabelle
+
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
@@ -28,8 +30,8 @@ trait FutureValue {
    *
    * Roughly the same as `[[scala.concurrent.Future.apply Future]] { this.[[force]] }`.
    */
-  def forceFuture(implicit ec: ExecutionContext): Future[this.type] =
-    for (_ <- someFuture) yield this
+  def forceFuture(implicit isabelle: Isabelle): Future[this.type] =
+    someFuture.map[this.type](_ => this)(isabelle.executionContext)
 
   /** Returns a future that completes when the computation of this object is complete.
    * (Or that holds an exception if that computation throws an exception.)

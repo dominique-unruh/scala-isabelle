@@ -4,7 +4,6 @@ import org.scalatest.funsuite.AnyFunSuite
 
 // Implicits
 import de.unruh.isabelle.control.IsabelleTest.isabelle
-import scala.concurrent.ExecutionContext.Implicits.global
 import Implicits._
 
 class FunctionConverterTest extends AnyFunSuite {

@@ -4,7 +4,6 @@ import de.unruh.isabelle.control.IsabelleTest.isabelle
 import org.scalatest.funsuite.AnyFunSuite
 
 // Implicits
-import scala.concurrent.ExecutionContext.Implicits.global
 import de.unruh.isabelle.pure.Implicits._
 
 

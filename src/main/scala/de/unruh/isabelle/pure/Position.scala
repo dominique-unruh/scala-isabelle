@@ -4,8 +4,6 @@ import de.unruh.isabelle.control.Isabelle
 import de.unruh.isabelle.mlvalue.{MLValue, MLValueWrapper}
 import de.unruh.isabelle.mlvalue.MLValue.compileValue
 
-import scala.concurrent.ExecutionContext
-
 /** Represents a position (ML type `Position.T`) in the Isabelle process.
  *
  * An instance of this class is merely a thin wrapper around an [[mlvalue.MLValue MLValue]],
@@ -24,12 +22,12 @@ object Position extends MLValueWrapper.Companion[Position] {
 
   override protected def instantiate(mlValue: MLValue[Position]): Position = new Position(mlValue)
 
-  protected class Ops(implicit isabelle: Isabelle, ec: ExecutionContext) extends super.Ops {
+  protected class Ops(implicit isabelle: Isabelle) extends super.Ops {
     lazy val none: Position = compileValue[Position]("Position.none").retrieveNow
   }
 
   /** Represents an unspecified position (`Position.none` in ML). */
-  def none(implicit isabelle: Isabelle, ec: ExecutionContext): Position = Ops.none
+  def none(implicit isabelle: Isabelle): Position = Ops.none
 
-  override protected def newOps(implicit isabelle: Isabelle, ec: ExecutionContext): Ops = new Ops
+  override protected def newOps(implicit isabelle: Isabelle): Ops = new Ops
 }

@@ -10,7 +10,6 @@ import de.unruh.isabelle.pure.Context
 // Implicits
 import de.unruh.isabelle.mlvalue.Implicits._
 import de.unruh.isabelle.pure.Implicits._
-import scala.concurrent.ExecutionContext.Implicits.global
 
 object Example {
   def main(args: Array[String]): Unit = {

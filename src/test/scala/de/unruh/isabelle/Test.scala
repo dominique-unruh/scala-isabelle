@@ -18,7 +18,6 @@ import scala.util.control.Breaks.{break, breakable}
 
 // Implicits
 import de.unruh.isabelle.control.IsabelleTest.isabelle
-import scala.concurrent.ExecutionContext.Implicits.global
 import de.unruh.isabelle.mlvalue.Implicits._
 import de.unruh.isabelle.pure.Implicits._
 

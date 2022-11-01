@@ -4,7 +4,6 @@ import org.log4s
 import org.log4s.Logger
 
 import scala.annotation.tailrec
-import scala.concurrent.ExecutionContext
 
 /**
   * This is a utility trait for handling a common use case when working with [[Isabelle]]. We illustrate this with an example:
@@ -22,7 +21,7 @@ import scala.concurrent.ExecutionContext
   *   isabelle.executeMLCodeNow("exception E_Real of real")
   *   private val fromStringID : Future[Isabelle.ID] = // Converts 'E_String str' into 'E_Real real'
   *     isabelle.storeValue("E_Function (fn E_String str => E_Real (Option.valOf (Real.fromString str)))")
-  *   def fromString(string: String)(implicit ec: ExecutionContext) : Future[Isabelle.ID] = for (
+  *   def fromString(string: String) : Future[Isabelle.ID] = for (
   *       strId <- isabelle.storeString(string);
   *       fromStr <- fromStringID;
   *       real <- isabelle.applyFunction(fromStr, strId))
@@ -37,14 +36,14 @@ import scala.concurrent.ExecutionContext
   * An obvious solution would be to make `Real` a class with an `isabelle: Isabelle` parameter.
   * However, that would make it less convenient to use `Real`: We need to explicitly create the `Real` and
   * keep track of it. Especially if the code that is responsible for the `Real` instance is not the code
-  * that creates the [[Isabelle]] instance, this might be compilcated.
+  * that creates the [[Isabelle]] instance, this might be complicated.
   *
   * A more user-friendly solution is therefore to keep `Real` as an object
   * and to pass the [[Isabelle]] instance as an implicit parameter to `Real.fromString`. However, this means `isabelle`
   * is not available outside `Real.fromString`, so we have to perform the initialization inside `fromString`:
   * {{{
   * object Real {
-  *   def fromString(string: String)(implicit isabelle: Isabelle, ec: ExecutionContext) : Future[Isabelle.ID] = {
+  *   def fromString(string: String)(implicit isabelle: Isabelle) : Future[Isabelle.ID] = {
   *     isabelle.executeMLCodeNow("exception E_Real of real")
   *     val fromStringID : Future[Isabelle.ID] =
   *       isabelle.storeValue("E_Function (fn E_String str => E_Real (Option.valOf (Real.fromString str)))")
@@ -70,13 +69,13 @@ import scala.concurrent.ExecutionContext
   * All this is made easy by the [[OperationCollection]] trait. The above code can be rewritten as follows:
   * {{{
   * object Real extends OperationCollection {
-  *   override protected def newOps(implicit isabelle: Isabelle, ec: ExecutionContext): Ops = new Ops()
-  *   protected class Ops(implicit val isabelle: Isabelle, ec: ExecutionContext) {
+  *   override protected def newOps(implicit isabelle: Isabelle): Ops = new Ops()
+  *   protected class Ops(implicit val isabelle: Isabelle) {
   *     isabelle.executeMLCodeNow("exception E_Real of real")
   *     val fromStringID : Future[Isabelle.ID] = // Converts 'E_String str' into 'E_Real real'
   *       isabelle.storeValue("E_Function (fn E_String str => E_Real (Option.valOf (Real.fromString str)))")
   *   }
-  *   def fromString(string: String)(implicit isabelle: Isabelle, ec: ExecutionContext) : Future[Isabelle.ID] = for (
+  *   def fromString(string: String)(implicit isabelle: Isabelle) : Future[Isabelle.ID] = for (
   *       strId <- isabelle.storeString(string);
   *       fromStr <- Ops.fromStringID;
   *       real <- isabelle.applyFunction(fromStr, strId))
@@ -92,8 +91,8 @@ import scala.concurrent.ExecutionContext
   * In general, [[OperationCollection]] is used with the following boilerplate:
   * {{{
   * object ObjectName extends OperationCollection {
-  *   override protected def newOps(implicit isabelle: Isabelle, ec: ExecutionContext): Ops = new Ops()
-  *   protected class Ops(implicit val isabelle: Isabelle, ec: ExecutionContext) {
+  *   override protected def newOps(implicit isabelle: Isabelle): Ops = new Ops()
+  *   protected class Ops(implicit val isabelle: Isabelle) {
   *     // arbitrary initialization code that is specific to the Isabelle instance `isabelle`
   *   }
   *   // code that uses Ops like an object
@@ -103,7 +102,7 @@ import scala.concurrent.ExecutionContext
   * - Ops must be not be called differently
   * - In `protected class Ops`, `protected` can be replaced by something weaker if the operations should be accessible
   *   outside the current object (e.g. `protected[packagename]`)
-  * - When `Obs` is used like an object, implicit of types [[Isabelle]] and [[scala.concurrent.ExecutionContext]] must be in scope
+  * - When `Obs` is used like an object, an implicit of type [[Isabelle]] must be in scope
   * - The function `newOps` must be defined exactly as specified here
   */
 trait OperationCollection {
@@ -113,18 +112,17 @@ trait OperationCollection {
   protected type Ops
 
   /** Should construct an instance of type [[Ops]] */
-  protected def newOps(implicit isabelle: Isabelle, ec: ExecutionContext): Ops
+  protected def newOps(implicit isabelle: Isabelle): Ops
 
   /** Data structure optimized for very few (usually exactly 1) entries */
   private var opsInstances: List[(Isabelle, Ops)] = Nil
 
-  private def addInstance(isabelle: Isabelle, ec: ExecutionContext): Ops = synchronized {
+  private def addInstance(isabelle: Isabelle): Ops = synchronized {
     def add() = {
       logger.debug(s"Adding Ops instance in ${getClass.getName} for $isabelle")
       assert(isabelle != null, "Isabelle is null")
-      assert(ec != null, "Execution context is null")
       isabelle.checkDestroyed()
-      val ops = newOps(isabelle, ec)
+      val ops = newOps(isabelle)
       opsInstances = (isabelle, ops) :: opsInstances.filterNot(_._1.isDestroyed)
       ops
     }
@@ -146,13 +144,13 @@ trait OperationCollection {
    * (If you see this doc string in a class different from [[control.OperationCollection OperationCollection]] but no definition of the
    * class [[Ops]], treat this function as if it was private.)
    */
-  def Ops(implicit isabelle: Isabelle, ec: ExecutionContext): Ops = {
+  def Ops(implicit isabelle: Isabelle): Ops = {
     @tailrec
     def get(instances: List[(Isabelle, Ops)]): Ops = instances match {
       case (isabelle2, ops) :: rest =>
         if (isabelle2 == isabelle) ops
         else get(rest)
-      case Nil => addInstance(isabelle, ec)
+      case Nil => addInstance(isabelle)
     }
 
     get(opsInstances)
@@ -163,9 +161,9 @@ trait OperationCollection {
    * has happened (e.g., declarations of ML types via [[control.Isabelle.executeMLCodeNow Isabelle.executeMLCodeNow]]) even if it does not access
    * any of the fields in the [[Ops]] class.
    *
-   * Can safely be called several times with the same `isabelle` and/or `executionContext`.
+   * Can safely be called several times with the same `isabelle`.
    */
-  def init()(implicit isabelle: Isabelle, executionContext: ExecutionContext): Unit =
+  def init()(implicit isabelle: Isabelle): Unit =
     Ops
 }
 

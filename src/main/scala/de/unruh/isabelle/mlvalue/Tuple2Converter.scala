@@ -4,8 +4,10 @@ import de.unruh.isabelle.control.Isabelle
 import de.unruh.isabelle.control.Isabelle.{DList, DObject}
 import de.unruh.isabelle.mlvalue.MLValue.{Converter, Ops}
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 
+// Implicits
+import de.unruh.isabelle.control.Isabelle.executionContext
 import Implicits._
 
 /**
@@ -18,14 +20,14 @@ import Implicits._
  * @see MLValue.Converter for explanations what [[MLValue.Converter Converter]]s are for.
  */
 @inline final class Tuple2Converter[A, B](converterA: Converter[A], converterB: Converter[B]) extends Converter[(A, B)] {
-  @inline override def retrieve(value: MLValue[(A, B)])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[(A, B)] = {
+  @inline override def retrieve(value: MLValue[(A, B)])(implicit isabelle: Isabelle): Future[(A, B)] = {
     for (DList(DObject(aID), DObject(bID)) <- Ops.retrieveTuple2(value.asInstanceOf[MLValue[(MLValue[A], MLValue[B])]]);
          a <- converterA.retrieve(MLValue.unsafeFromId[A](Future.successful(aID)));
          b <- converterB.retrieve(MLValue.unsafeFromId[B](Future.successful(bID))))
       yield (a, b)
   }
 
-  @inline override def store(value: (A, B))(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[(A, B)] = {
+  @inline override def store(value: (A, B))(implicit isabelle: Isabelle): MLValue[(A, B)] = {
     val (a, b) = value
     val mlA = converterA.store(a)
     val mlB = converterB.store(b)
@@ -33,8 +35,8 @@ import Implicits._
       .asInstanceOf[MLValue[(A, B)]]
   }
 
-  @inline override def exnToValue(implicit isabelle: Isabelle, ec: ExecutionContext): String = s"fn E_Pair (a,b) => ((${converterA.exnToValue}) a, (${converterB.exnToValue}) b) | ${MLValue.matchFailExn("Tuple2Converter.exnToValue")}"
-  @inline override def valueToExn(implicit isabelle: Isabelle, ec: ExecutionContext): String = s"fn (a,b) => E_Pair ((${converterA.valueToExn}) a, (${converterB.valueToExn}) b)"
+  @inline override def exnToValue(implicit isabelle: Isabelle): String = s"fn E_Pair (a,b) => ((${converterA.exnToValue}) a, (${converterB.exnToValue}) b) | ${MLValue.matchFailExn("Tuple2Converter.exnToValue")}"
+  @inline override def valueToExn(implicit isabelle: Isabelle): String = s"fn (a,b) => E_Pair ((${converterA.valueToExn}) a, (${converterB.valueToExn}) b)"
 
-  override def mlType(implicit isabelle: Isabelle, ec: ExecutionContext): String = s"(${converterA.mlType}) * (${converterB.mlType})"
+  override def mlType(implicit isabelle: Isabelle): String = s"(${converterA.mlType}) * (${converterB.mlType})"
 }

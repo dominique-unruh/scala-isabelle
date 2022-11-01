@@ -4,9 +4,12 @@ import de.unruh.isabelle.control.Isabelle
 import de.unruh.isabelle.control.Isabelle.{DList, DObject}
 import de.unruh.isabelle.mlvalue.MLValue.{Converter, Ops, matchFailExn}
 
-import scala.concurrent.{ExecutionContext, Future}
-import Implicits._
+import scala.concurrent.Future
 import scalaz.Id.Id
+
+// Implicits
+import de.unruh.isabelle.control.Isabelle.executionContext
+import Implicits._
 
 /**
  * [[MLValue.Converter]] for type [[scala.Option Option]][A].
@@ -19,13 +22,13 @@ import scalaz.Id.Id
  * @see MLValue.Converter for explanations what [[MLValue.Converter Converter]]s are for.
  */
 @inline final class OptionConverter[A](implicit converter: Converter[A]) extends Converter[Option[A]] {
-  @inline override def store(value: Option[A])(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[Option[A]] = value match {
+  @inline override def store(value: Option[A])(implicit isabelle: Isabelle): MLValue[Option[A]] = value match {
     case None => Ops.optionNone
     case Some(x) =>
       Ops.optionSome(x)
   }
 
-  @inline override def retrieve(value: MLValue[Option[A]])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Option[A]] = {
+  @inline override def retrieve(value: MLValue[Option[A]])(implicit isabelle: Isabelle): Future[Option[A]] = {
     for (data <- Ops.retrieveOption[A](value.insertMLValue[Option,A]);
          option <- data match {
            case DList() => Future.successful(None): Future[Option[A]]
@@ -34,8 +37,8 @@ import scalaz.Id.Id
       yield option
   }
 
-  @inline override def exnToValue(implicit isabelle: Isabelle, ec: ExecutionContext): String = s"fn E_Option x => Option.map (${converter.exnToValue}) x | ${matchFailExn("OptionConverter.exnToValue")}"
-  @inline override def valueToExn(implicit isabelle: Isabelle, ec: ExecutionContext): String = s"E_Option o Option.map (${converter.valueToExn})"
+  @inline override def exnToValue(implicit isabelle: Isabelle): String = s"fn E_Option x => Option.map (${converter.exnToValue}) x | ${matchFailExn("OptionConverter.exnToValue")}"
+  @inline override def valueToExn(implicit isabelle: Isabelle): String = s"E_Option o Option.map (${converter.valueToExn})"
 
-  override def mlType(implicit isabelle: Isabelle, ec: ExecutionContext): String = s"(${converter.mlType}) option"
+  override def mlType(implicit isabelle: Isabelle): String = s"(${converter.mlType}) option"
 }

@@ -2,7 +2,6 @@ package de.unruh.isabelle.pure
 
 import java.nio.file.{Files, Path, Paths}
 import java.util.concurrent.ConcurrentHashMap
-
 import de.unruh.isabelle.control.{Isabelle, OperationCollection}
 import de.unruh.isabelle.misc.{FutureValue, Utils}
 import de.unruh.isabelle.mlvalue.MLValue.{Converter, compileFunction}
@@ -19,6 +18,7 @@ import scala.util.Random
 // Implicits
 import de.unruh.isabelle.mlvalue.Implicits._
 import de.unruh.isabelle.pure.Implicits._
+import de.unruh.isabelle.control.Isabelle.executionContext
 
 
 /** Represents a theory (ML type `theory`) in the Isabelle process.
@@ -81,7 +81,7 @@ final class Theory private [Theory](val name: String, val mlValue : MLValue[Theo
    */
   @deprecated("Use importMLStructure(String) instead","0.1.1")
   def importMLStructure(name: String, newName: String)
-                       (implicit isabelle: Isabelle, executionContext: ExecutionContext): Unit =
+                       (implicit isabelle: Isabelle): Unit =
     Ops.importMLStructure(this, name, newName).retrieveNow
 
   /** Imports an ML structure from a theory into the global ML namespace.
@@ -128,11 +128,12 @@ final class Theory private [Theory](val name: String, val mlValue : MLValue[Theo
    * }}}
    */
   // The example is tested in TheoryTest
-  def importMLStructureNow(name: String)(implicit isabelle: Isabelle, executionContext: ExecutionContext) : String =
+  def importMLStructureNow(name: String)(implicit isabelle: Isabelle) : String =
     Await.result(importMLStructure(name), Duration.Inf)
 
   /** Like [[importMLStructureNow]] but returns a future containing the name of the imported structure without delay. */
-  def importMLStructure(name: String)(implicit isabelle: Isabelle, executionContext: ExecutionContext) : Future[String] = {
+  def importMLStructure(name: String)(implicit isabelle: Isabelle) : Future[String] = {
+    implicit val executionContext: ExecutionContext = isabelle.executionContext
     import scalaz.syntax.id._
     val newName = Utils.freshName(name).capitalize
     for (_ <- Ops.importMLStructure(this, name, newName).retrieve)
@@ -146,7 +147,7 @@ final class Theory private [Theory](val name: String, val mlValue : MLValue[Theo
    * Note: a new proof context is initialized each time this method is invoked.
    * In time-critical situations, it may be best to invoke this method only once.
    * */
-  def context(implicit isabelle: Isabelle, executionContext: ExecutionContext): Context =
+  def context(implicit isabelle: Isabelle): Context =
     Ops.init_global(this).retrieveNow
 }
 
@@ -166,7 +167,7 @@ object Theory extends OperationCollection {
   def mergeTheories(mergedName: String = null,
                     endTheory: Boolean = true,
                     theories: Seq[Theory])
-                   (implicit isabelle: Isabelle, executionContext: ExecutionContext): Theory = {
+                   (implicit isabelle: Isabelle): Theory = {
     val mergedName2 =
       if (mergedName==null) Utils.freshName("Merged_Theory")
       else mergedName
@@ -175,7 +176,7 @@ object Theory extends OperationCollection {
   }
 
   /** Same as [[mergeTheories(me* mergeTheories]](theories = theories). */
-  def mergeTheories(theories: Theory*)(implicit isabelle: Isabelle, executionContext: ExecutionContext): Theory =
+  def mergeTheories(theories: Theory*)(implicit isabelle: Isabelle): Theory =
     mergeTheories(theories = theories)
 
   /** Registers session directories.
@@ -199,13 +200,13 @@ object Theory extends OperationCollection {
    * @param paths Pairs `(session, dir)`. Meaning that `dir` is a session directory for `session`.
    * @see [[Theory.apply(name:* Theory.apply(String)]]
    */
-  def registerSessionDirectoriesNow(paths: (String,Path)*)(implicit isabelle: Isabelle, ec: ExecutionContext): Unit =
+  def registerSessionDirectoriesNow(paths: (String,Path)*)(implicit isabelle: Isabelle): Unit =
     Await.result(registerSessionDirectories(paths : _*), Duration.Inf)
 
   /** Like [[registerSessionDirectoriesNow]] but returns a [[scala.concurrent.Future Future]]. Only once the future completes successfully,
    * the session directories are guaranteed to have been registered.
    **/
-  def registerSessionDirectories(paths: (String,Path)*)(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Unit] = {
+  def registerSessionDirectories(paths: (String,Path)*)(implicit isabelle: Isabelle): Future[Unit] = {
     var changed = false
     for ((session, path) <- paths) {
       val absPath = path.toAbsolutePath
@@ -245,11 +246,11 @@ object Theory extends OperationCollection {
    *
    * @see [[Mutex.wrapWithMutex]] for a helper function to do locking with an Isabelle [[Mutex]]
    **/
-  def mutex(implicit isabelle: Isabelle, executionContext: ExecutionContext): Mutex = Theory.Ops.theoryMutex
+  def mutex(implicit isabelle: Isabelle): Mutex = Theory.Ops.theoryMutex
 
-  override protected def newOps(implicit isabelle: Isabelle, ec: ExecutionContext): Ops = new Ops()
+  override protected def newOps(implicit isabelle: Isabelle): Ops = new Ops()
   //noinspection TypeAnnotation
-  protected[isabelle] class Ops(implicit val isabelle: Isabelle, ec: ExecutionContext) {
+  protected[isabelle] class Ops(implicit val isabelle: Isabelle) {
     import MLValue.compileFunction
 
 //    MLValue.init()
@@ -353,7 +354,7 @@ object Theory extends OperationCollection {
    * If you want to invoke `Thy_Info.use_thy` or related functions yourself, please use [[Theory.mutex]]
    * to avoid concurrent execution with this function.
    **/
-  def apply(name: String)(implicit isabelle: Isabelle, ec: ExecutionContext): Theory =
+  def apply(name: String)(implicit isabelle: Isabelle): Theory =
     Ops.loadTheoryInternal(Ops.theoryMutex, name).retrieveNow
 
   /** Retrieves a theory located at the path `path`.
@@ -368,7 +369,7 @@ object Theory extends OperationCollection {
    *
    * The note about thread-safety from [[apply(name* apply(String)]] applies for this function, too.
    **/
-  def apply(path: Path)(implicit isabelle: Isabelle, ec: ExecutionContext): Theory = {
+  def apply(path: Path)(implicit isabelle: Isabelle): Theory = {
     val filename = path.getFileName.toString
     if (!filename.endsWith(".thy"))
       throw new IllegalArgumentException("Theory file must end in .thy")
@@ -385,14 +386,14 @@ object Theory extends OperationCollection {
    * Available as an implicit value by importing [[de.unruh.isabelle.pure.Implicits]]`._`
    **/
   object TheoryConverter extends Converter[Theory] {
-    override def retrieve(value: MLValue[Theory])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Theory] =
+    override def retrieve(value: MLValue[Theory])(implicit isabelle: Isabelle): Future[Theory] =
       Future.successful(new Theory(mlValue = value, name="‹theory›"))
-    override def store(value: Theory)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[Theory] =
+    override def store(value: Theory)(implicit isabelle: Isabelle): MLValue[Theory] =
       value.mlValue
-    override def exnToValue(implicit isabelle: Isabelle, ec: ExecutionContext): String = "fn E_Theory thy => thy"
-    override def valueToExn(implicit isabelle: Isabelle, ec: ExecutionContext): String = "E_Theory"
+    override def exnToValue(implicit isabelle: Isabelle): String = "fn E_Theory thy => thy"
+    override def valueToExn(implicit isabelle: Isabelle): String = "E_Theory"
 
-    override def mlType(implicit isabelle: Isabelle, ec: ExecutionContext): String = "theory"
+    override def mlType(implicit isabelle: Isabelle): String = "theory"
   }
 
   private val logger = log4s.getLogger

@@ -3,8 +3,6 @@ package de.unruh.isabelle.pure
 import de.unruh.isabelle.misc.Symbols
 import org.jetbrains.annotations.NotNull
 
-import scala.concurrent.ExecutionContext
-
 /** Base trait for object that can be pretty printed using an Isabelle proof context ([[Context]]). */
 trait PrettyPrintable {
   /** Produces a string representation of this object.
@@ -13,7 +11,7 @@ trait PrettyPrintable {
    * @param symbols Instance of [[misc.Symbols Symbols]] for converting to Unicode. Default: global default instance
    *                [[misc.Symbols.globalInstance Symbols.globalInstance]]. Use [[prettyRaw]] to avoid conversion to Unicode.
    * */
-  @NotNull def pretty(@NotNull ctxt: Context, @NotNull symbols: Symbols = Symbols.globalInstance)(implicit ec: ExecutionContext): String =
+  @NotNull def pretty(@NotNull ctxt: Context, @NotNull symbols: Symbols = Symbols.globalInstance): String =
     symbols.symbolsToUnicode(prettyRaw(ctxt))
 
   /** Produces a string representation of this object.
@@ -23,5 +21,5 @@ trait PrettyPrintable {
    *
    * @param ctxt The Isabelle proof context to use (this contains syntax declarations etc.)
    */
-  def prettyRaw(ctxt: Context)(implicit ec: ExecutionContext): String
+  def prettyRaw(ctxt: Context): String
 }

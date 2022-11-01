@@ -15,6 +15,7 @@ import scala.concurrent.{Await, ExecutionContext, Future}
 // Implicits
 import de.unruh.isabelle.mlvalue.Implicits._
 import de.unruh.isabelle.pure.Implicits._
+import de.unruh.isabelle.control.Isabelle.executionContext
 
 /**
  * This class represents a typ (ML type `typ`) in Isabelle. It can be transferred to and from the Isabelle process
@@ -77,7 +78,7 @@ sealed abstract class Typ extends FutureValue with PrettyPrintable {
   /** [[control.Isabelle Isabelle]] instance relative to which this type was constructed. */
   implicit val isabelle : Isabelle
 
-  override def prettyRaw(ctxt: Context)(implicit ec: ExecutionContext): String =
+  override def prettyRaw(ctxt: Context): String =
     Ops.stringOfType(MLValue((ctxt, this))).retrieveNow
 
   /** Transforms this term into a [[ConcreteTyp]]. A [[ConcreteTyp]] guarantees
@@ -87,7 +88,7 @@ sealed abstract class Typ extends FutureValue with PrettyPrintable {
 
   /** Transforms this typ into a [[ConcreteTyp]] (see [[concrete]]).
    * In contrast to [[concrete]], it also replaces all subtypes by concrete subterms. */
-  def concreteRecursive(implicit isabelle: Isabelle, ec: ExecutionContext) : ConcreteTyp
+  def concreteRecursive(implicit isabelle: Isabelle) : ConcreteTyp
 
   /** Indicates whether [[concrete]] has already been initialized. (I.e.,
    * whether it can be accessed without delay and without incurring communication with
@@ -95,7 +96,7 @@ sealed abstract class Typ extends FutureValue with PrettyPrintable {
   def concreteComputed: Boolean
 
   /** `t -->: u` is shorthand for `Type("fun", t, u)`, i.e., for a function from `t` to `u`. */
-  def -->:(that: Typ)(implicit ec: ExecutionContext): Type = Type("fun", that, this)
+  def -->:(that: Typ): Type = Type("fun", that, this)
 
   /** Hash code compatible with [[equals]]. May fail with an exception, see [[equals]]. */
   override def hashCode(): Int = throw new NotImplementedError("Should be overridden")
@@ -116,16 +117,13 @@ sealed abstract class Typ extends FutureValue with PrettyPrintable {
     case (t1: Ctyp, t2: Typ) => t1.mlValueTyp == t2
     case (t1: Typ, t2: Ctyp) => t1 == t2.mlValueTyp
     case (t1: MLValueTyp, t2: MLValueTyp) =>
-      import ExecutionContext.Implicits.global
       if (Await.result(t1.mlValue.id, Duration.Inf) == Await.result(t2.mlValue.id, Duration.Inf)) true
       else if (t1.concreteComputed && t2.concreteComputed) t1.concrete == t2.concrete
       else Ops.equalsTyp(t1,t2).retrieveNow
     case (t1: MLValueTyp, t2: Typ) =>
-      import ExecutionContext.Implicits.global
       if (t1.concreteComputed) t1.concrete == t2
       else Ops.equalsTyp(t1,t2).retrieveNow
     case (t1: Typ, t2: MLValueTyp) =>
-      import ExecutionContext.Implicits.global
       if (t2.concreteComputed) t1 == t2.concrete
       else Ops.equalsTyp(t1,t2).retrieveNow
     case _ => false
@@ -159,7 +157,7 @@ sealed abstract class ConcreteTyp extends Typ {
 /** A [[Typ]] that is stored in the Isabelle process's object store
  * and may or may not be known in Scala. Use [[concrete]] to
  * get a representation of the same type as a [[ConcreteTyp]]. */
-final class MLValueTyp(val mlValue: MLValue[Typ])(implicit val isabelle: Isabelle, ec: ExecutionContext) extends Typ {
+final class MLValueTyp(val mlValue: MLValue[Typ])(implicit val isabelle: Isabelle) extends Typ {
   @inline override def concreteComputed: Boolean = concreteLoaded
   @volatile private var concreteLoaded = false
 
@@ -187,7 +185,7 @@ final class MLValueTyp(val mlValue: MLValue[Typ])(implicit val isabelle: Isabell
     typ
   }
 
-  override def concreteRecursive(implicit isabelle: Isabelle, ec: ExecutionContext): ConcreteTyp = concrete.concreteRecursive
+  override def concreteRecursive(implicit isabelle: Isabelle): ConcreteTyp = concrete.concreteRecursive
 
   override def hashCode(): Int = concrete.hashCode()
 
@@ -205,7 +203,7 @@ final class MLValueTyp(val mlValue: MLValue[Typ])(implicit val isabelle: Isabell
  * A [[Ctyp]] is always well-formed relative to the context for which it was
  * created (this is ensured by the Isabelle trusted core).
  **/
-final class Ctyp private(val ctypMlValue: MLValue[Ctyp])(implicit val isabelle: Isabelle, ec: ExecutionContext) extends Typ {
+final class Ctyp private(val ctypMlValue: MLValue[Ctyp])(implicit val isabelle: Isabelle) extends Typ {
   /** Returns this term as an `MLValue[Typ]` (not `MLValue[Ctyp]`). The difference is crucial
    * because `MLValue[_]` is not covariant. So for invoking ML functions that expect an argument of type `typ`, you
    * need to get an `MLValue[Typ]`. In contrast, [[ctypMlValue]] returns this type as an `MLValue[Ctyp]`. */
@@ -218,7 +216,7 @@ final class Ctyp private(val ctypMlValue: MLValue[Ctyp])(implicit val isabelle: 
   /** Transforms this [[Ctyp]] into an [[MLValueTyp]]. */
   private [pure] def mlValueTyp = new MLValueTyp(mlValue)
 
-  override def prettyRaw(ctxt: Context)(implicit ec: ExecutionContext): String =
+  override def prettyRaw(ctxt: Context): String =
     Ops.stringOfCtyp(MLValue((ctxt, this))).retrieveNow
 
   override lazy val concrete: ConcreteTyp = new MLValueTyp(mlValue).concrete
@@ -227,7 +225,7 @@ final class Ctyp private(val ctypMlValue: MLValue[Ctyp])(implicit val isabelle: 
     if (mlValueLoaded) mlValueTyp.concreteComputed
     else false
 
-  def concreteRecursive(implicit isabelle: Isabelle, ec: ExecutionContext): ConcreteTyp = mlValueTyp.concreteRecursive
+  def concreteRecursive(implicit isabelle: Isabelle): ConcreteTyp = mlValueTyp.concreteRecursive
 
   override def hashCode(): Int = concrete.hashCode()
 
@@ -244,7 +242,7 @@ object Ctyp {
    * is just a wrapper around an [[mlvalue.MLValue MLValue]][[[Ctyp]]], this operation does not
    * require any communication with the Isabelle process. */
   def apply(mlValue: MLValue[Ctyp])
-           (implicit isabelle: Isabelle, executionContext: ExecutionContext) =
+           (implicit isabelle: Isabelle) =
     new Ctyp(mlValue)
 
   /** Converts a [[Typ]] into a [[Ctyp]]. This involves type-checking (relative to the
@@ -254,7 +252,7 @@ object Ctyp {
    * (Which guarantees that `typ` is also a valid typ w.r.t. `ctxt`.)
    * If this is not possible, `typ` is re-checked to create a ctyp.
    */
-  def apply(ctxt: Context, typ: Typ)(implicit isabelle: Isabelle, ec: ExecutionContext): Ctyp = typ match {
+  def apply(ctxt: Context, typ: Typ)(implicit isabelle: Isabelle): Ctyp = typ match {
     case ctyp : Ctyp =>
       // We cannot just return `ctyp` because it may be a ctyp w.r.t. the wrong context.
       // But re-checking the typ is wasteful if the typ was already checked w.r.t. this context.
@@ -263,7 +261,7 @@ object Ctyp {
   }
 
   /** Parses `string` as a typ and returns the result as a [[Ctyp]]. */
-  def apply(ctxt: Context, string: String)(implicit isabelle: Isabelle, ec: ExecutionContext) : Ctyp =
+  def apply(ctxt: Context, string: String)(implicit isabelle: Isabelle) : Ctyp =
     Ctyp(ctxt, Typ(ctxt, string))
 
   /** Representation of ctyps in ML.
@@ -274,21 +272,21 @@ object Ctyp {
    * Available as an implicit value by importing [[de.unruh.isabelle.pure.Implicits]]`._`
    **/
   object CtypConverter extends Converter[Ctyp] {
-    override def store(value: Ctyp)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[Ctyp] =
+    override def store(value: Ctyp)(implicit isabelle: Isabelle): MLValue[Ctyp] =
       value.ctypMlValue
-    override def retrieve(value: MLValue[Ctyp])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Ctyp] =
+    override def retrieve(value: MLValue[Ctyp])(implicit isabelle: Isabelle): Future[Ctyp] =
       Future.successful(new Ctyp(ctypMlValue = value))
-    override def exnToValue(implicit isabelle: Isabelle, ec: ExecutionContext): String = "fn (E_Ctyp t) => t"
-    override def valueToExn(implicit isabelle: Isabelle, ec: ExecutionContext): String = "E_Ctyp"
+    override def exnToValue(implicit isabelle: Isabelle): String = "fn (E_Ctyp t) => t"
+    override def valueToExn(implicit isabelle: Isabelle): String = "E_Ctyp"
 
-    override def mlType(implicit isabelle: Isabelle, ec: ExecutionContext): String = "ctyp"
+    override def mlType(implicit isabelle: Isabelle): String = "ctyp"
   }
 }
 
 /** A type constructor (ML constructor `Type`). [[name]] is the fully qualified name of the type constructor (e.g.,
  * `"List.list"`) and [[args]] its type parameters. */
 final class Type private[pure](val name: String, val args: List[Typ], val initialMlValue: MLValue[Typ]=null)
-                              (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTyp {
+                              (implicit val isabelle: Isabelle) extends ConcreteTyp {
   lazy val mlValue : MLValue[Typ] =
     if (initialMlValue!=null) initialMlValue
     else Ops.makeType(MLValue(name,args))
@@ -299,7 +297,7 @@ final class Type private[pure](val name: String, val args: List[Typ], val initia
   override def hashCode(): Int = new HashCodeBuilder(342534543,34774653)
     .append(name).toHashCode
 
-  override def concreteRecursive(implicit isabelle: Isabelle, ec: ExecutionContext): Type = {
+  override def concreteRecursive(implicit isabelle: Isabelle): Type = {
     var changed = false
     val args = for (a <- this.args) yield {
       val a2 = a.concreteRecursive
@@ -314,13 +312,14 @@ final class Type private[pure](val name: String, val args: List[Typ], val initia
 
   override def await: Unit = Await.ready(someFuture, Duration.Inf)
   override lazy val someFuture: Future[Any] = {
+    implicit val executionContext: ExecutionContext = isabelle.executionContext
     Future.traverse(args : Seq[Typ])(_.someFuture).map(_ => ())
   }
 }
 
 object Type {
   /** Create a type with type constructor `name` and type parameters `args`. */
-  def apply(name: String, args: Typ*)(implicit isabelle: Isabelle, ec: ExecutionContext) = new Type(name, args.toList)
+  def apply(name: String, args: Typ*)(implicit isabelle: Isabelle) = new Type(name, args.toList)
 
   /** Allows to pattern match types. E.g.,
    * {{{
@@ -344,7 +343,7 @@ object Type {
  * `"'a'"`) and [[sort]] its sort. (The sort is a list of fully qualified type class names.)
  * Note that type variables whose names do not start with ' are not legal in Isabelle. */
 final class TFree private[pure] (val name: String, val sort: List[String], val initialMlValue: MLValue[Typ]=null)
-                                (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTyp {
+                                (implicit val isabelle: Isabelle) extends ConcreteTyp {
   lazy val mlValue : MLValue[Typ] =
     if (initialMlValue!=null) initialMlValue
     else Ops.makeTFree(name, sort)
@@ -353,20 +352,20 @@ final class TFree private[pure] (val name: String, val sort: List[String], val i
     case _ => s"$name::{${sort.mkString(",")}}"
   }
 
-  override def concreteRecursive(implicit isabelle: Isabelle, ec: ExecutionContext): this.type = this
+  override def concreteRecursive(implicit isabelle: Isabelle): this.type = this
 
   override def hashCode(): Int = new HashCodeBuilder(335434265,34255633)
     .append(name).append(sort).toHashCode
 
   override def someFuture: Future[Any] = Future.successful(())
   override def await: Unit = {}
-  override def forceFuture(implicit ec: ExecutionContext): Future[this.type] = Future.successful(this)
+  override def forceFuture(implicit isabelle: Isabelle): Future[this.type] = Future.successful(this)
 }
 
 object TFree {
   /** Create a free type variable with name `name` and sort `sort`. */
   def apply(name: String, sort: Seq[String])
-           (implicit isabelle: Isabelle, ec: ExecutionContext) = new TFree(name, sort.toList)
+           (implicit isabelle: Isabelle) = new TFree(name, sort.toList)
 
   /** Allows to pattern match free type variables. E.g.,
    * {{{
@@ -393,7 +392,7 @@ object TFree {
  *
  * Note that type variables whose names do not start with ' are not legal in Isabelle. */
 final class TVar private[pure] (val name: String, val index: Int, val sort: List[String], val initialMlValue: MLValue[Typ]=null)
-                               (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTyp {
+                               (implicit val isabelle: Isabelle) extends ConcreteTyp {
   lazy val mlValue : MLValue[Typ] =
     if (initialMlValue!=null) initialMlValue
     else Ops.makeTVar(name,index,sort)
@@ -402,20 +401,20 @@ final class TVar private[pure] (val name: String, val index: Int, val sort: List
     case _ => s"?$name$index::{${sort.mkString(",")}}"
   }
 
-  override def concreteRecursive(implicit isabelle: Isabelle, ec: ExecutionContext): this.type = this
+  override def concreteRecursive(implicit isabelle: Isabelle): this.type = this
 
   override def hashCode(): Int = new HashCodeBuilder(342524363,354523249)
     .append(name).append(index).append(sort).toHashCode
 
   override def someFuture: Future[Any] = Future.successful(())
   override def await: Unit = {}
-  override def forceFuture(implicit ec: ExecutionContext): Future[this.type] = Future.successful(this)
+  override def forceFuture(implicit isabelle: Isabelle): Future[this.type] = Future.successful(this)
 }
 
 object TVar {
   /** Create a schematic type variable with name `name`, index `index`, and sort `sort`. */
   def apply(name: String, index: Int, sort: Seq[String])
-           (implicit isabelle: Isabelle, ec: ExecutionContext) = new TVar(name, index, sort.toList)
+           (implicit isabelle: Isabelle) = new TVar(name, index, sort.toList)
 
   /** Allows to pattern match schematic type variables. E.g.,
    * {{{
@@ -434,8 +433,8 @@ object TVar {
 }
 
 object Typ extends OperationCollection {
-  override protected def newOps(implicit isabelle: Isabelle, ec: ExecutionContext): Ops = new Ops()
-  protected[pure] class Ops(implicit val isabelle: Isabelle, ec: ExecutionContext) {
+  override protected def newOps(implicit isabelle: Isabelle): Ops = new Ops()
+  protected[pure] class Ops(implicit val isabelle: Isabelle) {
     import MLValue.compileFunction
 //    Context.init()
 //    isabelle.executeMLCodeNow("exception E_Typ of typ;; exception E_Ctyp of ctyp") // ;; exception E_TypList of typ list
@@ -479,7 +478,7 @@ object Typ extends OperationCollection {
    * @param string The string to be parsed
    * @param symbols Instance of [[misc.Symbols Symbols]] to convert `string` to Isabelle's internal encoding
    **/
-  def apply(context: Context, string: String, symbols : Symbols = Symbols.globalInstance)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValueTyp = {
+  def apply(context: Context, string: String, symbols : Symbols = Symbols.globalInstance)(implicit isabelle: Isabelle): MLValueTyp = {
     new MLValueTyp(Ops.readType(context, symbols.unicodeToSymbols(string)))
   }
 
@@ -491,14 +490,14 @@ object Typ extends OperationCollection {
    * Available as an implicit value by importing [[de.unruh.isabelle.pure.Implicits]]`._`
    **/
   object TypConverter extends Converter[Typ] {
-    override def retrieve(value: MLValue[Typ])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Typ] =
+    override def retrieve(value: MLValue[Typ])(implicit isabelle: Isabelle): Future[Typ] =
       Future.successful(new MLValueTyp(mlValue = value))
-    override def store(value: Typ)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[Typ] =
+    override def store(value: Typ)(implicit isabelle: Isabelle): MLValue[Typ] =
       value.mlValue
-    override def exnToValue(implicit isabelle: Isabelle, ec: ExecutionContext): String = "fn E_Typ typ => typ"
-    override def valueToExn(implicit isabelle: Isabelle, ec: ExecutionContext): String = "E_Typ"
+    override def exnToValue(implicit isabelle: Isabelle): String = "fn E_Typ typ => typ"
+    override def valueToExn(implicit isabelle: Isabelle): String = "E_Typ"
 
-    override def mlType(implicit isabelle: Isabelle, ec: ExecutionContext): String = "typ"
+    override def mlType(implicit isabelle: Isabelle): String = "typ"
   }
 }
 

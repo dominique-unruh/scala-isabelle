@@ -3,7 +3,7 @@ package de.unruh.isabelle.mlvalue
 import de.unruh.isabelle.control.{Isabelle, OperationCollection}
 import de.unruh.isabelle.misc.{FutureValue, Utils}
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 
 /** Base trait to simplify creating classes that contain a reference to a value in the Isabelle process.
  * Classes inheriting from this trait contain an [[MLValue]] that refers to a value in the Isabelle process.
@@ -38,7 +38,7 @@ import scala.concurrent.{ExecutionContext, Future}
  *  - Arbitrary additional methods and fields can be added to the definition of the class `Something` or
  *    the companion object `Something`. However, it should be noted that the constructor of `Something` can
  *    only have arguments [[MLValueWrapper.mlValue mlValue]]` : `[[MLValue]]`[Something]` and optionally
- *    an [[control.Isabelle Isabelle]] instance and an [[scala.concurrent.ExecutionContext ExecutionContext]]
+ *    an [[control.Isabelle Isabelle]] instance
  *    and not other user defined values. (This is
  *    because the constructor needs to be invoked by [[MLValueWrapper.Companion.instantiate Something.instantiate]]
  *    which does not have access to other data.)
@@ -47,8 +47,8 @@ import scala.concurrent.{ExecutionContext, Future}
  *    `Something`.
  *    Since the base trait [[MLValueWrapper.Companion]] already defines `Ops`, this needs to be done as follows:
  *    {{{
- *    override protected def newOps(implicit isabelle: Isabelle, ec: ExecutionContext): Ops = new Ops
- *    protected class Ops(implicit isabelle: Isabelle, ec: ExecutionContext) extends super.Ops {
+ *    override protected def newOps(implicit isabelle: Isabelle): Ops = new Ops
+ *    protected class Ops(implicit isabelle: Isabelle) extends super.Ops {
  *      // Example:
  *      lazy val test: MLFunction[Something,String] = compileFunction[Something,String]("... : something -> string")
  *    }
@@ -102,35 +102,35 @@ object MLValueWrapper {
      * object store as `EXN a`. If [[predefinedException]] is overwritten, this returns [[predefinedException]].
      * Otherwise it returns a fresh exception name (and ensures that that exception is declared).
      **/
-    final def exceptionName(implicit isabelle: Isabelle, ec: ExecutionContext): String = {
+    final def exceptionName(implicit isabelle: Isabelle): String = {
       init(); _exceptionName
     }
 
     /** A class for storing [[control.Isabelle Isabelle]]-instance-dependent declarations. See
      * [[control.OperationCollection OperationCollection]].
      * The `Ops` be overridden but must then inherit from this `Ops` class (`extends super.Ops`). */
-    protected class Ops(implicit isabelle: Isabelle, ec: ExecutionContext) {
+    protected class Ops(implicit isabelle: Isabelle) {
       if (predefinedException==null)
         isabelle.executeMLCodeNow(s"exception ${_exceptionName} of ($mlType)")
     }
 
     /** Must return a fresh instance of [[Ops]] (with implicit arguments `isabelle` and `ec`. */
-    override protected def newOps(implicit isabelle: Isabelle, ec: ExecutionContext): Ops = new Ops
+    override protected def newOps(implicit isabelle: Isabelle): Ops = new Ops
 
     /** The [[MLValue.Converter]] for `A`. Import this as an implicit to support using objects of
      * type `A` in [[MLFunction]]s etc. */
     final implicit object converter extends MLValue.Converter[A] {
-      override def mlType(implicit isabelle: Isabelle, ec: ExecutionContext): String = Companion.this.mlType
+      override def mlType(implicit isabelle: Isabelle): String = Companion.this.mlType
 
-      override def retrieve(value: MLValue[A])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[A] =
+      override def retrieve(value: MLValue[A])(implicit isabelle: Isabelle): Future[A] =
         Future.successful(instantiate(value))
 
-      override def store(value: A)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[A] =
+      override def store(value: A)(implicit isabelle: Isabelle): MLValue[A] =
         value.mlValue
 
-      override def exnToValue(implicit isabelle: Isabelle, ec: ExecutionContext): String = s"fn $exceptionName x => x"
+      override def exnToValue(implicit isabelle: Isabelle): String = s"fn $exceptionName x => x"
 
-      override def valueToExn(implicit isabelle: Isabelle, ec: ExecutionContext): String = exceptionName
+      override def valueToExn(implicit isabelle: Isabelle): String = exceptionName
     }
   }
 }
