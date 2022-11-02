@@ -69,11 +69,50 @@ import de.unruh.isabelle.pure.Implicits._
  * [[Ctyp]]s and regular terms (such as [[TFree]]) without explicit conversions. Similarly, patterns such as
  * `case TFree(name,sort) =>` also match [[Ctyp]]s.
  */
-sealed abstract class Typ extends FutureValue with PrettyPrintable {
+sealed abstract class Typ(
+                           /** Contain an [[MLValue]] containing this type, or `null`.
+                            * This is mutable, but it will only be replaced by other [[MLValue]]s containing equal types (or `null`).
+                            * This variable is updated without synchronization.
+                            * This is safe because it will only be replaced by equivalent values.
+                            * However, there is a potential of unnecessarily duplicating computations when a new MLValue is loaded.
+                            * This is mitigated by the fact that invoking an Isabelle function ([[MLFunction.apply]] is ansynchronous and
+                            * returns and [[MLValue]] very fast. Race conditions can still lead to duplicated loading (but this is just an
+                            * issue of wasted efficiency, not of safety).
+                            * */
+                           private var mlValueVariable: MLValue[Typ]
+                         ) extends FutureValue with PrettyPrintable {
+
+  protected def computeMlValue: MLValue[Typ]
+
+  /** Same as [[mlValue]] but may return `None` if no MLValue is currently available.
+   * (Does not trigger any computation.) */
+  final def peekMlValue: Option[MLValue[Typ]] = Option(mlValueVariable)
+
+  /** Is an [[mlValue]] currently available without computation? */
+  final def mlValueLoaded: Boolean = mlValueVariable != null
+
+  /** Forgets the [[MLValue]] associated with this term.
+   * Note that the method [[mlValue]] will automatically create a new one when invoked.
+   * Will be ignored for [[MLValueTerm]]s (because those cannot recover the term structure without the MLValue)
+   * */
+  def disconnectFromIsabelle(): Unit = mlValueVariable = null
+
   /** Transforms this type into an [[mlvalue.MLValue MLValue]] containing this type. This causes transfer of
    * the type to Isabelle only the first time it is accessed (and not at all if the type
-   * came from the Isabelle process in the first place). */
-  val mlValue : MLValue[Typ]
+   * came from the Isabelle process in the first place).
+   *
+   * The MLValue can change over time but will always be an MLValue for an equal type.
+   * */
+  final def mlValue: MLValue[Typ] = {
+    val val1 = mlValueVariable
+    if (val1 == null) {
+      val val2 = computeMlValue
+      mlValueVariable = val2
+      val2
+    } else
+      val1
+  }
+
   /** [[control.Isabelle Isabelle]] instance relative to which this type was constructed. */
   implicit val isabelle : Isabelle
 
@@ -100,34 +139,78 @@ sealed abstract class Typ extends FutureValue with PrettyPrintable {
   /** Hash code compatible with [[equals]]. May fail with an exception, see [[equals]]. */
   override def hashCode(): Int = throw new NotImplementedError("Should be overridden")
 
+  /** Makes this and that have the same [[MLValue]] if `condition` is true.
+   * `condition` must not be true if the two types are not equal!
+   *
+   * @return `condition` */
+  @inline final private def checkAndMerge(that: Typ, condition: Boolean): Boolean = if (condition) {
+    val thisVal = this.mlValueVariable
+    if (thisVal != null)
+      that.mlValueVariable = thisVal
+    else {
+      val thatVal = that.mlValueVariable
+      if (thatVal != null)
+        this.mlValueVariable = thatVal
+    }
+    true
+  } else
+    false
+
+  final private def sameId(that: Typ): Boolean = {
+    import ExecutionContext.Implicits.global
+    val mlValueThis = this.mlValueVariable
+    val mlValueThat = that.mlValueVariable
+    if (mlValueThis != null && mlValueThat != null) {
+      if (mlValueThis eq mlValueThat) true
+      else Await.result(for (thisId <- mlValueThis.id;
+                             thatId <- mlValueThat.id)
+      yield thisId == thatId,
+        Duration.Inf)
+    } else
+      false
+  }
+
   /** Equality of types. Returns true iff the two [[Typ]] instances represent the same type in
    * the Isabelle process. (E.g., a [[Ctyp]] and a [[TFree]] can be equal.) May throw an exception
    * if the computation of the terms fails. (But will not fail if [[await]] or a related
    * [[misc.FutureValue FutureValue]] method has returned successfully on both terms.)
+   *
+   * As a side effect, comparing two types makes their [[mlValue]]s equal (if the equality test returned true).
+   * This means that comparing terms can reduce memory use on the Isabelle side (because duplicate types are released),
+   * and future equality checks will be faster.
+   * Note: if both compared values already have ML Values, then the one from `this` will be copied to `that` (so the order matters).
    */
-  override def equals(that: Any): Boolean = (this, that) match {
-    case (t1, t2: AnyRef) if t1 eq t2 => true
-    case (t1: Type, t2: Type) => t1.name == t2.name && t1.args == t2.args
-    case (t1: TVar, t2: TVar) => t1.name == t2.name && t1.index == t2.index && t1.sort == t2.sort
-    case (t1: TFree, t2: TFree) => t1.name == t2.name && t1.sort == t2.sort
+  final override def equals(that: Any): Boolean = (this, that) match {
+    case (_, t2: AnyRef) if this eq t2 => true
+    case (_, t2: Typ) if sameId(t2) => true
+    case (t1: Type, t2: Type) => checkAndMerge(t2, t1.name == t2.name && t1.args == t2.args)
+    case (t1: TVar, t2: TVar) => checkAndMerge(t2, t1.name == t2.name && t1.index == t2.index && t1.sort == t2.sort)
+    case (t1: TFree, t2: TFree) => checkAndMerge(t2, t1.name == t2.name && t1.sort == t2.sort)
     case (t1: Ctyp, t2: Ctyp) =>
-      if (Await.result(t1.ctypMlValue.id, Duration.Inf) == Await.result(t2.ctypMlValue.id, Duration.Inf)) true
-      else t1.mlValueTyp == t2.mlValueTyp
-    case (t1: Ctyp, t2: Typ) => t1.mlValueTyp == t2
-    case (t1: Typ, t2: Ctyp) => t1 == t2.mlValueTyp
+      import ExecutionContext.Implicits.global
+      Await.result(for (t1id <- t1.ctypMlValue.id;
+                        t2id <- t2.ctypMlValue.id)
+      yield
+        if (t1id == t2id) true
+        else checkAndMerge(t2, t1.mlValueTyp == t2.mlValueTyp),
+        Duration.Inf)
+    case (t1: Ctyp, t2: Typ) => checkAndMerge(t2, t1.mlValueTyp == t2)
+    case (t1: Typ, t2: Ctyp) => checkAndMerge(t2, t1 == t2.mlValueTyp)
     case (t1: MLValueTyp, t2: MLValueTyp) =>
       import ExecutionContext.Implicits.global
-      if (Await.result(t1.mlValue.id, Duration.Inf) == Await.result(t2.mlValue.id, Duration.Inf)) true
-      else if (t1.concreteComputed && t2.concreteComputed) t1.concrete == t2.concrete
-      else Ops.equalsTyp(t1,t2).retrieveNow
+      checkAndMerge(t2,
+        if (t1.concreteComputed && t2.concreteComputed) t1.concrete == t2.concrete
+        else Ops.equalsTyp(t1, t2).retrieveNow)
     case (t1: MLValueTyp, t2: Typ) =>
       import ExecutionContext.Implicits.global
-      if (t1.concreteComputed) t1.concrete == t2
-      else Ops.equalsTyp(t1,t2).retrieveNow
+      checkAndMerge(t2,
+        if (t1.concreteComputed) t1.concrete == t2
+        else Ops.equalsTyp(t1,t2).retrieveNow)
     case (t1: Typ, t2: MLValueTyp) =>
       import ExecutionContext.Implicits.global
-      if (t2.concreteComputed) t1 == t2.concrete
-      else Ops.equalsTyp(t1,t2).retrieveNow
+      checkAndMerge(t2,
+        if (t2.concreteComputed) t1 == t2.concrete
+        else Ops.equalsTyp(t1,t2).retrieveNow)
     case _ => false
   }
 
@@ -148,7 +231,7 @@ sealed abstract class Typ extends FutureValue with PrettyPrintable {
  * that the Scala-type of the [[Typ]] ([[Type]],[[TFree]],[[TVar]]...) corresponds to the top-level
  * constructor on Isabelle side (`Type`, `TFree`, `TVar`).
  */
-sealed abstract class ConcreteTyp extends Typ {
+sealed abstract class ConcreteTyp(initialMlValue: MLValue[Typ]) extends Typ(initialMlValue) {
   /** @return this */
   override val concrete: this.type = this
 
@@ -159,7 +242,12 @@ sealed abstract class ConcreteTyp extends Typ {
 /** A [[Typ]] that is stored in the Isabelle process's object store
  * and may or may not be known in Scala. Use [[concrete]] to
  * get a representation of the same type as a [[ConcreteTyp]]. */
-final class MLValueTyp(val mlValue: MLValue[Typ])(implicit val isabelle: Isabelle, ec: ExecutionContext) extends Typ {
+final class MLValueTyp private[pure] (initialMLValue: MLValue[Typ])(implicit val isabelle: Isabelle, ec: ExecutionContext) extends Typ(initialMLValue) {
+  override protected def computeMlValue: MLValue[Typ] = throw new IllegalStateException("MLValueTyp.computeMLValue should never be called")
+
+  /** Does not do anything. */
+  override def disconnectFromIsabelle(): Unit = {}
+
   @inline override def concreteComputed: Boolean = concreteLoaded
   @volatile private var concreteLoaded = false
 
@@ -205,18 +293,13 @@ final class MLValueTyp(val mlValue: MLValue[Typ])(implicit val isabelle: Isabell
  * A [[Ctyp]] is always well-formed relative to the context for which it was
  * created (this is ensured by the Isabelle trusted core).
  **/
-final class Ctyp private(val ctypMlValue: MLValue[Ctyp])(implicit val isabelle: Isabelle, ec: ExecutionContext) extends Typ {
+final class Ctyp private(val ctypMlValue: MLValue[Ctyp])(implicit val isabelle: Isabelle, ec: ExecutionContext) extends Typ(null) {
   /** Returns this term as an `MLValue[Typ]` (not `MLValue[Ctyp]`). The difference is crucial
    * because `MLValue[_]` is not covariant. So for invoking ML functions that expect an argument of type `typ`, you
    * need to get an `MLValue[Typ]`. In contrast, [[ctypMlValue]] returns this type as an `MLValue[Ctyp]`. */
-  override lazy val mlValue: MLValue[Typ] = {
-    val result = Ops.typOfCtyp(ctypMlValue)
-    mlValueLoaded = true
-    result
-  }
-  private var mlValueLoaded = false
+  override protected def computeMlValue: MLValue[Typ] = Ops.typOfCtyp(ctypMlValue)
   /** Transforms this [[Ctyp]] into an [[MLValueTyp]]. */
-  private [pure] def mlValueTyp = new MLValueTyp(mlValue)
+  private [pure] lazy val mlValueTyp = new MLValueTyp(mlValue)
 
   override def prettyRaw(ctxt: Context)(implicit ec: ExecutionContext): String =
     Ops.stringOfCtyp(MLValue((ctxt, this))).retrieveNow
@@ -287,11 +370,9 @@ object Ctyp {
 
 /** A type constructor (ML constructor `Type`). [[name]] is the fully qualified name of the type constructor (e.g.,
  * `"List.list"`) and [[args]] its type parameters. */
-final class Type private[pure](val name: String, val args: List[Typ], val initialMlValue: MLValue[Typ]=null)
-                              (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTyp {
-  lazy val mlValue : MLValue[Typ] =
-    if (initialMlValue!=null) initialMlValue
-    else Ops.makeType(MLValue(name,args))
+final class Type private[pure](val name: String, val args: List[Typ], initialMlValue: MLValue[Typ]=null)
+                              (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTyp(initialMlValue) {
+  override protected def computeMlValue : MLValue[Typ] = Ops.makeType(MLValue(name,args))
   override def toString: String =
     if (args.isEmpty) name
     else s"$name(${args.mkString(", ")})"
@@ -307,7 +388,7 @@ final class Type private[pure](val name: String, val args: List[Typ], val initia
       a2
     }
     if (changed)
-      new Type(name, args, initialMlValue)
+      new Type(name, args, peekMlValue.orNull)
     else
       this
   }
@@ -343,11 +424,9 @@ object Type {
 /** A free type variable (ML constructor `TFree`). [[name]] is the name of the type variable (e.g.,
  * `"'a'"`) and [[sort]] its sort. (The sort is a list of fully qualified type class names.)
  * Note that type variables whose names do not start with ' are not legal in Isabelle. */
-final class TFree private[pure] (val name: String, val sort: List[String], val initialMlValue: MLValue[Typ]=null)
-                                (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTyp {
-  lazy val mlValue : MLValue[Typ] =
-    if (initialMlValue!=null) initialMlValue
-    else Ops.makeTFree(name, sort)
+final class TFree private[pure] (val name: String, val sort: List[String], initialMlValue: MLValue[Typ]=null)
+                                (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTyp(initialMlValue) {
+  override protected def computeMlValue : MLValue[Typ] = Ops.makeTFree(name, sort)
   override def toString: String = sort match {
     case List(clazz) => s"$name::$clazz"
     case _ => s"$name::{${sort.mkString(",")}}"
@@ -392,11 +471,9 @@ object TFree {
  * and [[index]]`=0`. And `?'b1` or `?'b.1` is a [[TVar]] with [[name]]`="'b"` and [[index]]`=1`.
  *
  * Note that type variables whose names do not start with ' are not legal in Isabelle. */
-final class TVar private[pure] (val name: String, val index: Int, val sort: List[String], val initialMlValue: MLValue[Typ]=null)
-                               (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTyp {
-  lazy val mlValue : MLValue[Typ] =
-    if (initialMlValue!=null) initialMlValue
-    else Ops.makeTVar(name,index,sort)
+final class TVar private[pure] (val name: String, val index: Int, val sort: List[String], initialMlValue: MLValue[Typ]=null)
+                               (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTyp(initialMlValue) {
+  override protected def computeMlValue : MLValue[Typ] = Ops.makeTVar(name,index,sort)
   override def toString: String = sort match {
     case List(clazz) => s"?$name$index::$clazz"
     case _ => s"?$name$index::{${sort.mkString(",")}}"
@@ -492,7 +569,7 @@ object Typ extends OperationCollection {
    **/
   object TypConverter extends Converter[Typ] {
     override def retrieve(value: MLValue[Typ])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Typ] =
-      Future.successful(new MLValueTyp(mlValue = value))
+      Future.successful(new MLValueTyp(initialMLValue = value))
     override def store(value: Typ)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[Typ] =
       value.mlValue
     override def exnToValue(implicit isabelle: Isabelle, ec: ExecutionContext): String = "fn E_Typ typ => typ"

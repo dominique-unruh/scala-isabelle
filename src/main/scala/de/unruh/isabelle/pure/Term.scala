@@ -69,11 +69,50 @@ import scala.util.control.Breaks
  * [[Cterm]]s and regular terms (such as [[Const]]) without explicit conversions. Similarly, patterns such as
  * `case Const(name,typ) =>` also match [[Cterm]]s.
  */
-sealed abstract class Term extends FutureValue with PrettyPrintable {
+sealed abstract class Term(
+                            /** Contain an [[MLValue]] containing this term, or `null`.
+                             * This is mutable, but it will only be replaced by other [[MLValue]]s containing equal terms (or `null`).
+                             * This variable is updated without synchronization.
+                             * This is safe because it will only be replaced by equivalent values.
+                             * However, there is a potential of unnecessarily duplicating computations when a new MLValue is loaded.
+                             * This is mitigated by the fact that invoking an Isabelle function ([[MLFunction.apply]] is ansynchronous and
+                             * returns and [[MLValue]] very fast. Race conditions can still lead to duplicated loading (but this is just an
+                             * issue of wasted efficiency, not of safety).
+                             * */
+                            private var mlValueVariable: MLValue[Term]
+                          ) extends FutureValue with PrettyPrintable {
+
+  protected def computeMlValue: MLValue[Term]
+
+  /** Same as [[mlValue]] but may return `None` if no MLValue is currently available.
+   * (Does not trigger any computation.) */
+  final def peekMlValue: Option[MLValue[Term]] = Option(mlValueVariable)
+
+  /** Is an [[mlValue]] currently available without computation? */
+  final def mlValueLoaded: Boolean = mlValueVariable != null
+
+  /** Forgets the [[MLValue]] associated with this term.
+   * Note that the method [[mlValue]] will automatically create a new one when invoked.
+   * Will be ignored for [[MLValueTerm]]s (because those cannot recover the term structure without the MLValue)
+   * */
+  def disconnectFromIsabelle(): Unit = mlValueVariable = null
+
   /** Transforms this term into an [[mlvalue.MLValue MLValue]] containing this term. This causes transfer of
    * the term to Isabelle only the first time it is accessed (and not at all if the term
-   * came from the Isabelle process in the first place). */
-  val mlValue : MLValue[Term]
+   * came from the Isabelle process in the first place).
+   *
+   * The MLValue can change over time but will always be an MLValue for an equal term.
+   * */
+  final def mlValue : MLValue[Term] = {
+    val val1 = mlValueVariable
+    if (val1 == null) {
+      val val2 = computeMlValue
+      mlValueVariable = val2
+      val2
+    } else
+      val1
+  }
+
   /** [[control.Isabelle Isabelle]] instance relative to which this term was constructed. */
   implicit val isabelle : Isabelle
 
@@ -95,42 +134,85 @@ sealed abstract class Term extends FutureValue with PrettyPrintable {
   def concreteComputed: Boolean
 
   /** `t $ u` is shorthand for [[App]]`(t,u)` */
-  def $(that: Term)(implicit ec: ExecutionContext): App = App(this, that)
+  final def $(that: Term)(implicit ec: ExecutionContext): App = App(this, that)
 
   /** Hash code compatible with [[equals]]. May fail with an exception, see [[equals]]. */
   override def hashCode(): Int = throw new NotImplementedError("Should be overridden")
+
+  /** Makes this and that have the same [[MLValue]] if `condition` is true.
+   * `condition` must not be true if the two terms are not equal!
+   * @return `condition` */
+  @inline final private def checkAndMerge(that: Term, condition: Boolean): Boolean = if (condition) {
+    val thisVal = this.mlValueVariable
+    if (thisVal != null)
+      that.mlValueVariable = thisVal
+    else {
+      val thatVal = that.mlValueVariable
+      if (thatVal != null)
+        this.mlValueVariable = thatVal
+    }
+    true
+  } else
+    false
+
+  final private def sameId(that: Term): Boolean = {
+    import ExecutionContext.Implicits.global
+    val mlValueThis = this.mlValueVariable
+    val mlValueThat = that.mlValueVariable
+    if (mlValueThis != null && mlValueThat != null) {
+      if (mlValueThis eq mlValueThat) true
+      else Await.result(for (thisId <- mlValueThis.id;
+                             thatId <- mlValueThat.id)
+      yield thisId == thatId,
+        Duration.Inf)
+    } else
+      false
+  }
 
   /** Equality of terms. Returns true iff the two [[Term]] instances represent the same term in
    * the Isabelle process. (E.g., a [[Cterm]] and a [[Const]] can be equal.) May throw an exception
    * if the computation of the terms fails. (But will not fail if [[await]] or a related [[misc.FutureValue FutureValue]] method has
    * returned successfully on both terms.)
+   *
+   * As a side effect, comparing two terms makes their [[mlValue]]s equal (if the equality test returned true).
+   * This means that comparing terms can reduce memory use on the Isabelle side (because duplicate terms are released),
+   * and future equality checks will be faster.
+   * Note: if both compared values already have ML Values, then the one from `this` will be copied to `that` (so the order matters).
    */
-  override def equals(that: Any): Boolean = (this, that) match {
-    case (t1, t2: AnyRef) if t1 eq t2 => true
-    case (t1: App, t2: App) => t1.fun == t2.fun && t1.arg == t2.arg
-    case (t1: Bound, t2: Bound) => t1.index == t2.index
-    case (t1: Var, t2: Var) => t1.name == t2.name && t1.index == t2.index && t1.typ == t2.typ
-    case (t1: Free, t2: Free) => t1.name == t2.name && t1.typ == t2.typ
-    case (t1: Const, t2: Const) => t1.name == t2.name && t1.typ == t2.typ
-    case (t1: Abs, t2: Abs) => t1.name == t2.name && t1.typ == t2.typ && t1.body == t2.body
+  final override def equals(that: Any): Boolean = (this, that) match {
+    case (_, t2: AnyRef) if this eq t2 => true
+    case (_, t2: Term) if sameId(t2) => true
+    case (t1: App, t2: App) => checkAndMerge(t2, t1.fun == t2.fun && t1.arg == t2.arg)
+    case (t1: Bound, t2: Bound) => checkAndMerge(t2, t1.index == t2.index)
+    case (t1: Var, t2: Var) => checkAndMerge(t2, t1.name == t2.name && t1.index == t2.index && t1.typ == t2.typ)
+    case (t1: Free, t2: Free) => checkAndMerge(t2, t1.name == t2.name && t1.typ == t2.typ)
+    case (t1: Const, t2: Const) => checkAndMerge(t2, t1.name == t2.name && t1.typ == t2.typ)
+    case (t1: Abs, t2: Abs) => checkAndMerge(t2, t1.name == t2.name && t1.typ == t2.typ && t1.body == t2.body)
     case (t1: Cterm, t2: Cterm) =>
-      if (Await.result(t1.ctermMlValue.id, Duration.Inf) == Await.result(t2.ctermMlValue.id, Duration.Inf)) true
-      else t1.mlValueTerm == t2.mlValueTerm
-    case (t1: Cterm, t2: Term) => t1.mlValueTerm == t2
-    case (t1: Term, t2: Cterm) => t1 == t2.mlValueTerm
+      import ExecutionContext.Implicits.global
+      Await.result(for (t1id <- t1.ctermMlValue.id;
+                        t2id <- t2.ctermMlValue.id)
+      yield
+        if (t1id == t2id) true
+        else checkAndMerge(t2, t1.mlValueTerm == t2.mlValueTerm),
+        Duration.Inf)
+    case (t1: Cterm, t2: Term) => checkAndMerge(t2, t1.mlValueTerm == t2)
+    case (t1: Term, t2: Cterm) => checkAndMerge(t2, t1 == t2.mlValueTerm)
     case (t1: MLValueTerm, t2: MLValueTerm) =>
       import ExecutionContext.Implicits.global
-      if (Await.result(t1.mlValue.id, Duration.Inf) == Await.result(t2.mlValue.id, Duration.Inf)) true
-      else if (t1.concreteComputed && t2.concreteComputed) t1.concrete == t2.concrete
-      else Ops.equalsTerm(t1,t2).retrieveNow
+      checkAndMerge(t2,
+        if (t1.concreteComputed && t2.concreteComputed) t1.concrete == t2.concrete
+        else Ops.equalsTerm(t1,t2).retrieveNow)
     case (t1: MLValueTerm, t2: Term) =>
       import ExecutionContext.Implicits.global
-      if (t1.concreteComputed) t1.concrete == t2
-      else Ops.equalsTerm(t1,t2).retrieveNow
+      checkAndMerge(t2,
+        if (t1.concreteComputed) t1.concrete == t2
+        else Ops.equalsTerm(t1,t2).retrieveNow)
     case (t1: Term, t2: MLValueTerm) =>
       import ExecutionContext.Implicits.global
-      if (t2.concreteComputed) t1 == t2.concrete
-      else Ops.equalsTerm(t1,t2).retrieveNow
+      checkAndMerge(t2,
+        if (t2.concreteComputed) t1 == t2.concrete
+        else Ops.equalsTerm(t1,t2).retrieveNow)
     case _ => false
   }
 
@@ -151,7 +233,7 @@ sealed abstract class Term extends FutureValue with PrettyPrintable {
    * This method is analogous to `fastype_of` in Isabelle/ML but avoids transferring the term to/from Isabelle when
    * determining the type.
    * */
-  def fastType(implicit executionContext: ExecutionContext) : Typ = {
+  final def fastType(implicit executionContext: ExecutionContext) : Typ = {
     import Breaks._
     tryBreakable {
       def typ(t: Term, env: List[Typ]): Typ = t match {
@@ -187,7 +269,7 @@ sealed abstract class Term extends FutureValue with PrettyPrintable {
  * that the type of the term ([[App]],[[Const]],[[Abs]]...) corresponds to the top-level
  * constructor on Isabelle side (`$`, `Const`, `Abs`, ...).
  */
-sealed abstract class ConcreteTerm extends Term {
+sealed abstract class ConcreteTerm(initialMlValue: MLValue[Term]) extends Term(initialMlValue) {
   /** @return this */
   @inline override val concrete: this.type = this
   /** @return true */
@@ -200,17 +282,13 @@ sealed abstract class ConcreteTerm extends Term {
  * A [[Cterm]] is always well-typed relative to the context for which it was
  * created (this is ensured by the Isabelle trusted core).
  **/
-final class Cterm private(val ctermMlValue: MLValue[Cterm])(implicit val isabelle: Isabelle, ec: ExecutionContext) extends Term {
+final class Cterm private(val ctermMlValue: MLValue[Cterm])(implicit val isabelle: Isabelle, ec: ExecutionContext) extends Term(null) {
   /** Returns this term as an `MLValue[Term]` (not `MLValue[Cterm]`). The difference is crucial
    * because `MLValue[_]` is not covariant. So for invoking ML functions that expect an argument of type `term`, you
    * need to get an `MLValue[Term]`. In contrast, [[ctermMlValue]] returns this term as an `MLValue[Cterm]`. */
-  override lazy val mlValue: MLValue[Term] = {
-    val result = Ops.termOfCterm(ctermMlValue)
-    mlValueLoaded = true
-    result }
-  private var mlValueLoaded = false
+  override protected def computeMlValue: MLValue[Term] = Ops.termOfCterm(ctermMlValue)
   /** Transforms this [[Cterm]] into an [[MLValueTerm]]. */
-  private [pure] def mlValueTerm = new MLValueTerm(mlValue)
+  private [pure] lazy val mlValueTerm = new MLValueTerm(mlValue)
   override def prettyRaw(ctxt: Context)(implicit ec: ExecutionContext): String =
     Ops.stringOfCterm(MLValue((ctxt, this))).retrieveNow
   lazy val concrete: ConcreteTerm = mlValueTerm.concrete
@@ -282,7 +360,12 @@ object Cterm {
 /** A [[Term]] that is stored in the Isabelle process's object store
  * and may or may not be known in Scala. Use [[concrete]] to
  * get a representation of the same term as a [[ConcreteTerm]]. */
-final class MLValueTerm(val mlValue: MLValue[Term])(implicit val isabelle: Isabelle, ec: ExecutionContext) extends Term {
+final class MLValueTerm private[pure] (initialMlValue: MLValue[Term])(implicit val isabelle: Isabelle, ec: ExecutionContext) extends Term(initialMlValue) {
+  override protected def computeMlValue: MLValue[Term] = throw new IllegalStateException("MLValueTerm.computeMLValue should never be called")
+
+  /** Does not do anything. */
+  override def disconnectFromIsabelle(): Unit = {}
+
   override def someFuture: Future[Any] = mlValue.someFuture
   override def await: Unit = mlValue.await
 
@@ -328,10 +411,8 @@ final class MLValueTerm(val mlValue: MLValue[Term])(implicit val isabelle: Isabe
 /** A constant (ML constructor `Const`). [[name]] is the fully qualified name of the constant (e.g.,
  * `"HOL.True"`) and [[typ]] its type. */
 final class Const private[pure](val name: String, val typ: Typ, initialMlValue: MLValue[Term]=null)
-                               (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTerm {
-  override lazy val mlValue : MLValue[Term] =
-    if (initialMlValue!=null) initialMlValue
-    else Ops.makeConst(MLValue((name,typ)))
+                               (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTerm(initialMlValue) {
+  override protected def computeMlValue : MLValue[Term] = Ops.makeConst(MLValue((name,typ)))
   override def toString: String = name
 
   override def concreteRecursive(implicit ec: ExecutionContext): Const = {
@@ -339,7 +420,7 @@ final class Const private[pure](val name: String, val typ: Typ, initialMlValue: 
     if (typ eq this.typ)
       this
     else
-      new Const(name, typ, initialMlValue)
+      new Const(name, typ, peekMlValue.orNull)
   }
 
   override def hashCode(): Int = new HashCodeBuilder(162389433,568734237)
@@ -373,10 +454,8 @@ object Const {
 /** A free variable (ML constructor `Free`). [[name]] is the name of the variable (e.g.,
  * `"x"`) and [[typ]] its type. */
 final class Free private[pure](val name: String, val typ: Typ, initialMlValue: MLValue[Term]=null)
-                              (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTerm {
-  override lazy val mlValue : MLValue[Term] =
-    if (initialMlValue!=null) initialMlValue
-    else Ops.makeFree(name, typ)
+                              (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTerm(initialMlValue) {
+  override protected def computeMlValue : MLValue[Term] = Ops.makeFree(name, typ)
   override def toString: String = name
 
   override def hashCode(): Int = new HashCodeBuilder(384673423,678423475)
@@ -387,7 +466,7 @@ final class Free private[pure](val name: String, val typ: Typ, initialMlValue: M
     if (typ eq this.typ)
       this
     else
-      new Free(name, typ, initialMlValue)
+      new Free(name, typ, peekMlValue.orNull)
   }
 
   override def someFuture: Future[Any] = Future.successful(())
@@ -425,10 +504,8 @@ object Free {
  * By convention, schematic variables indicate variables that are can be instantiated/unified.
  **/
 final class Var private[pure](val name: String, val index: Int, val typ: Typ, initialMlValue: MLValue[Term]=null)
-                       (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTerm {
-  override lazy val mlValue : MLValue[Term] =
-    if (initialMlValue!=null) initialMlValue
-    else Ops.makeVar(name, index, typ)
+                             (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTerm(initialMlValue) {
+  override protected def computeMlValue: MLValue[Term] = Ops.makeVar(name, index, typ)
   override def toString: String = s"?$name$index"
 
   override def hashCode(): Int = new HashCodeBuilder(3474285, 342683425)
@@ -439,7 +516,7 @@ final class Var private[pure](val name: String, val index: Int, val typ: Typ, in
     if (typ eq this.typ)
       this
     else
-      new Var(name, index, typ, initialMlValue)
+      new Var(name, index, typ, peekMlValue.orNull)
   }
 
   override def someFuture: Future[Any] = Future.successful(())
@@ -474,10 +551,8 @@ object Var {
  * (Pattern matching only supports the syntax `App(...)`, not `$`.)
  **/
 final class App private[pure] (val fun: Term, val arg: Term, initialMlValue: MLValue[Term]=null)
-                              (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTerm {
-  override lazy val mlValue : MLValue[Term] =
-    if (initialMlValue!=null) initialMlValue
-    else Ops.makeApp(fun,arg)
+                              (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTerm(initialMlValue) {
+  override protected def computeMlValue: MLValue[Term] = Ops.makeApp(fun,arg)
 
   override def toString: String = s"($fun $$ $arg)"
 
@@ -490,7 +565,7 @@ final class App private[pure] (val fun: Term, val arg: Term, initialMlValue: MLV
     if ((fun eq this.fun) && (arg eq this.arg))
       this
     else
-      new App(fun, arg, initialMlValue)
+      new App(fun, arg, peekMlValue.orNull)
   }
 
   override def await: Unit = Await.ready(someFuture, Duration.Inf)
@@ -526,10 +601,8 @@ object App {
  * since deBrujn indices are used. [[name]] can even be `""`.
  */
 final class Abs private[pure] (val name: String, val typ: Typ, val body: Term, initialMlValue: MLValue[Term]=null)
-                              (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTerm {
-  override lazy val mlValue : MLValue[Term] =
-    if (initialMlValue!=null) initialMlValue
-    else Ops.makeAbs(name,typ,body)
+                              (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTerm(initialMlValue) {
+  override protected def computeMlValue: MLValue[Term] = Ops.makeAbs(name,typ,body)
   override def toString: String = s"(λ$name. $body)"
 
   override def hashCode(): Int = new HashCodeBuilder(342345635,564562379)
@@ -541,7 +614,7 @@ final class Abs private[pure] (val name: String, val typ: Typ, val body: Term, i
     if ((typ eq this.typ) && (body eq this.body))
       this
     else
-      new Abs(name, typ, body, initialMlValue)
+      new Abs(name, typ, body, peekMlValue.orNull)
   }
 
   override def await: Unit = body.await
@@ -575,10 +648,8 @@ object Abs {
  * (Starting from 0, i.e., `Bound(0)` refers to the directly enclosing [[Abs]].)
  **/
 final class Bound private[pure] (val index: Int, initialMlValue: MLValue[Term]=null)
-                                (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTerm {
-  override lazy val mlValue : MLValue[Term] =
-    if (initialMlValue!=null) initialMlValue
-    else Ops.makeBound(index)
+                                (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTerm(initialMlValue) {
+  override protected def computeMlValue: MLValue[Term] = Ops.makeBound(index)
   override def toString: String = s"Bound $index"
 
   override def hashCode(): Int = new HashCodeBuilder(442344345,423645769)
@@ -704,7 +775,7 @@ object Term extends OperationCollection {
     override def store(value: Term)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[Term] =
       value.mlValue
     override def retrieve(value: MLValue[Term])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Term] =
-        Future.successful(new MLValueTerm(mlValue = value))
+        Future.successful(new MLValueTerm(initialMlValue = value))
     override def exnToValue(implicit isabelle: Isabelle, ec: ExecutionContext): String = "fn (E_Term t) => t"
     override def valueToExn(implicit isabelle: Isabelle, ec: ExecutionContext): String = "E_Term"
 

@@ -3,14 +3,23 @@ package de.unruh.isabelle.pure
 import de.unruh.isabelle.control.IsabelleMLException
 import de.unruh.isabelle.control.IsabelleTest.{isabelle => isa}
 import de.unruh.isabelle.misc.Symbols
+import de.unruh.isabelle.mlvalue.{MLFunction, MLValue}
 import de.unruh.isabelle.pure.TermTest.assertRecursivelyConcrete
 import org.scalatest.Assertions
 import org.scalatest.funsuite.AnyFunSuite
+import scalaz.Leibniz.subst
 
+import scala.collection.mutable.ArrayBuffer
+import scala.concurrent.{Await, Awaitable, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.Duration
+import de.unruh.isabelle.mlvalue.Implicits._
+import de.unruh.isabelle.pure.Implicits._
 
 class TermTest extends AnyFunSuite {
   lazy val ctxt: Context = Context("Main")
+
+  private def await[A](awaitable: Awaitable[A]) = Await.result(awaitable, Duration.Inf)
 
   test("equals: Const/Const") {
     val const1 = Const("true", Type("bool"))
@@ -100,6 +109,74 @@ class TermTest extends AnyFunSuite {
     val t = Term(ctxt, "1 ≤ 2")
     val t2 = Term(ctxt, "less_eq 1 2")
     assert(t == t2)
+  }
+
+  test("equal merge") {
+    val t1 = Term(ctxt, "1 = 2")
+    val t2 = Term(ctxt, "1 = 2")
+    assert(await(t1.mlValue.id) != await(t2.mlValue.id))
+    assert(t1 == t2)
+    assert(await(t1.mlValue.id) == await(t2.mlValue.id))
+  }
+
+  test("equal merge gc") {
+    val dummyFn = MLValue.compileFunction[Unit, Unit]("fn () => ()")
+    val numObjects = MLValue.compileFunction[Unit, Int]("Control_Isabelle.numObjects")
+    val mkTerm = MLValue.compileFunction[Unit, Term]("""fn () => Bound 1 $ Const("bla", Type("HOL.bool", []))""")
+    val buffer = ArrayBuffer[Future[Term]]()
+    val numTerms = 1000
+
+    def gc(): Unit = {
+      for (i <- 1 to 10) {
+        System.gc()
+        Thread.sleep(100)
+        dummyFn().retrieveNow
+        Thread.sleep(100)
+      }
+    }
+
+    val startCount = numObjects().retrieveNow
+    println(s"Num objects before creating: ${startCount}")
+    println("Creating terms")
+    for (_ <- 1 to numTerms)
+      buffer.addOne(mkTerm().retrieve)
+    println("Waiting for terms")
+    // Can try with .force or with .concreteRecursive
+    // TODO why does the test fail with .concreteRecursive? ANSWER: because Typ's are created and for those we have not updated equals yet.
+    val terms = buffer.toSeq.map(t => await(t).concreteRecursive)
+    buffer.clear() // Allow GC
+    val count1 = numObjects().retrieveNow
+    gc()
+    println(s"Num objects after creating: $count1")
+    assert(count1 >= startCount + numTerms)
+    val termSame = mkTerm().retrieveNow.concreteRecursive
+    val termOther = Term(ctxt, "1 = 2")
+    println("Comparing terms (false)")
+    for (t <- terms)
+      assert(termOther != t)
+    val count2 = numObjects().retrieveNow
+    println(s"Num objects after comparing: $count2")
+    assert(count2 >= startCount + numTerms)
+    gc()
+    val count3 = numObjects().retrieveNow
+    println(s"Num objects after gc: $count3")
+    assert(count2 >= startCount + numTerms)
+    println("Comparing terms (true)")
+    for (t <- terms)
+      assert(termSame == t)
+    // TODO: This should not increase the number of objects!
+    val count4 = numObjects().retrieveNow
+    println(s"Num objects after comparing: $count4")
+    gc()
+    val count5 = numObjects().retrieveNow
+    println(s"Num objects after gc: $count5")
+    assert(count5 <= startCount + 100)
+    println("Comparing terms (true), again")
+    for (t <- terms)
+      assert(termSame == t)
+    val count6 = numObjects().retrieveNow
+    println(s"Num objects after comparing: $count6")
+    assert(count6 <= startCount + 100)
   }
 }
 
