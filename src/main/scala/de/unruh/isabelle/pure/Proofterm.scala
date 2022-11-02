@@ -4,11 +4,13 @@ import de.unruh.isabelle.control.Isabelle.{DInt, DList, DObject, DString, Data}
 import de.unruh.isabelle.control.{Isabelle, IsabelleMiscException, IsabelleMLException, IsabelleProtocolException, OperationCollection}
 import de.unruh.isabelle.mlvalue.{MLRetrieveFunction, MLStoreFunction, MLValue, MLValueWrapper, Version}
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 import Implicits.{positionConverter, termConverter, theoryConverter, thmConverter, typConverter}
 import org.jetbrains.annotations.ApiStatus.Experimental
 
 import scala.annotation.tailrec
+
+import de.unruh.isabelle.control.Isabelle.executionContext
 
 /** Support for Isabelle proofterms. '''Experimental and incomplete.'''
  * May throw [[scala.NotImplementedError NotImplementedError]] and change without notice. Not documented.
@@ -33,15 +35,15 @@ object Proofterm extends OperationCollection {
   final case class Oracle(name: String, term: Term, typ: Option[List[Typ]]) extends Proofterm
 
   final case class PThm(header: ThmHeader, body: ThmBody) extends Proofterm {
-    def proof(implicit isabelle: Isabelle, executionContext: ExecutionContext): Proofterm =
+    def proof(implicit isabelle: Isabelle): Proofterm =
       // I do not know why it needs the explicit Proofterm.converter here but I got compilation errors without it.
-      body.proofOpenMlValue.retrieveNow(Proofterm.converter, implicitly, implicitly)
+      body.proofOpenMlValue.retrieveNow(Proofterm.converter, implicitly)
 
-    def fullProof(theory: Theory)(implicit isabelle: Isabelle, executionContext: ExecutionContext): Proofterm =
+    def fullProof(theory: Theory)(implicit isabelle: Isabelle): Proofterm =
       Ops.reconstruct_proof(theory.mlValue, header.prop.mlValue, body.proofOpenMlValue).retrieveNow
   }
   object PThm {
-    def apply(thm: Thm)(implicit isabelle: Isabelle, executionContext: ExecutionContext): PThm = {
+    def apply(thm: Thm)(implicit isabelle: Isabelle): PThm = {
       @tailrec
       def strip(prf: Proofterm): PThm = prf match {
         case prf : PThm => prf
@@ -56,7 +58,7 @@ object Proofterm extends OperationCollection {
 
   final case class ThmHeader(serial: Long, pos: List[Position], theoryName: String, name: String, prop: Term, types: Option[List[Typ]])
   final class ThmBody(val mlValue: MLValue[ThmBody]) extends MLValueWrapper[ThmBody] {
-    def proofOpenMlValue(implicit isabelle: Isabelle, executionContext: ExecutionContext): MLValue[Proofterm] =
+    def proofOpenMlValue(implicit isabelle: Isabelle): MLValue[Proofterm] =
       Ops.thm_body_proof_open(this)
   }
   object ThmBody extends MLValueWrapper.Companion[ThmBody] {
@@ -65,9 +67,9 @@ object Proofterm extends OperationCollection {
   }
 
 
-  //  def fromThm(thm: Thm)(implicit isabelle: Isabelle, executionContext: ExecutionContext): Proofterm = Ops.proof_of(thm).retrieveNow
+  //  def fromThm(thm: Thm)(implicit isabelle: Isabelle): Proofterm = Ops.proof_of(thm).retrieveNow
 /*  def fromThm(context: Context, name: String, fullProof: Boolean = false)
-             (implicit isabelle: Isabelle, executionContext: ExecutionContext): (Term, Proofterm) = {
+             (implicit isabelle: Isabelle): (Term, Proofterm) = {
     @tailrec
     def strip(prf: Proofterm): (Term, MLValue[Proofterm]) = prf match {
       case PThm(name2, prop, _, proof2) =>
@@ -88,7 +90,7 @@ object Proofterm extends OperationCollection {
   }*/
 
   //noinspection TypeAnnotation
-  protected class Ops(implicit isabelle: Isabelle, executionContext: ExecutionContext) {
+  protected class Ops(implicit isabelle: Isabelle) {
     if (!Version.from2020)
       throw IsabelleMiscException("Proofterms are supported only for Isabelle >=2020, not " + Version.versionString)
 
@@ -126,7 +128,7 @@ object Proofterm extends OperationCollection {
 //    val store = MLStoreFunction[Proofterm]("""fn DInt 0 => MinProof""")
   }
 
-  override protected def newOps(implicit isabelle:  Isabelle, ec:  ExecutionContext) = new Ops
+  override protected def newOps(implicit isabelle: Isabelle) = new Ops
 
   implicit object converter extends MLValue.Converter[Proofterm] {
     private def opt[A](f: Data => A)(dlist: Data): Option[A] = dlist match {
@@ -135,7 +137,7 @@ object Proofterm extends OperationCollection {
     }
 
     private def obj[A : MLValue.Converter](data: Data)
-                                          (implicit isabelle: Isabelle, executionContext: ExecutionContext) : A =
+                                          (implicit isabelle: Isabelle) : A =
       data match {
         case DObject(id) => MLValue.unsafeFromId[A](id).retrieveNow
       }
@@ -148,13 +150,13 @@ object Proofterm extends OperationCollection {
     }
     //    private def typList(ids: Data) = ids match { case DList(list@_*) => list.map { case DObject(id) => typ(id) }.toList }
 
-    private def dataToThmHeader(data: Data)(implicit isabelle: Isabelle, executionContext: ExecutionContext) : ThmHeader = data match {
+    private def dataToThmHeader(data: Data)(implicit isabelle: Isabelle) : ThmHeader = data match {
       case DList(DInt(serial), pos, DString(theoryName), DString(name), prop, types) =>
         ThmHeader(serial = serial, pos = list(obj[Position])(pos), theoryName = theoryName, name = name,
           prop = obj[Term](prop), opt(list(obj[Typ]))(types))
     }
 
-    private def dataToProofterm(data: Data)(implicit isabelle: Isabelle, ec: ExecutionContext) : Proofterm = {
+    private def dataToProofterm(data: Data)(implicit isabelle: Isabelle) : Proofterm = {
       data match {
         case DInt(0) => MinProof
         case DList(DInt(1), DInt(i)) => PBound(i.toInt)
@@ -181,16 +183,16 @@ object Proofterm extends OperationCollection {
       case MinProof => DInt(0)
     }*/
 
-    override def mlType(implicit isabelle: Isabelle, ec: ExecutionContext): String = "Proofterm.proof"
-    override def retrieve(value:  MLValue[Proofterm])(implicit isabelle: Isabelle, ec:  ExecutionContext): Future[Proofterm] =
+    override def mlType(implicit isabelle: Isabelle): String = "Proofterm.proof"
+    override def retrieve(value:  MLValue[Proofterm])(implicit isabelle: Isabelle) : Future[Proofterm] =
       Ops.retrieve(value).map(dataToProofterm)
 
-    override def store(value:  Proofterm)(implicit isabelle:  Isabelle, ec: ExecutionContext): MLValue[Proofterm] =
+    override def store(value:  Proofterm)(implicit isabelle:  Isabelle): MLValue[Proofterm] =
       ???
 //      Ops.store(prooftermToData(value))
 
 
-    override def exnToValue(implicit isabelle: Isabelle, ec: ExecutionContext): String = "fn E_Proofterm prf => prf"
-    override def valueToExn(implicit isabelle: Isabelle, ec: ExecutionContext): String = "E_Proofterm"
+    override def exnToValue(implicit isabelle: Isabelle): String = "fn E_Proofterm prf => prf"
+    override def valueToExn(implicit isabelle: Isabelle): String = "E_Proofterm"
   }
 }

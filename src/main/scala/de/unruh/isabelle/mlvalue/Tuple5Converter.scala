@@ -4,8 +4,10 @@ import de.unruh.isabelle.control.Isabelle
 import de.unruh.isabelle.control.Isabelle.{DList, DObject}
 import de.unruh.isabelle.mlvalue.MLValue.{Converter, Ops}
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 
+// Implicits
+import de.unruh.isabelle.control.Isabelle.executionContext
 import Implicits._
 
 /**
@@ -19,7 +21,7 @@ import Implicits._
  */
 final class Tuple5Converter[A, B, C, D, E](converterA: Converter[A], converterB: Converter[B], converterC: Converter[C], converterD: Converter[D], converterE: Converter[E])
   extends Converter[(A, B, C, D, E)] {
-  override def retrieve(value: MLValue[(A, B, C, D, E)])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[(A, B, C, D, E)] = {
+  override def retrieve(value: MLValue[(A, B, C, D, E)])(implicit isabelle: Isabelle): Future[(A, B, C, D, E)] = {
     for (DList(DObject(aID), DObject(bID), DObject(cID), DObject(dID), DObject(eID)) <- Ops.retrieveTuple5(value.asInstanceOf[MLValue[(MLValue[A], MLValue[B], MLValue[C], MLValue[D], MLValue[E])]]);
          a <- converterA.retrieve(MLValue.unsafeFromId[A](Future.successful(aID)));
          b <- converterB.retrieve(MLValue.unsafeFromId[B](Future.successful(bID)));
@@ -29,7 +31,7 @@ final class Tuple5Converter[A, B, C, D, E](converterA: Converter[A], converterB:
       yield (a, b, c, d, e)
   }
 
-  override def store(value: (A, B, C, D, E))(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[(A, B, C, D, E)] = {
+  override def store(value: (A, B, C, D, E))(implicit isabelle: Isabelle): MLValue[(A, B, C, D, E)] = {
     val (a, b, c, d, e) = value
     val mlA = converterA.store(a)
     val mlB = converterB.store(b)
@@ -41,8 +43,8 @@ final class Tuple5Converter[A, B, C, D, E](converterA: Converter[A], converterB:
       .asInstanceOf[MLValue[(A, B, C, D, E)]]
   }
 
-  @inline override def exnToValue(implicit isabelle: Isabelle, ec: ExecutionContext): String = s"fn E_Pair (a, E_Pair (b, E_Pair (c, E_Pair (d, e)))) => ((${converterA.exnToValue}) a, (${converterB.exnToValue}) b, (${converterC.exnToValue}) c, (${converterD.exnToValue}) d, (${converterE.exnToValue}) e)"
-  @inline override def valueToExn(implicit isabelle: Isabelle, ec: ExecutionContext): String = s"fn (a,b,c,d,e) => E_Pair ((${converterA.valueToExn}) a, E_Pair ((${converterB.valueToExn}) b, E_Pair ((${converterC.valueToExn}) c, E_Pair ((${converterD.valueToExn}) d, (${converterE.valueToExn}) e))))"
+  @inline override def exnToValue(implicit isabelle: Isabelle): String = s"fn E_Pair (a, E_Pair (b, E_Pair (c, E_Pair (d, e)))) => ((${converterA.exnToValue}) a, (${converterB.exnToValue}) b, (${converterC.exnToValue}) c, (${converterD.exnToValue}) d, (${converterE.exnToValue}) e)"
+  @inline override def valueToExn(implicit isabelle: Isabelle): String = s"fn (a,b,c,d,e) => E_Pair ((${converterA.valueToExn}) a, E_Pair ((${converterB.valueToExn}) b, E_Pair ((${converterC.valueToExn}) c, E_Pair ((${converterD.valueToExn}) d, (${converterE.valueToExn}) e))))"
 
-  override def mlType(implicit isabelle: Isabelle, ec: ExecutionContext): String = s"(${converterA.mlType}) * (${converterB.mlType}) * (${converterC.mlType}) * (${converterD.mlType}) * (${converterE.mlType})"
+  override def mlType(implicit isabelle: Isabelle): String = s"(${converterA.mlType}) * (${converterB.mlType}) * (${converterC.mlType}) * (${converterD.mlType}) * (${converterE.mlType})"
 }

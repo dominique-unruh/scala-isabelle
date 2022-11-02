@@ -4,8 +4,10 @@ import de.unruh.isabelle.control.Isabelle
 import de.unruh.isabelle.control.Isabelle.DString
 import de.unruh.isabelle.mlvalue.MLValue.{Converter, Ops, matchFailExn}
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 
+// Implicits
+import de.unruh.isabelle.control.Isabelle.executionContext
 import Implicits._
 
 /**
@@ -24,16 +26,16 @@ import Implicits._
  * @see MLValue.Converter for explanations what [[MLValue.Converter Converter]]s are for.
  */
 object StringConverter extends Converter[String] {
-  @inline override def store(value: String)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[String] =
+  @inline override def store(value: String)(implicit isabelle: Isabelle): MLValue[String] =
     Ops.storeString(DString(value))
 
   @inline override def retrieve(value: MLValue[String])
-                               (implicit isabelle: Isabelle, ec: ExecutionContext): Future[String] =
+                               (implicit isabelle: Isabelle): Future[String] =
     for (DString(str) <- Ops.retrieveString(value))
       yield str
 
-  @inline override def exnToValue(implicit isabelle: Isabelle, ec: ExecutionContext): String = s"fn E_String str => str | ${matchFailExn("BooleanConverter.exnToValue")}"
-  @inline override def valueToExn(implicit isabelle: Isabelle, ec: ExecutionContext): String = "E_String"
+  @inline override def exnToValue(implicit isabelle: Isabelle): String = s"fn E_String str => str | ${matchFailExn("BooleanConverter.exnToValue")}"
+  @inline override def valueToExn(implicit isabelle: Isabelle): String = "E_String"
 
-  override def mlType(implicit isabelle: Isabelle, ec: ExecutionContext): String = "string"
+  override def mlType(implicit isabelle: Isabelle): String = "string"
 }

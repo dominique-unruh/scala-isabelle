@@ -3,7 +3,10 @@ package de.unruh.isabelle.mlvalue
 import de.unruh.isabelle.control.Isabelle
 import de.unruh.isabelle.mlvalue.MLValue.Converter
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
+
+// Implicits
+import de.unruh.isabelle.control.Isabelle.executionContext
 
 /**
  * [[MLValue.Converter]] for type `D => R`.
@@ -30,20 +33,20 @@ import scala.concurrent.{ExecutionContext, Future}
  * @see MLValue.Converter for explanations what [[MLValue.Converter Converter]]s are for.
  */
 @inline final class FunctionConverter[D,R](implicit converterD : Converter[D], converterR: Converter[R]) extends Converter[D => R] {
-  override def retrieve(value: MLValue[D => R])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[D => R] = {
+  override def retrieve(value: MLValue[D => R])(implicit isabelle: Isabelle): Future[D => R] = {
     val mlFunction = value.function[D,R]
     def function(d: D): R = mlFunction(d).retrieveNow
     for (_ <- value.id) // Make sure this future completes only after value has been computed on the ML side
       yield function _
   }
 
-  override def store(value: D => R)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[D => R] =
+  override def store(value: D => R)(implicit isabelle: Isabelle): MLValue[D => R] =
     throw new UnsupportedOperationException("Cannot store a Scala function in the ML process")
 
-  override def exnToValue(implicit isabelle: Isabelle, ec: ExecutionContext): String =
+  override def exnToValue(implicit isabelle: Isabelle): String =
     s"fn E_Function f => ((${converterR.exnToValue}) o (fn DObject e => e) o f o DObject o (${converterD.valueToExn})) | ${MLValue.matchFailExn("FunctionConverter.exnToValue")}"
-  override def valueToExn(implicit isabelle: Isabelle, ec: ExecutionContext): String =
+  override def valueToExn(implicit isabelle: Isabelle): String =
     s"fn f => E_Function (DObject o (${converterR.valueToExn}) o f o (${converterD.exnToValue}) o (fn DObject e => e))"
 
-  override def mlType(implicit isabelle: Isabelle, ec: ExecutionContext): String = s"(${converterD.mlType}) -> (${converterR.mlType})"
+  override def mlType(implicit isabelle: Isabelle): String = s"(${converterD.mlType}) -> (${converterR.mlType})"
 }

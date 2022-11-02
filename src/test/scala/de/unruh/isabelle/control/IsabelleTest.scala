@@ -14,7 +14,6 @@ import org.scalatest.concurrent.TimeLimits.failAfter
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.time.{Seconds, Span}
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Await, Awaitable, Future}
 import scala.concurrent.duration.Duration
 import scala.sys.process.Process

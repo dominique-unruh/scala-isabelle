@@ -7,7 +7,7 @@ import de.unruh.isabelle.mlvalue.{MLFunction, MLFunction2, MLValue}
 import de.unruh.isabelle.pure.Thm.Ops
 import org.jetbrains.annotations.ApiStatus.Experimental
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 
 // Implicits
 import de.unruh.isabelle.mlvalue.Implicits._
@@ -20,7 +20,7 @@ import de.unruh.isabelle.pure.Implicits._
  * all explanations and examples given for [[Context]] also apply here.
  */
 final class Thm private [Thm](val mlValue : MLValue[Thm])
-                             (implicit ec: ExecutionContext, isabelle: Isabelle) extends FutureValue with PrettyPrintable {
+                             (implicit isabelle: Isabelle) extends FutureValue with PrettyPrintable {
   /** A string representation. Does not contain the actual proposition of the theorem, use [[pretty]]
    * for that. */
   override def toString: String = s"thm${mlValue.stateString}"
@@ -31,7 +31,7 @@ final class Thm private [Thm](val mlValue : MLValue[Thm])
   /** Returns the theory this theorem is part of. */
   def theoryOf: Theory = Ops.theoryOfThm(this).retrieveNow
 
-  override def prettyRaw(ctxt: Context)(implicit ec: ExecutionContext): String =
+  override def prettyRaw(ctxt: Context): String =
     Ops.stringOfThm(MLValue(ctxt, this)).retrieveNow
 
   /** Returns the proofterm of this theorem. */
@@ -43,9 +43,9 @@ final class Thm private [Thm](val mlValue : MLValue[Thm])
 }
 
 object Thm extends OperationCollection {
-  override protected def newOps(implicit isabelle: Isabelle, ec: ExecutionContext): Ops = new Ops()
+  override protected def newOps(implicit isabelle: Isabelle): Ops = new Ops()
   //noinspection TypeAnnotation
-  protected[isabelle] class Ops(implicit val isabelle: Isabelle, ec: ExecutionContext) {
+  protected[isabelle] class Ops(implicit val isabelle: Isabelle) {
     import MLValue.compileFunction
     //    Term.init()
     //    isabelle.executeMLCodeNow("exception E_Thm of thm")
@@ -64,7 +64,7 @@ object Thm extends OperationCollection {
    * Both short and fully qualified names work. (I.e., `Thm(context, "TrueI")` and `Thm(context, "HOL.TrueI)`
    * return the same theorem.)
    **/
-  def apply(context: Context, name: String)(implicit isabelle: Isabelle, ec: ExecutionContext): Thm = {
+  def apply(context: Context, name: String)(implicit isabelle: Isabelle): Thm = {
     val mlThm : MLValue[Thm] = Ops.getThm(MLValue((context, name)))
     new Thm(mlThm)
   }
@@ -77,13 +77,13 @@ object Thm extends OperationCollection {
    * Available as an implicit value by importing [[de.unruh.isabelle.pure.Implicits]]`._`
    * */
   object ThmConverter extends Converter[Thm] {
-    override def retrieve(value: MLValue[Thm])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Thm] =
+    override def retrieve(value: MLValue[Thm])(implicit isabelle: Isabelle): Future[Thm] =
       Future.successful(new Thm(mlValue = value))
-    override def store(value: Thm)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[Thm] =
+    override def store(value: Thm)(implicit isabelle: Isabelle): MLValue[Thm] =
       value.mlValue
-    override def exnToValue(implicit isabelle: Isabelle, ec: ExecutionContext): String = "fn E_Thm thm => thm"
-    override def valueToExn(implicit isabelle: Isabelle, ec: ExecutionContext): String = "E_Thm"
+    override def exnToValue(implicit isabelle: Isabelle): String = "fn E_Thm thm => thm"
+    override def valueToExn(implicit isabelle: Isabelle): String = "E_Thm"
 
-    override def mlType(implicit isabelle: Isabelle, ec: ExecutionContext): String = "thm"
+    override def mlType(implicit isabelle: Isabelle): String = "thm"
   }
 }

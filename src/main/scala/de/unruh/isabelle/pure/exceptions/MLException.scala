@@ -8,11 +8,12 @@ import de.unruh.isabelle.mlvalue.{MLFunction2, MLValue}
 import de.unruh.isabelle.pure.{Context, Cterm, Term, Theory, Thm, Typ}
 
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{Await, Future}
 
 // Implicits
 import de.unruh.isabelle.mlvalue.Implicits._
 import de.unruh.isabelle.pure.Implicits._
+import de.unruh.isabelle.control.Isabelle.executionContext
 
 /** Contains:
  *  - [[Converter]]s for exceptions raised in ML code (represented as [[IsabelleMLException]]s), see [[MLException.simpleIsabelleMLExceptionConverter]] and [[MLException.distinguishingIsabelleMLExceptionConverter]])
@@ -36,30 +37,30 @@ object MLException extends OperationCollection {
    *      [[simpleIsabelleMLExceptionConverter]] and [[distinguishingIsabelleMLExceptionConverter]], see there.
    */
   abstract class IsabelleMLExceptionConverter extends Converter[IsabelleMLException] {
-    final override def mlType(implicit isabelle: Isabelle, ec: ExecutionContext): String = "exn"
-    final override def retrieve(value: MLValue[IsabelleMLException])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[IsabelleMLException] = {
+    final override def mlType(implicit isabelle: Isabelle): String = "exn"
+    final override def retrieve(value: MLValue[IsabelleMLException])(implicit isabelle: Isabelle): Future[IsabelleMLException] = {
       for (id <- value.id;
            exn = IsabelleMLException.unsafeFromId(isabelle, id);
            exn2 <- recognize(exn))
         yield exn2
     }
 
-    final override def store(value: IsabelleMLException)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[IsabelleMLException] = MLValue.unsafeFromId(value.id)
-    final override def exnToValue(implicit isabelle: Isabelle, ec: ExecutionContext): String = "(fn e : exn => e)"
-    final override def valueToExn(implicit isabelle: Isabelle, ec: ExecutionContext): String = "(fn e : exn => e)"
+    final override def store(value: IsabelleMLException)(implicit isabelle: Isabelle): MLValue[IsabelleMLException] = MLValue.unsafeFromId(value.id)
+    final override def exnToValue(implicit isabelle: Isabelle): String = "(fn e : exn => e)"
+    final override def valueToExn(implicit isabelle: Isabelle): String = "(fn e : exn => e)"
 
     /** This function can replace the retrieved exception (`exception`) by a more informative exception object
      * (e.g., a subclass, or an [[IsabelleMLException]] with a different message). The returned object
      * must have the same [[IsabelleMLException.id id]] and [[IsabelleMLException.isabelle]] fields as `exception`.
      * If no additional information is to be added, simply return `exception` unchanged.
      * @param exception The exception to be transformed */
-    def recognize(exception: IsabelleMLException)(implicit ec: ExecutionContext) : Future[IsabelleMLException]
+    def recognize(exception: IsabelleMLException) : Future[IsabelleMLException]
   }
 
   /** Preconfigured instance of [[IsabelleMLExceptionConverter]]. It simply returns an [[IsabelleMLException]] without
    * any extra processing. Use by importing it. */
   implicit object simpleIsabelleMLExceptionConverter extends IsabelleMLExceptionConverter {
-    def recognize(exception: IsabelleMLException)(implicit ec: ExecutionContext) : Future[IsabelleMLException] = Future.successful(exception)
+    def recognize(exception: IsabelleMLException) : Future[IsabelleMLException] = Future.successful(exception)
   }
 
   /** Preconfigured instance of [[IsabelleMLExceptionConverter]].
@@ -68,13 +69,13 @@ object MLException extends OperationCollection {
    * It uses [[recognizeException]] to recognize the exception, see there for a list of all supported exceptions.
    * Use by importing it. */
   implicit object distinguishingIsabelleMLExceptionConverter extends IsabelleMLExceptionConverter {
-    override def recognize(exception: IsabelleMLException)(implicit ec: ExecutionContext): Future[IsabelleMLException] =
+    override def recognize(exception: IsabelleMLException): Future[IsabelleMLException] =
       recognizeException(exception)
   }
 
-  override protected def newOps(implicit isabelle: Isabelle, ec: ExecutionContext): Ops = new Ops()
+  override protected def newOps(implicit isabelle: Isabelle): Ops = new Ops()
   //noinspection TypeAnnotation
-  protected class Ops(implicit val isabelle: Isabelle, ec: ExecutionContext) {
+  protected class Ops(implicit val isabelle: Isabelle) {
     val recognizeException = MLValue.compileFunction[Data, Data](
       """fn DObject exn => case exn of
         |  ERROR message => DList [DString "ERROR", DString message]
@@ -109,7 +110,7 @@ object MLException extends OperationCollection {
    * @param fallback A function for transforming the exception if it is not any of the above
    * */
   def recognizeException(exception: IsabelleMLException, fallback: IsabelleMLException => IsabelleMLException = identity)
-                        (implicit ec: ExecutionContext): Future[IsabelleMLException] = {
+                        : Future[IsabelleMLException] = {
     val id = exception.id
     implicit val isabelle: Isabelle = exception.isabelle
     for (DList(DString(typ), args @_*) <- Ops.recognizeException(DObject(id)).retrieve)
@@ -151,7 +152,6 @@ object MLException extends OperationCollection {
    **/
   class ExceptionManager(isabelle: Isabelle) extends control.ExceptionManager {
     implicit val isa: Isabelle = isabelle
-    import scala.concurrent.ExecutionContext.Implicits.global
     private var context : Context = _
 
     def setContext(ctxt: Context): Unit = context = ctxt

@@ -10,7 +10,6 @@ import de.unruh.isabelle.pure.Context.Mode
 
 import scala.annotation.compileTimeOnly
 import scala.collection.mutable.ListBuffer
-import scala.concurrent.ExecutionContext
 import scala.language.experimental.macros
 import scala.reflect.macros.whitebox
 import scala.util.Random
@@ -32,7 +31,7 @@ import de.unruh.isabelle.pure.Implicits._
  *
  * The support for the interpolators is activated by importing the implicits `import de.unruh.isabelle.pure.Implicits._`.
  *
- * To use the interpolators, an implicit [[control.Isabelle Isabelle]] instance, an implicit [[scala.concurrent.ExecutionContext ExecutionContext]],
+ * To use the interpolators, an implicit [[control.Isabelle Isabelle]] instance,
  * and an implicit [[Context]] must be given.
  * (The latter provides the theory context in which to parse the terms/types.)
  *
@@ -41,7 +40,6 @@ import de.unruh.isabelle.pure.Implicits._
  * An example how to use type and term interpolators:
  * {{{
  *   import de.unruh.isabelle.pure.Implicits._
- *   import scala.concurrent.ExecutionContext.Implicits.global
  *   implicit isabelle = new Isabelle(...)
  *   implicit context = Context("Main") // Parsing w.r.t. Isabelle theory Main
  *   val typ1 = typ"nat"               // type nat
@@ -133,7 +131,7 @@ object StringInterpolators extends OperationCollection {
 //    c.info(c.enclosingPosition, s"For StringContext ${parts.mkString("•")}, template is $templateString and holes are $holes", force = true)
 
     def termApplyImpl(args: c.Expr[Any]*)
-                     (context: c.Expr[Context], isabelle: c.Expr[Isabelle], executionContext: c.Expr[ExecutionContext]): c.Expr[Term] = {
+                     (context: c.Expr[Context], isabelle: c.Expr[Isabelle]): c.Expr[Term] = {
       if (args.length != holes.length)
         c.abort(c.enclosingPosition, s"Expecting ${holes.length} arguments")
 
@@ -145,12 +143,12 @@ object StringInterpolators extends OperationCollection {
       c.Expr(
         q"""
           _root_.de.unruh.isabelle.pure.StringInterpolators.PrivateImplementation.termApplyImplRuntime(
-             $uniqueId, $context, $templateString, List(..$typInstantiations), List(..$termInstantiations))($isabelle,$executionContext)
+             $uniqueId, $context, $templateString, List(..$typInstantiations), List(..$termInstantiations))($isabelle)
           """)
     }
 
     def termUnapplyImpl(term: c.Expr[Term])
-                       (context: c.Expr[Context], isabelle: c.Expr[Isabelle], executionContext: c.Expr[ExecutionContext]):
+                       (context: c.Expr[Context], isabelle: c.Expr[Isabelle]):
     c.Expr[Option[Product]] = {
       val returnType = tq"(..${holes.map(h => if (h.isTerm) tq"Term" else tq"Typ")})"
       val vars = for (h <- holes) yield (c.universe.TermName(c.freshName("v")), h)
@@ -163,7 +161,7 @@ object StringInterpolators extends OperationCollection {
                    List(..${holes collect { case h if !h.isTerm => h.varName }}),
                    List(..${holes collect { case h if h.isTerm => h.varName }}),
                    term)
-                   ($isabelle,$executionContext)
+                   ($isabelle)
               listOption match {
                 case None => None
                 case Some((List(..${vars collect { case (v,h) if !h.isTerm => pq"$v" }}),
@@ -200,7 +198,7 @@ object StringInterpolators extends OperationCollection {
 //    c.info(c.enclosingPosition, s"For StringContext ${parts.mkString("•")}, template is $templateString and holes are $varNames", force = true)
 
     def typApplyImpl(args: c.Expr[Typ]*)
-                     (context: c.Expr[Context], isabelle: c.Expr[Isabelle], executionContext: c.Expr[ExecutionContext]): c.Expr[Typ] = {
+                     (context: c.Expr[Context], isabelle: c.Expr[Isabelle]): c.Expr[Typ] = {
       if (args.length != varNames.length)
         c.abort(c.enclosingPosition, s"Expecting ${varNames.length} arguments")
 
@@ -210,12 +208,12 @@ object StringInterpolators extends OperationCollection {
       c.Expr(
         q"""
           _root_.de.unruh.isabelle.pure.StringInterpolators.PrivateImplementation.typApplyImplRuntime(
-             $uniqueId, $context, $templateString, List(..$typInstantiations))($isabelle,$executionContext)
+             $uniqueId, $context, $templateString, List(..$typInstantiations))($isabelle)
           """)
     }
 
     def typUnapplySeqImpl(typ: c.Expr[Typ])
-                         (context: c.Expr[Context], isabelle: c.Expr[Isabelle], executionContext: c.Expr[ExecutionContext]):
+                         (context: c.Expr[Context], isabelle: c.Expr[Isabelle]):
     c.Expr[Option[Seq[Typ]]] = c.Expr(q"""
         new _root_.de.unruh.isabelle.pure.StringInterpolators.PrivateImplementation.TypExtractorImplRuntime(
         $uniqueId, $context, $templateString, List(..$varNames)).unapplySeq($typ)
@@ -230,19 +228,19 @@ object StringInterpolators extends OperationCollection {
     private val typCache:  Cache[(Long,Context), Typ]  = CacheBuilder.newBuilder().expireAfterAccess(5, TimeUnit.SECONDS).maximumSize(1000).build()
 
     private def parseTerm(uniqueId: Long, context: Context, string: String)
-                         (implicit isabelle: Isabelle, executionContext: ExecutionContext): Term = {
+                         (implicit isabelle: Isabelle): Term = {
       termCache.get((uniqueId,context), () => Term(context.setMode(Mode.pattern), string))
     }
 
     private def parseTyp(uniqueId: Long, context: Context, string: String)
-                        (implicit isabelle: Isabelle, executionContext: ExecutionContext) : Typ = {
+                        (implicit isabelle: Isabelle) : Typ = {
       typCache.get((uniqueId,context), () => Typ(context.setMode(Mode.pattern), string))
     }
 
     /** This function should be considered private. (It is only visible to be accessible in
      * macro code.) */
     def termUnapplyImplRuntime(uniqueId: Long, context: Context, string: String, typVars: List[String], termVars: List[String], term: Term)
-                              (implicit isabelle: Isabelle, executionContext: ExecutionContext) : Option[(List[Typ], List[Term])] = {
+                              (implicit isabelle: Isabelle) : Option[(List[Typ], List[Term])] = {
       val template = parseTerm(uniqueId, context, string)
       Ops.patternMatch(context, template, term, typVars, termVars).retrieveNow
     }
@@ -250,7 +248,7 @@ object StringInterpolators extends OperationCollection {
     /** This class should be considered private. (It is only visible to be accessible in
      * macro code.) */
     final class TypExtractorImplRuntime(uniqueId: Long, context: Context, string: String, varNames: List[String])
-                                       (implicit isabelle: Isabelle, executionContext: ExecutionContext) {
+                                       (implicit isabelle: Isabelle) {
       def unapplySeq(typ: Typ) : Option[Seq[Typ]] = {
         val template = parseTyp(uniqueId, context, string)
         Ops.patternMatchTyp(context, template, typ, varNames).retrieveNow
@@ -260,7 +258,7 @@ object StringInterpolators extends OperationCollection {
     /** This function should be considered private. (It is only visible to be accessible in
      * macro code.) */
     def termApplyImplRuntime(uniqueId: Long, context: Context, string: String, typeInstantiation: List[(String,Typ)], termInstantiation: List[(String,Term)])
-                            (implicit isabelle: Isabelle, executionContext: ExecutionContext): Cterm = {
+                            (implicit isabelle: Isabelle): Cterm = {
       val template = parseTerm(uniqueId, context, string)
       val typeInstantiation2 = for ((v,typ) <- typeInstantiation) yield (v, Ctyp(context, typ))
       val termInstantiation2 = for ((v,term) <- termInstantiation) yield (v, Cterm(context, term))
@@ -270,7 +268,7 @@ object StringInterpolators extends OperationCollection {
     /** This function should be considered private. (It is only visible to be accessible in
      * macro code.) */
     def typApplyImplRuntime(uniqueId: Long, context: Context, string: String, instantiation: List[(String,Typ)])
-                           (implicit isabelle: Isabelle, executionContext: ExecutionContext) : Typ = {
+                           (implicit isabelle: Isabelle) : Typ = {
       val template = parseTyp(uniqueId, context, string)
       Ops.instantiateTyp(instantiation, template).retrieveNow
     }
@@ -279,11 +277,11 @@ object StringInterpolators extends OperationCollection {
   /** See [[StringInterpolators]] for an explanation. */
   implicit final class TermInterpolator(val stringContext: StringContext) {
     object term {
-      def apply(args: TermOrTyp*)(implicit context: Context, isabelle: Isabelle, executionContext: ExecutionContext) : Term =
+      def apply(args: TermOrTyp*)(implicit context: Context, isabelle: Isabelle) : Term =
       macro TermMacroImpl.termApplyImpl
 
       def unapply(term: Term)
-                 (implicit context: Context, isabelle: Isabelle, executionContext: ExecutionContext): Option[Any] =
+                 (implicit context: Context, isabelle: Isabelle): Option[Any] =
       macro TermMacroImpl.termUnapplyImpl
     }
   }
@@ -291,17 +289,17 @@ object StringInterpolators extends OperationCollection {
   /** See [[StringInterpolators]] for an explanation. */
   implicit final class TypInterpolator(val stringContext: StringContext) {
     object typ {
-      def apply(args: Typ*)(implicit context: Context, isabelle: Isabelle, executionContext: ExecutionContext) : Typ =
+      def apply(args: Typ*)(implicit context: Context, isabelle: Isabelle) : Typ =
       macro TypMacroImpl.typApplyImpl
 
       def unapplySeq(typ: Typ)
-                    (implicit context: Context, isabelle: Isabelle, executionContext: ExecutionContext): Option[Seq[Typ]] =
+                    (implicit context: Context, isabelle: Isabelle): Option[Seq[Typ]] =
       macro TypMacroImpl.typUnapplySeqImpl
     }
   }
 
   //noinspection TypeAnnotation
-  protected final class Ops(implicit isabelle: Isabelle, executionContext: ExecutionContext) {
+  protected final class Ops(implicit isabelle: Isabelle) {
     val inferInstantiateTerm = MLValue.compileFunction[Context, List[(String, Typ)], List[(String, Cterm)], Term, Cterm](
       """fn (ctxt, typInst, termInst, term) => let
         |  val term = Term.map_types (Term.map_atyps (fn v as TVar((n,0),_) =>
@@ -332,5 +330,5 @@ object StringInterpolators extends OperationCollection {
     )
   }
 
-  override protected def newOps(implicit isabelle: Isabelle, ec: ExecutionContext): Ops = new Ops
+  override protected def newOps(implicit isabelle: Isabelle): Ops = new Ops
 }

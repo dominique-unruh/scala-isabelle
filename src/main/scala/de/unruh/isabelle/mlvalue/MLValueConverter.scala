@@ -4,7 +4,7 @@ import de.unruh.isabelle.control.Isabelle
 import de.unruh.isabelle.mlvalue.MLValue.Converter
 import scalaz.Id.Id
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 
 /** A special [[MLValue.Converter]] that allows us to create [[MLValue]]s that contain [[MLValue]]s.
  *
@@ -31,15 +31,16 @@ import scala.concurrent.{ExecutionContext, Future}
  * means the above approach (except for retrieving values of type `huge`) can even be used if no converter for `A`
  * has not actually been implemented. (As long as we consistently imagine a specific ML type and encoding for `A`.)
  */
+// DOCUMENT import de.unruh.isabelle.control.Isabelle.executionContext -- for getting an ExecutionContext
 @inline final class MLValueConverter[A] extends Converter[MLValue[A]] {
-  override def retrieve(value: MLValue[MLValue[A]])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[MLValue[A]] =
+  override def retrieve(value: MLValue[MLValue[A]])(implicit isabelle: Isabelle): Future[MLValue[A]] =
     Future.successful(value.removeMLValue[Id, A])
 
-  override def store(value: MLValue[A])(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[MLValue[A]] =
+  override def store(value: MLValue[A])(implicit isabelle: Isabelle): MLValue[MLValue[A]] =
     value.insertMLValue[Id, A]
 
-  @inline override def exnToValue(implicit isabelle: Isabelle, ec: ExecutionContext): String = "fn x => x"
-  @inline override def valueToExn(implicit isabelle: Isabelle, ec: ExecutionContext): String = "fn x => x"
+  @inline override def exnToValue(implicit isabelle: Isabelle): String = "fn x => x"
+  @inline override def valueToExn(implicit isabelle: Isabelle): String = "fn x => x"
 
-  override def mlType(implicit isabelle: Isabelle, ec: ExecutionContext): String = "exn"
+  override def mlType(implicit isabelle: Isabelle): String = "exn"
 }

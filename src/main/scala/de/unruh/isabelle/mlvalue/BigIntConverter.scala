@@ -5,7 +5,10 @@ import de.unruh.isabelle.control.Isabelle
 import de.unruh.isabelle.control.Isabelle.{DInt, DList, DString}
 import de.unruh.isabelle.mlvalue.MLValue.Ops
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
+
+// Implicits
+import Isabelle.executionContext
 
 /**
  * [[MLValue.Converter]] for [[scala.BigInt BigInt]]s.
@@ -20,16 +23,16 @@ import scala.concurrent.{ExecutionContext, Future}
  */
 
 object BigIntConverter extends MLValue.Converter[BigInt] {
-  override def mlType(implicit isabelle: Isabelle, ec: ExecutionContext): String = IntConverter.mlType
+  override def mlType(implicit isabelle: Isabelle): String = IntConverter.mlType
 
-  override def retrieve(value: MLValue[BigInt])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[BigInt] =
+  override def retrieve(value: MLValue[BigInt])(implicit isabelle: Isabelle): Future[BigInt] =
     for (DString(str) <- Ops.retrieveBigInt(value))
       yield BigInt(str.replace('~','-'))
 
-  override def store(value: BigInt)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[BigInt] =
+  override def store(value: BigInt)(implicit isabelle: Isabelle): MLValue[BigInt] =
     Ops.storeBigInt(DString(value.toString))
 
-  override def exnToValue(implicit isabelle: Isabelle, ec: ExecutionContext): String = IntConverter.exnToValue
+  override def exnToValue(implicit isabelle: Isabelle): String = IntConverter.exnToValue
 
-  override def valueToExn(implicit isabelle: Isabelle, ec: ExecutionContext): String = IntConverter.valueToExn
+  override def valueToExn(implicit isabelle: Isabelle): String = IntConverter.valueToExn
 }

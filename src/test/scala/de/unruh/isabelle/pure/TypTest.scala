@@ -7,8 +7,6 @@ import de.unruh.isabelle.pure.TypTest.assertRecursivelyConcrete
 import org.scalatest.Assertions
 import org.scalatest.funsuite.AnyFunSuite
 
-import scala.concurrent.ExecutionContext.Implicits.global
-
 class TypTest extends AnyFunSuite {
   lazy val ctxt: Context = Context("Main")
 

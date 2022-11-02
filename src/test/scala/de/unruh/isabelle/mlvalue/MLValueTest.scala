@@ -7,7 +7,6 @@ import de.unruh.isabelle.mlvalue.Implicits._
 import de.unruh.isabelle.pure.{Context, Thm}
 import org.scalatest.funsuite.AnyFunSuite
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Awaitable}
 
@@ -18,10 +17,10 @@ class MLValueTest extends AnyFunSuite {
     val isabelle1 = IsabelleTest.isabelle
     val isabelle2 = new Isabelle(IsabelleTest.setup)
 
-    val ctxt1 = Context("Pure")(isabelle1, implicitly)
-    val ctxt2 = Context("Main")(isabelle2, implicitly)
-    val thm1 = Thm(ctxt1, "Pure.reflexive")(isabelle1, implicitly)
-    val thm2 = Thm(ctxt2, "HOL.refl")(isabelle2, implicitly)
+    val ctxt1 = Context("Pure")(isabelle1)
+    val ctxt2 = Context("Main")(isabelle2)
+    val thm1 = Thm(ctxt1, "Pure.reflexive")(isabelle1)
+    val thm2 = Thm(ctxt2, "HOL.refl")(isabelle2)
     val str1 = thm1.pretty(ctxt1)
     val str2 = thm2.pretty(ctxt2)
     assert(str1 == "?x ≡ ?x")
@@ -68,9 +67,7 @@ class MLValueTest extends AnyFunSuite {
   }
 
   test("MLValue documentation example") {
-
     // implicit val isabelle: Isabelle = new Isabelle(...)
-    import scala.concurrent.ExecutionContext.Implicits._
 
     // Create an MLValue containing an integer
     val intML : MLValue[Int] = MLValue(123)

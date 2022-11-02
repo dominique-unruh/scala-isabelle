@@ -1,19 +1,22 @@
 package de.unruh.isabelle.pure
 
 import de.unruh.isabelle.control.Isabelle.{DInt, DList, DObject, DString}
-import de.unruh.isabelle.control.{Isabelle, IsabelleMLException, IsabelleMiscException, OperationCollection}
-import de.unruh.isabelle.misc.{FutureValue, Symbols, Utils}
-import de.unruh.isabelle.mlvalue.MLValue.Converter
+import de.unruh.isabelle.control.{Isabelle, IsabelleMiscException, OperationCollection}
+import de.unruh.isabelle.misc.{FutureValue, Symbols}
 import de.unruh.isabelle.mlvalue.Implicits._
-import de.unruh.isabelle.mlvalue.{MLFunction, MLFunction2, MLFunction3, MLRetrieveFunction, MLValue}
+import de.unruh.isabelle.mlvalue.MLValue.Converter
+import de.unruh.isabelle.mlvalue._
 import de.unruh.isabelle.pure.Implicits._
 import de.unruh.isabelle.pure.Term.Ops
 import org.apache.commons.lang3.builder.HashCodeBuilder
 
 import scala.annotation.tailrec
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Awaitable, ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.control.Breaks
+
+// Implicits
+import de.unruh.isabelle.control.Isabelle.executionContext
 
 /**
  * This class represents a term (ML type `term`) in Isabelle. It can be transferred to and from the Isabelle process
@@ -116,7 +119,7 @@ sealed abstract class Term(
   /** [[control.Isabelle Isabelle]] instance relative to which this term was constructed. */
   implicit val isabelle : Isabelle
 
-  override def prettyRaw(ctxt: Context)(implicit ec: ExecutionContext): String =
+  override def prettyRaw(ctxt: Context): String =
     Ops.stringOfTerm(MLValue((ctxt, this))).retrieveNow
 
   /** Transforms this term into a [[ConcreteTerm]]. A [[ConcreteTerm]] guarantees
@@ -126,7 +129,7 @@ sealed abstract class Term(
 
   /** Transforms this term into a [[ConcreteTerm]] (see [[concrete]]).
    * In contrast to [[concrete]], it also replaces all subterms by concrete subterms. */
-  def concreteRecursive(implicit ec: ExecutionContext) : ConcreteTerm
+  def concreteRecursive : ConcreteTerm
 
   /** Indicates whether [[concrete]] has already been initialized. (I.e.,
    * whether it can be accessed without delay and without incurring communication with
@@ -134,7 +137,7 @@ sealed abstract class Term(
   def concreteComputed: Boolean
 
   /** `t $ u` is shorthand for [[App]]`(t,u)` */
-  final def $(that: Term)(implicit ec: ExecutionContext): App = App(this, that)
+  final def $(that: Term): App = App(this, that)
 
   /** Hash code compatible with [[equals]]. May fail with an exception, see [[equals]]. */
   override def hashCode(): Int = throw new NotImplementedError("Should be overridden")
@@ -156,7 +159,6 @@ sealed abstract class Term(
     false
 
   final private def sameId(that: Term): Boolean = {
-    import ExecutionContext.Implicits.global
     val mlValueThis = this.mlValueVariable
     val mlValueThat = that.mlValueVariable
     if (mlValueThis != null && mlValueThat != null) {
@@ -189,7 +191,6 @@ sealed abstract class Term(
     case (t1: Const, t2: Const) => checkAndMerge(t2, t1.name == t2.name && t1.typ == t2.typ)
     case (t1: Abs, t2: Abs) => checkAndMerge(t2, t1.name == t2.name && t1.typ == t2.typ && t1.body == t2.body)
     case (t1: Cterm, t2: Cterm) =>
-      import ExecutionContext.Implicits.global
       Await.result(for (t1id <- t1.ctermMlValue.id;
                         t2id <- t2.ctermMlValue.id)
       yield
@@ -199,17 +200,14 @@ sealed abstract class Term(
     case (t1: Cterm, t2: Term) => checkAndMerge(t2, t1.mlValueTerm == t2)
     case (t1: Term, t2: Cterm) => checkAndMerge(t2, t1 == t2.mlValueTerm)
     case (t1: MLValueTerm, t2: MLValueTerm) =>
-      import ExecutionContext.Implicits.global
       checkAndMerge(t2,
         if (t1.concreteComputed && t2.concreteComputed) t1.concrete == t2.concrete
         else Ops.equalsTerm(t1,t2).retrieveNow)
     case (t1: MLValueTerm, t2: Term) =>
-      import ExecutionContext.Implicits.global
       checkAndMerge(t2,
         if (t1.concreteComputed) t1.concrete == t2
         else Ops.equalsTerm(t1,t2).retrieveNow)
     case (t1: Term, t2: MLValueTerm) =>
-      import ExecutionContext.Implicits.global
       checkAndMerge(t2,
         if (t2.concreteComputed) t1 == t2.concrete
         else Ops.equalsTerm(t1,t2).retrieveNow)
@@ -233,7 +231,7 @@ sealed abstract class Term(
    * This method is analogous to `fastype_of` in Isabelle/ML but avoids transferring the term to/from Isabelle when
    * determining the type.
    * */
-  final def fastType(implicit executionContext: ExecutionContext) : Typ = {
+  final def fastType : Typ = {
     import Breaks._
     tryBreakable {
       def typ(t: Term, env: List[Typ]): Typ = t match {
@@ -282,17 +280,17 @@ sealed abstract class ConcreteTerm(initialMlValue: MLValue[Term]) extends Term(i
  * A [[Cterm]] is always well-typed relative to the context for which it was
  * created (this is ensured by the Isabelle trusted core).
  **/
-final class Cterm private(val ctermMlValue: MLValue[Cterm])(implicit val isabelle: Isabelle, ec: ExecutionContext) extends Term(null) {
+final class Cterm private(val ctermMlValue: MLValue[Cterm])(implicit val isabelle: Isabelle) extends Term(null) {
   /** Returns this term as an `MLValue[Term]` (not `MLValue[Cterm]`). The difference is crucial
    * because `MLValue[_]` is not covariant. So for invoking ML functions that expect an argument of type `term`, you
    * need to get an `MLValue[Term]`. In contrast, [[ctermMlValue]] returns this term as an `MLValue[Cterm]`. */
   override protected def computeMlValue: MLValue[Term] = Ops.termOfCterm(ctermMlValue)
   /** Transforms this [[Cterm]] into an [[MLValueTerm]]. */
   private [pure] lazy val mlValueTerm = new MLValueTerm(mlValue)
-  override def prettyRaw(ctxt: Context)(implicit ec: ExecutionContext): String =
+  override def prettyRaw(ctxt: Context): String =
     Ops.stringOfCterm(MLValue((ctxt, this))).retrieveNow
   lazy val concrete: ConcreteTerm = mlValueTerm.concrete
-  override def concreteRecursive(implicit ec: ExecutionContext): ConcreteTerm = mlValueTerm.concreteRecursive
+  override def concreteRecursive: ConcreteTerm = mlValueTerm.concreteRecursive
   override def hashCode(): Int = concrete.hashCode()
   override def force : this.type = { ctermMlValue.force; this }
   override def someFuture: Future[Any] = ctermMlValue.someFuture
@@ -312,7 +310,7 @@ object Cterm {
    * is just a wrapper around an [[mlvalue.MLValue MLValue]][[[Cterm]]], this operation does not
    * require any communication with the Isabelle process. */
   def apply(mlValue: MLValue[Cterm])
-           (implicit isabelle: Isabelle, executionContext: ExecutionContext) =
+           (implicit isabelle: Isabelle) =
     new Cterm(mlValue)
 
   /** Converts a [[Term]] into a [[Cterm]]. This involves type-checking (relative to the
@@ -322,7 +320,7 @@ object Cterm {
    * (Which guarantees that `term` is also a valid term w.r.t. `ctxt`.)
    * If this is not possible, `term` is re-checked to create a cterm.
    * */
-  def apply(ctxt: Context, term: Term)(implicit isabelle: Isabelle, ec: ExecutionContext) : Cterm = term match {
+  def apply(ctxt: Context, term: Term)(implicit isabelle: Isabelle) : Cterm = term match {
     case cterm : Cterm =>
       // We cannot just return `cterm` because it may be a cterm w.r.t. the wrong context.
       // But re-checking the term is wasteful if the term was already checked w.r.t. this context.
@@ -331,11 +329,11 @@ object Cterm {
   }
 
   /** Parses `string` as a term and returns the result as a [[Cterm]]. */
-  def apply(ctxt: Context, string: String)(implicit isabelle: Isabelle, ec: ExecutionContext) : Cterm =
+  def apply(ctxt: Context, string: String)(implicit isabelle: Isabelle) : Cterm =
     Cterm(ctxt, Term(ctxt, string))
 
   /** Parses `string` as a term of type `typ` and returns the result as a [[Cterm]]. */
-  def apply(ctxt: Context, string: String, typ: Typ)(implicit isabelle: Isabelle, ec: ExecutionContext) : Cterm =
+  def apply(ctxt: Context, string: String, typ: Typ)(implicit isabelle: Isabelle) : Cterm =
     Cterm(ctxt, Term(ctxt, string, typ))
 
   /** Representation of cterms in ML.
@@ -346,21 +344,21 @@ object Cterm {
    * Available as an implicit value by importing [[de.unruh.isabelle.pure.Implicits]]`._`
    **/
   object CtermConverter extends Converter[Cterm] {
-    override def store(value: Cterm)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[Cterm] =
+    override def store(value: Cterm)(implicit isabelle: Isabelle): MLValue[Cterm] =
       value.ctermMlValue
-    override def retrieve(value: MLValue[Cterm])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Cterm] =
+    override def retrieve(value: MLValue[Cterm])(implicit isabelle: Isabelle): Future[Cterm] =
         Future.successful(new Cterm(ctermMlValue = value))
-    override def exnToValue(implicit isabelle: Isabelle, ec: ExecutionContext): String = "fn (E_Cterm t) => t"
-    override def valueToExn(implicit isabelle: Isabelle, ec: ExecutionContext): String = "E_Cterm"
+    override def exnToValue(implicit isabelle: Isabelle): String = "fn (E_Cterm t) => t"
+    override def valueToExn(implicit isabelle: Isabelle): String = "E_Cterm"
 
-    override def mlType(implicit isabelle: Isabelle, ec: ExecutionContext): String = "cterm"
+    override def mlType(implicit isabelle: Isabelle): String = "cterm"
   }
 }
 
 /** A [[Term]] that is stored in the Isabelle process's object store
  * and may or may not be known in Scala. Use [[concrete]] to
  * get a representation of the same term as a [[ConcreteTerm]]. */
-final class MLValueTerm private[pure] (initialMlValue: MLValue[Term])(implicit val isabelle: Isabelle, ec: ExecutionContext) extends Term(initialMlValue) {
+final class MLValueTerm private[pure] (initialMlValue: MLValue[Term])(implicit val isabelle: Isabelle) extends Term(initialMlValue) {
   override protected def computeMlValue: MLValue[Term] = throw new IllegalStateException("MLValueTerm.computeMLValue should never be called")
 
   /** Does not do anything. */
@@ -400,7 +398,7 @@ final class MLValueTerm private[pure] (initialMlValue: MLValue[Term])(implicit v
     term
   }
 
-  override def concreteRecursive(implicit ec: ExecutionContext): ConcreteTerm = concrete.concreteRecursive
+  override def concreteRecursive: ConcreteTerm = concrete.concreteRecursive
 
   override def toString: String =
     if (concreteLoaded) concrete.toString
@@ -411,11 +409,11 @@ final class MLValueTerm private[pure] (initialMlValue: MLValue[Term])(implicit v
 /** A constant (ML constructor `Const`). [[name]] is the fully qualified name of the constant (e.g.,
  * `"HOL.True"`) and [[typ]] its type. */
 final class Const private[pure](val name: String, val typ: Typ, initialMlValue: MLValue[Term]=null)
-                               (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTerm(initialMlValue) {
+                               (implicit val isabelle: Isabelle) extends ConcreteTerm(initialMlValue) {
   override protected def computeMlValue : MLValue[Term] = Ops.makeConst(MLValue((name,typ)))
   override def toString: String = name
 
-  override def concreteRecursive(implicit ec: ExecutionContext): Const = {
+  override def concreteRecursive: Const = {
     val typ = this.typ.concreteRecursive
     if (typ eq this.typ)
       this
@@ -428,12 +426,12 @@ final class Const private[pure](val name: String, val typ: Typ, initialMlValue: 
 
   override def someFuture: Future[Any] = Future.successful(())
   override def await: Unit = {}
-  override def forceFuture(implicit ec: ExecutionContext): Future[this.type] = Future.successful(this)
+  override def forceFuture(implicit isabelle: Isabelle): Future[this.type] = Future.successful(this)
 }
 
 object Const {
   /** Create a constant with name `name` and type `typ`. */
-  def apply(name: String, typ: Typ)(implicit isabelle: Isabelle, ec: ExecutionContext) = new Const(name, typ)
+  def apply(name: String, typ: Typ)(implicit isabelle: Isabelle) = new Const(name, typ)
 
   /** Allows to pattern match constants. E.g.,
    * {{{
@@ -454,14 +452,14 @@ object Const {
 /** A free variable (ML constructor `Free`). [[name]] is the name of the variable (e.g.,
  * `"x"`) and [[typ]] its type. */
 final class Free private[pure](val name: String, val typ: Typ, initialMlValue: MLValue[Term]=null)
-                              (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTerm(initialMlValue) {
+                              (implicit val isabelle: Isabelle) extends ConcreteTerm(initialMlValue) {
   override protected def computeMlValue : MLValue[Term] = Ops.makeFree(name, typ)
   override def toString: String = name
 
   override def hashCode(): Int = new HashCodeBuilder(384673423,678423475)
     .append(name).toHashCode
 
-  override def concreteRecursive(implicit ec: ExecutionContext): Free = {
+  override def concreteRecursive: Free = {
     val typ = this.typ.concreteRecursive
     if (typ eq this.typ)
       this
@@ -471,12 +469,12 @@ final class Free private[pure](val name: String, val typ: Typ, initialMlValue: M
 
   override def someFuture: Future[Any] = Future.successful(())
   override def await: Unit = {}
-  override def forceFuture(implicit ec: ExecutionContext): Future[this.type] = Future.successful(this)
+  override def forceFuture(implicit isabelle: Isabelle): Future[this.type] = Future.successful(this)
 }
 
 object Free {
   /** Create a free variable with name `name` and type `typ`. */
-  def apply(name: String, typ: Typ)(implicit isabelle: Isabelle, ec: ExecutionContext) = new Free(name, typ)
+  def apply(name: String, typ: Typ)(implicit isabelle: Isabelle) = new Free(name, typ)
 
   /** Allows to pattern match free variables. E.g.,
    * {{{
@@ -504,14 +502,14 @@ object Free {
  * By convention, schematic variables indicate variables that are can be instantiated/unified.
  **/
 final class Var private[pure](val name: String, val index: Int, val typ: Typ, initialMlValue: MLValue[Term]=null)
-                             (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTerm(initialMlValue) {
+                             (implicit val isabelle: Isabelle) extends ConcreteTerm(initialMlValue) {
   override protected def computeMlValue: MLValue[Term] = Ops.makeVar(name, index, typ)
   override def toString: String = s"?$name$index"
 
   override def hashCode(): Int = new HashCodeBuilder(3474285, 342683425)
     .append(name).append(index).toHashCode
 
-  override def concreteRecursive(implicit ec: ExecutionContext): Var = {
+  override def concreteRecursive: Var = {
     val typ = this.typ.concreteRecursive
     if (typ eq this.typ)
       this
@@ -521,12 +519,12 @@ final class Var private[pure](val name: String, val index: Int, val typ: Typ, in
 
   override def someFuture: Future[Any] = Future.successful(())
   override def await: Unit = {}
-  override def forceFuture(implicit ec: ExecutionContext): Future[this.type] = Future.successful(this)
+  override def forceFuture(implicit isabelle: Isabelle): Future[this.type] = Future.successful(this)
 }
 
 object Var {
   /** Create a schematic variable with name `name`, index `index`, and type `typ`. */
-  def apply(name: String, index: Int, typ: Typ)(implicit isabelle: Isabelle, ec: ExecutionContext) = new Var(name, index, typ)
+  def apply(name: String, index: Int, typ: Typ)(implicit isabelle: Isabelle) = new Var(name, index, typ)
 
   /** Allows to pattern match schematic variables. E.g.,
    * {{{
@@ -551,7 +549,7 @@ object Var {
  * (Pattern matching only supports the syntax `App(...)`, not `$`.)
  **/
 final class App private[pure] (val fun: Term, val arg: Term, initialMlValue: MLValue[Term]=null)
-                              (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTerm(initialMlValue) {
+                              (implicit val isabelle: Isabelle) extends ConcreteTerm(initialMlValue) {
   override protected def computeMlValue: MLValue[Term] = Ops.makeApp(fun,arg)
 
   override def toString: String = s"($fun $$ $arg)"
@@ -559,7 +557,7 @@ final class App private[pure] (val fun: Term, val arg: Term, initialMlValue: MLV
   override def hashCode(): Int = new HashCodeBuilder(334234237,465634533)
     .append(arg).toHashCode
 
-  override def concreteRecursive(implicit ec: ExecutionContext): App = {
+  override def concreteRecursive: App = {
     val fun = this.fun.concreteRecursive
     val arg = this.arg.concreteRecursive
     if ((fun eq this.fun) && (arg eq this.arg))
@@ -574,7 +572,7 @@ final class App private[pure] (val fun: Term, val arg: Term, initialMlValue: MLV
 
 object App {
   /** Create a function application with function `fun` and argument `arg`. */
-  def apply(fun: Term, arg: Term)(implicit isabelle: Isabelle, ec: ExecutionContext) = new App(fun, arg)
+  def apply(fun: Term, arg: Term)(implicit isabelle: Isabelle) = new App(fun, arg)
 
   /** Allows to pattern match function applications. E.g.,
    * {{{
@@ -601,14 +599,14 @@ object App {
  * since deBrujn indices are used. [[name]] can even be `""`.
  */
 final class Abs private[pure] (val name: String, val typ: Typ, val body: Term, initialMlValue: MLValue[Term]=null)
-                              (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTerm(initialMlValue) {
+                              (implicit val isabelle: Isabelle) extends ConcreteTerm(initialMlValue) {
   override protected def computeMlValue: MLValue[Term] = Ops.makeAbs(name,typ,body)
   override def toString: String = s"(λ$name. $body)"
 
   override def hashCode(): Int = new HashCodeBuilder(342345635,564562379)
     .append(name).append(body).toHashCode
 
-  override def concreteRecursive(implicit ec: ExecutionContext): Abs = {
+  override def concreteRecursive: Abs = {
     val typ = this.typ.concreteRecursive
     val body = this.body.concreteRecursive
     if ((typ eq this.typ) && (body eq this.body))
@@ -624,7 +622,7 @@ final class Abs private[pure] (val name: String, val typ: Typ, val body: Term, i
 object Abs {
   /** Create a lambda abstraction with bound variable name `name`, bound variable type `typ`,
    * and body `body`. */
-  def apply(name: String, typ: Typ, body: Term)(implicit isabelle: Isabelle, ec: ExecutionContext) = new Abs(name,typ,body)
+  def apply(name: String, typ: Typ, body: Term)(implicit isabelle: Isabelle) = new Abs(name,typ,body)
 
   /** Allows to pattern match lambda abstractions. E.g.,
    * {{{
@@ -648,7 +646,7 @@ object Abs {
  * (Starting from 0, i.e., `Bound(0)` refers to the directly enclosing [[Abs]].)
  **/
 final class Bound private[pure] (val index: Int, initialMlValue: MLValue[Term]=null)
-                                (implicit val isabelle: Isabelle, ec: ExecutionContext) extends ConcreteTerm(initialMlValue) {
+                                (implicit val isabelle: Isabelle) extends ConcreteTerm(initialMlValue) {
   override protected def computeMlValue: MLValue[Term] = Ops.makeBound(index)
   override def toString: String = s"Bound $index"
 
@@ -657,14 +655,14 @@ final class Bound private[pure] (val index: Int, initialMlValue: MLValue[Term]=n
 
   override def someFuture: Future[Any] = Future.successful(())
   override def await: Unit = {}
-  override def forceFuture(implicit ec: ExecutionContext): Future[this.type] = Future.successful(this)
+  override def forceFuture(implicit isabelle: Isabelle): Future[this.type] = Future.successful(this)
 
-  override def concreteRecursive(implicit ec: ExecutionContext): this.type = this
+  override def concreteRecursive: this.type = this
 }
 
 object Bound {
   /** Create a bound variable with index `index`. */
-  def apply(index: Int)(implicit isabelle: Isabelle, ec: ExecutionContext) = new Bound(index)
+  def apply(index: Int)(implicit isabelle: Isabelle) = new Bound(index)
 
   /** Allows to pattern match bound variables. E.g.,
    * {{{
@@ -685,9 +683,9 @@ object Bound {
 
 
 object Term extends OperationCollection {
-  override protected def newOps(implicit isabelle: Isabelle, ec: ExecutionContext): Ops = new Ops()
+  override protected def newOps(implicit isabelle: Isabelle): Ops = new Ops()
   //noinspection TypeAnnotation
-  protected[pure] class Ops(implicit val isabelle: Isabelle, ec: ExecutionContext) {
+  protected[pure] class Ops(implicit val isabelle: Isabelle) {
     import MLValue.compileFunction
 //    Typ.init()
 //    isabelle.executeMLCodeNow("exception E_Term of term;; exception E_Cterm of cterm")
@@ -737,7 +735,7 @@ object Term extends OperationCollection {
    * @param string The string to be parsed
    * @param symbols Instance of [[misc.Symbols Symbols]] to convert `string` to Isabelle's internal encoding
    **/
-  def apply(context: Context, string: String, symbols : Symbols = Symbols.globalInstance)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValueTerm = {
+  def apply(context: Context, string: String, symbols : Symbols = Symbols.globalInstance)(implicit isabelle: Isabelle): MLValueTerm = {
     new MLValueTerm(Ops.readTerm(context, symbols.unicodeToSymbols(string)))
   }
 
@@ -748,7 +746,7 @@ object Term extends OperationCollection {
    * @param string The string to be parsed
    * @param typ The type constraint. I.e., the returned term will have type `typ`
    **/
-  def apply(context: Context, string: String, typ: Typ)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValueTerm =
+  def apply(context: Context, string: String, typ: Typ)(implicit isabelle: Isabelle): MLValueTerm =
     Term(context, string, typ, Symbols.globalInstance)
 
   /** Same as [[de.unruh.isabelle.pure.Term#apply(context:de\.unruh\.isabelle\.pure\.Context,string:String,typ:de\.unruh\.isabelle\.pure\.Typ,symbols:de\.unruh\.isabelle\.misc\.Symbols)* apply(Context,String,Typ)]] but allows to specify the [[misc.Symbols Symbols]] translation table.
@@ -758,7 +756,7 @@ object Term extends OperationCollection {
    * @param typ The type constraint. I.e., the returned term will have type `typ`
    * @param symbols Instance of [[misc.Symbols Symbols]] to convert `string` to Isabelle's internal encoding
    **/
-  def apply(context: Context, string: String, typ: Typ, symbols : Symbols)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValueTerm =
+  def apply(context: Context, string: String, typ: Typ, symbols : Symbols)(implicit isabelle: Isabelle): MLValueTerm =
     new MLValueTerm(Ops.readTermConstrained(MLValue((context, symbols.unicodeToSymbols(string), typ))))
 
   /** Representation of terms in ML.
@@ -772,13 +770,13 @@ object Term extends OperationCollection {
    * Available as an implicit value by importing [[de.unruh.isabelle.pure.Implicits]]`._`
    **/
   object TermConverter extends Converter[Term] {
-    override def store(value: Term)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[Term] =
+    override def store(value: Term)(implicit isabelle: Isabelle): MLValue[Term] =
       value.mlValue
-    override def retrieve(value: MLValue[Term])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Term] =
+    override def retrieve(value: MLValue[Term])(implicit isabelle: Isabelle): Future[Term] =
         Future.successful(new MLValueTerm(initialMlValue = value))
-    override def exnToValue(implicit isabelle: Isabelle, ec: ExecutionContext): String = "fn (E_Term t) => t"
-    override def valueToExn(implicit isabelle: Isabelle, ec: ExecutionContext): String = "E_Term"
+    override def exnToValue(implicit isabelle: Isabelle): String = "fn (E_Term t) => t"
+    override def valueToExn(implicit isabelle: Isabelle): String = "E_Term"
 
-    override def mlType(implicit isabelle: Isabelle, ec: ExecutionContext): String = "term"
+    override def mlType(implicit isabelle: Isabelle): String = "term"
   }
 }

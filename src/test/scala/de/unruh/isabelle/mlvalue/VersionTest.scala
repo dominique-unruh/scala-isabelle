@@ -5,8 +5,6 @@ import de.unruh.isabelle.control.IsabelleTest
 import de.unruh.isabelle.control.IsabelleTest.isabelle
 import de.unruh.isabelle.mlvalue.Version.NOT_RC
 
-import scala.concurrent.ExecutionContext.Implicits.global
-
 class VersionTest extends org.scalatest.funsuite.AnyFunSuite {
   test("parse version") {
     val string = Version.versionString

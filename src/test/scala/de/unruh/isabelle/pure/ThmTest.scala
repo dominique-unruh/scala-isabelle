@@ -3,7 +3,6 @@ package de.unruh.isabelle.pure
 import org.scalatest.funsuite.AnyFunSuite
 
 import de.unruh.isabelle.control.IsabelleTest.isabelle
-import scala.concurrent.ExecutionContext.Implicits.global
 
 class ThmTest extends AnyFunSuite {
   test("retrieve thm") {

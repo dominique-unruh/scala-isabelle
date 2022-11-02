@@ -4,8 +4,6 @@ import de.unruh.isabelle.control.Isabelle
 import de.unruh.isabelle.mlvalue.{MLValue, MLValueWrapper}
 import de.unruh.isabelle.mlvalue.MLValue.{compileFunction, compileFunction0, compileValue}
 
-import scala.concurrent.ExecutionContext
-
 /** Represents a mutex (ML type `Mutex.mutex`) in the Isabelle process.
  *
  * An instance of this class is merely a thin wrapper around an [[mlvalue.MLValue MLValue]],
@@ -25,12 +23,12 @@ object Mutex extends MLValueWrapper.Companion[Mutex] {
   override protected def instantiate(mlValue: MLValue[Mutex]): Mutex = new Mutex(mlValue)
 
   //noinspection TypeAnnotation
-  protected class Ops(implicit isabelle: Isabelle, ec: ExecutionContext) extends super.Ops {
+  protected class Ops(implicit isabelle: Isabelle) extends super.Ops {
     lazy val createMutex = compileFunction0[Mutex]("Mutex.mutex")
   }
 
   /** Creates a new mutex */
-  def apply()(implicit isabelle: Isabelle, ec: ExecutionContext) : Mutex = Ops.createMutex().retrieveNow
+  def apply()(implicit isabelle: Isabelle) : Mutex = Ops.createMutex().retrieveNow
 
   /** Returns a fragment of ML code that exectutes the ML code `code` with the mutex `mutex`.
    * `mutex` is assumed to be the name of an ML value that holds the mutex.
@@ -49,5 +47,5 @@ object Mutex extends MLValueWrapper.Companion[Mutex] {
   def wrapWithMutex(mutex: String, code: String) =
     s"let val _ = Mutex.lock $mutex val result = ($code) handle e => (Mutex.unlock $mutex; Exn.reraise e) val _ = Mutex.unlock $mutex in result end"
 
-  override protected def newOps(implicit isabelle: Isabelle, ec: ExecutionContext): Ops = new Ops
+  override protected def newOps(implicit isabelle: Isabelle): Ops = new Ops
 }

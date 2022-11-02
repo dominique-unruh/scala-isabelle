@@ -6,8 +6,6 @@ import de.unruh.isabelle.mlvalue.Version
 import de.unruh.isabelle.pure.Proofterm.PThm
 import org.scalatest.funsuite.AnyFunSuite
 
-import scala.concurrent.ExecutionContext.Implicits.global
-
 class ProoftermTest extends AnyFunSuite {
 
   test("old version") {

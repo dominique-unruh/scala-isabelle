@@ -4,7 +4,7 @@ import de.unruh.isabelle.control.{Isabelle, OperationCollection}
 import de.unruh.isabelle.mlvalue.MLValue.Converter
 import de.unruh.isabelle.mlvalue.{MLFunction, MLValue, MLValueWrapper}
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 
 import Context.Ops
 
@@ -50,7 +50,7 @@ final class Context private [Context](val mlValue : MLValue[Context]) extends ML
 //  override def someFuture: Future[Any] = mlValue.someFuture
 
   /** Returns the theory underlying this context. */
-  def theoryOf(implicit isabelle: Isabelle, executionContext: ExecutionContext) : Theory = Ops.theoryOf(this).retrieveNow
+  def theoryOf(implicit isabelle: Isabelle) : Theory = Ops.theoryOf(this).retrieveNow
 
   /** Sets the "inner syntax mode" of the context.
    * This affects, e.g., parsing of terms/types.
@@ -60,14 +60,14 @@ final class Context private [Context](val mlValue : MLValue[Context]) extends ML
    * @return a new context with the corresponding mode
    */
   def setMode(mode: Context.Mode)
-             (implicit isabelle: Isabelle, executionContext: ExecutionContext) : Context =
+             (implicit isabelle: Isabelle) : Context =
     Ops.setMode(this, mode.id).retrieveNow
 }
 
 object Context extends MLValueWrapper.Companion[Context] {
-  override protected def newOps(implicit isabelle: Isabelle, ec: ExecutionContext): Ops = new Ops()
+  override protected def newOps(implicit isabelle: Isabelle): Ops = new Ops()
   //noinspection TypeAnnotation
-  protected class Ops(implicit val isabelle: Isabelle, ec: ExecutionContext) extends super.Ops {
+  protected class Ops(implicit val isabelle: Isabelle) extends super.Ops {
     import MLValue.compileFunction
 
     lazy val contextFromTheory : MLFunction[Theory, Context] =
@@ -82,7 +82,7 @@ object Context extends MLValueWrapper.Companion[Context] {
   }
 
   /** Initializes a new context from the Isabelle theory `theory` */
-  def apply(theory: Theory)(implicit isabelle: Isabelle, ec: ExecutionContext): Context = {
+  def apply(theory: Theory)(implicit isabelle: Isabelle): Context = {
     val mlCtxt : MLValue[Context] = Ops.contextFromTheory(theory.mlValue)
     new Context(mlCtxt)
   }
@@ -90,7 +90,7 @@ object Context extends MLValueWrapper.Companion[Context] {
   /** Initializes a new context from the Isabelle theory `theory`.
    * @param name full name of the theory (see [[Theory.apply(name:* Theory.apply(String)]] for details)
    **/
-  def apply(name: String)(implicit isabelle: Isabelle, ec: ExecutionContext) : Context =
+  def apply(name: String)(implicit isabelle: Isabelle) : Context =
     Context(Theory(name))
 
   override protected val mlType: String = "Proof.context"

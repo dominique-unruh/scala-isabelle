@@ -13,7 +13,7 @@ import de.unruh.isabelle.mlvalue.MLValue.{compileFunction, compileFunction0, com
 import de.unruh.isabelle.mlvalue.MLValueTest.await
 import de.unruh.isabelle.pure.{Context, Theory, TheoryHeader, Thm, ToplevelState}
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 import scala.reflect.runtime.currentMirror
 import scala.tools.reflect.ToolBox
 
@@ -21,8 +21,8 @@ import scala.tools.reflect.ToolBox
 import de.unruh.isabelle.control.IsabelleTest.isabelle
 import de.unruh.isabelle.mlvalue.Implicits._
 import de.unruh.isabelle.pure.Implicits._
+import de.unruh.isabelle.control.Isabelle.executionContext
 
-import scala.concurrent.ExecutionContext.Implicits.global
 
 object RuntimeError extends AdHocConverter("Runtime.error")
 //object ToplevelState extends AdHocConverter("Toplevel.state")
@@ -73,7 +73,7 @@ object ExecuteIsar {
       case _ =>
         super.getTheorySource(name)
     }
-    override def getHeader(source: TheoryManager.Source)(implicit isabelle: Isabelle, ec: ExecutionContext): TheoryHeader = {
+    override def getHeader(source: TheoryManager.Source)(implicit isabelle: Isabelle): TheoryHeader = {
       val global = null
       val header = super.getHeader(source)
 //      addScalaKeyword(header).retrieveNow
@@ -145,18 +145,18 @@ object ExecuteIsar {
     final case class Preamble(code: String) extends ScalaCommand
     final case object Empty extends ScalaCommand
 
-    override def mlType(implicit isabelle: Isabelle, ec: ExecutionContext): String = s"$scalaKeywordsStruct.scala_command"
-    override def retrieve(value: MLValue[ScalaCommand])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[ScalaCommand] =
+    override def mlType(implicit isabelle: Isabelle): String = s"$scalaKeywordsStruct.scala_command"
+    override def retrieve(value: MLValue[ScalaCommand])(implicit isabelle: Isabelle): Future[ScalaCommand] =
       for (data <- retrieveScalaCommand(value))
         yield data match {
           case DInt(0) => Empty
           case DList(DInt(1), DString(str)) => ScalaCommand.Code(str)
           case DList(DInt(2), DString(str)) => ScalaCommand.Preamble(str)
         }
-    override def store(value: ScalaCommand)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[ScalaCommand] = ???
-    override def exnToValue(implicit isabelle: Isabelle, ec: ExecutionContext): String =
+    override def store(value: ScalaCommand)(implicit isabelle: Isabelle): MLValue[ScalaCommand] = ???
+    override def exnToValue(implicit isabelle: Isabelle): String =
       s"fn $scalaKeywordsStruct.E_ScalaCommand sc => sc"
-    override def valueToExn(implicit isabelle: Isabelle, ec: ExecutionContext): String = s"$scalaKeywordsStruct.E_ScalaCommand"
+    override def valueToExn(implicit isabelle: Isabelle): String = s"$scalaKeywordsStruct.E_ScalaCommand"
   }
 
   val retrieveScalaCommand = MLRetrieveFunction[ScalaCommand](

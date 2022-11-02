@@ -26,12 +26,14 @@ import scalaz.Scalaz.ToOptionalOps
 import java.nio.file.attribute.FileTime
 import java.util.Date
 import scala.annotation.tailrec
+import scala.concurrent.ExecutionContext
+import scala.language.implicitConversions
 // Deprecated, but we use it because scala.jdk.CollectionConverters is not available in Scala 2.12
 import scala.collection.JavaConverters.{collectionAsScalaIterableConverter, asScalaIteratorConverter}
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, ExecutionContext, Future, Promise}
+import scala.concurrent.{Await, Future, Promise}
 import scala.io.Source
 import scala.sys.process.{Process, ProcessLogger}
 import scala.util.{Failure, Random, Success, Try}
@@ -88,6 +90,8 @@ import scala.util.{Failure, Random, Success, Try}
   */
 class Isabelle(val setup: SetupGeneral) extends FutureValue {
   import Isabelle._
+
+  implicit val executionContext: ExecutionContext = setup.executionContext
 
   private val sendQueue : BlockingQueue[(DataOutputStream => Unit, Try[Data] => Unit)] = new ArrayBlockingQueue(1000)
   private val callbacks : ConcurrentHashMap[Long, Try[Data] => Unit] = new ConcurrentHashMap()
@@ -243,6 +247,7 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
    *
    **/
   private def parseIsabelle(isabelleOutput: InputStream) : Unit = try {
+    implicit val executionContext: ExecutionContext = this.executionContext
     val output = new DataInputStream(isabelleOutput)
     destroyActions.add(() => isabelleOutput.close())
 
@@ -254,7 +259,6 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
       var exn : IsabelleProtocolException = null
       try {
         if (answerType == 2) {
-          import ExecutionContext.Implicits.global
           val msg = Await.result(Future { readString(output) }, Duration(5, scala.concurrent.duration.SECONDS))
           exn = IsabelleProtocolException(s"Received a protocol response from Isabelle with seq# $seq " +
             s"but no callback is registered for that seq#. Probably the communication is out of sync now. " +
@@ -280,7 +284,7 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
         case 5 =>
           if (callback==null) missingCallback(seq, answerType)
           val id = output.readLong()
-          ExecutionContext.global.execute { () =>
+          executionContext.execute { () =>
             // We run this asynchronously. Because exceptionManager may try to communicate with Isabelle
             // and if it does, and parseIsabelle is still waiting for it to return first, then we
             // have a deadlock
@@ -293,7 +297,7 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
           if (seq != 0) IsabelleProtocolException(s"Received a protocol response from Isabelle with seq# $seq and " +
             s"answerType $answerType. Seq should be 0. Probably the communication is out of sync now.")
           val payload = readData(output)
-          ExecutionContext.global.execute { () =>
+          executionContext.execute { () =>
             try {
               setup.isabelleCommandHandler(payload)
             } catch {
@@ -374,6 +378,7 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
    * */
   private def startProcessSlave(setup: Setup) : java.lang.Process = {
     implicit val s: Setup = setup
+    implicit val executionContext: ExecutionContext = this.executionContext
     def wd = setup.workingDirectory
     val useSockets = SystemUtils.IS_OS_WINDOWS
 
@@ -722,8 +727,10 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
   }
 
   /** Like [[applyFunction(f:de* applyFunction(ID,Data)]], except `f` is a future. */
-  def applyFunction(f: Future[ID], x: Data)(implicit ec: ExecutionContext) : Future[Data] =
+  def applyFunction(f: Future[ID], x: Data) : Future[Data] = {
+    implicit val executionContext: ExecutionContext = this.executionContext
     for (f2 <- f; fx <- applyFunction(f2, x)) yield fx
+  }
 
   private val lastMessages = new mutable.Queue[String]()
   private def logStream(stream: InputStream, level: LogLevel) : Unit = {
@@ -777,6 +784,9 @@ object Isabelle {
 
   /** Parent trait for different kinds of configuration for [[Isabelle]]. See in particular [[Setup]]. */
   sealed trait SetupGeneral {
+    /** [[ExecutionContext]] that is to be used for all background operations related to this Isabelle process
+     * (e.g., when operating on futures etc.) */
+    val executionContext : ExecutionContext
     /** Installs a handler for commands sent from the Isabelle process to the Scala process.
      * When invoking `Control_Isabelle.sendToScala data` (for `data` of ML type `data`),
      * then `isabelleCommandHandler` is invoked as `isabelleCommandHandler(data)`. (After transferring
@@ -827,6 +837,7 @@ object Isabelle {
                    build : Boolean = true,
                    verbose : Boolean = false,
                    exceptionManager: Isabelle => ExceptionManager = new DefaultExceptionManager(_),
+                   executionContext: ExecutionContext = ExecutionContext.global,
                    isabelleCommandHandler: Data => Unit = Isabelle.defaultCommandHandler) extends SetupGeneral {
     /** [[isabelleHome]] as an absolute path */
     def isabelleHomeAbsolute: Path = workingDirectory.resolve(isabelleHome)
@@ -857,6 +868,7 @@ object Isabelle {
   @Experimental
   case class SetupRunning(inputPipe : Path, outputPipe : Path,
                           exceptionManager: Isabelle => ExceptionManager = new DefaultExceptionManager(_),
+                          executionContext: ExecutionContext = ExecutionContext.global,
                           isabelleCommandHandler: Data => Unit = Isabelle.defaultCommandHandler) extends SetupGeneral
 
   //noinspection UnstableApiUsage
@@ -1032,6 +1044,8 @@ object Isabelle {
       }
     }
   }
+
+  implicit def executionContext(implicit isabelle: Isabelle): ExecutionContext = isabelle.executionContext
 }
 
 /** Ancestor of all exceptions specific to [[Isabelle]] */

@@ -4,7 +4,10 @@ import de.unruh.isabelle.control.{Isabelle, IsabelleMiscException, IsabelleMLExc
 import de.unruh.isabelle.control.Isabelle.{DList, DObject, Data, ID}
 import de.unruh.isabelle.mlvalue.MLValue.{Converter, Ops, matchFailExn}
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
+
+// Implicits
+import de.unruh.isabelle.control.Isabelle.executionContext
 import Implicits._
 
 /**
@@ -17,7 +20,7 @@ import Implicits._
  * @see MLValue.Converter for explanations what [[MLValue.Converter Converter]]s are for.
  */
 @inline final class ListConverter[A](implicit converter: Converter[A]) extends Converter[List[A]] {
-  @inline override def store(value: List[A])(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[List[A]] = {
+  @inline override def store(value: List[A])(implicit isabelle: Isabelle): MLValue[List[A]] = {
     val listID: Future[List[ID]] = Future.traverse(value) {
       converter.store(_).id
     }
@@ -26,7 +29,7 @@ import Implicits._
     result.asInstanceOf[MLValue[List[A]]]
   }
 
-  @inline override def retrieve(value: MLValue[List[A]])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[List[A]] = {
+  @inline override def retrieve(value: MLValue[List[A]])(implicit isabelle: Isabelle): Future[List[A]] = {
     for (DList(listObj@_*) <- Ops.retrieveList(value.asInstanceOf[MLValue[List[MLValue[Nothing]]]]);
          listMLValue = listObj map {
            case DObject(id) => MLValue.unsafeFromId[A](Future.successful(id))
@@ -38,8 +41,8 @@ import Implicits._
       yield list.toList
   }
 
-  @inline override def exnToValue(implicit isabelle: Isabelle, ec: ExecutionContext): String = s"fn E_List list => map (${converter.exnToValue}) list | ${matchFailExn("ListConverter.exnToValue")}"
-  @inline override def valueToExn(implicit isabelle: Isabelle, ec: ExecutionContext): String = s"E_List o map (${converter.valueToExn})"
+  @inline override def exnToValue(implicit isabelle: Isabelle): String = s"fn E_List list => map (${converter.exnToValue}) list | ${matchFailExn("ListConverter.exnToValue")}"
+  @inline override def valueToExn(implicit isabelle: Isabelle): String = s"E_List o map (${converter.valueToExn})"
 
-  override def mlType(implicit isabelle: Isabelle, ec: ExecutionContext): String = s"(${converter.mlType}) list"
+  override def mlType(implicit isabelle: Isabelle): String = s"(${converter.mlType}) list"
 }

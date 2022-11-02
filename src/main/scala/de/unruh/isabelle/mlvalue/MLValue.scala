@@ -9,8 +9,11 @@ import org.log4s
 import scalaz.Id.Id
 
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{Await, Future}
 import scala.util.{Failure, Success}
+
+// Implicits
+import de.unruh.isabelle.control.Isabelle.executionContext
 
 /** A type safe wrapper for values stored in the Isabelle process managed by [[control.Isabelle Isabelle]].
   *
@@ -80,7 +83,6 @@ import scala.util.{Failure, Success}
   * A full example:
   * {{{
   *     implicit val isabelle: Isabelle = new Isabelle(...)
-  *     import scala.concurrent.ExecutionContext.Implicits._
   *
   *     // Create an MLValue containing an integer
   *     val intML : MLValue[Int] = MLValue(123)
@@ -111,7 +113,8 @@ import scala.util.{Failure, Success}
   */
 class MLValue[A] protected (/** the ID of the referenced object in the Isabelle process */ val id: Future[Isabelle.ID])
   extends FutureValue {
-  def logError(message: => String)(implicit executionContext: ExecutionContext): this.type = {
+  def logError(message: => String)(implicit isabelle: Isabelle): this.type = {
+    implicit val executionContext = Isabelle.executionContext
     id.onComplete {
       case Success(_) =>
       case Failure(exception) => logger.error(exception)(message)
@@ -121,7 +124,7 @@ class MLValue[A] protected (/** the ID of the referenced object in the Isabelle 
 
   /** Returns a textual representation of the value in the ML process as it is stored in the object store
    * (i.e., encoded as an exception). E.g., an integer 3 would be represented as "E_Int 3". */
-  def debugInfo(implicit isabelle: Isabelle, ec: ExecutionContext): String =
+  def debugInfo(implicit isabelle: Isabelle): String =
     Ops.debugInfo[A](this).retrieveNow
 
   override def await: Unit = Await.result(id, Duration.Inf)
@@ -140,12 +143,12 @@ class MLValue[A] protected (/** the ID of the referenced object in the Isabelle 
    *                 exception thrown.) In an application with only a single `Isabelle` instance that instance
    *                 can safely be declared as an implicit.
    */
-  @inline def retrieve(implicit converter: Converter[A], isabelle: Isabelle, ec: ExecutionContext): Future[A] =
+  @inline def retrieve(implicit converter: Converter[A], isabelle: Isabelle): Future[A] =
     converter.retrieve(this)
 
   /** Like retrieve but returns the Scala value directly instead of a future (blocks till the computation
    * and transfer finish). */
-  @inline def retrieveNow(implicit converter: Converter[A], isabelle: Isabelle, ec: ExecutionContext): A =
+  @inline def retrieveNow(implicit converter: Converter[A], isabelle: Isabelle): A =
     Await.result(retrieve, Duration.Inf)
 
   /** Returns this MLValue as an [[MLFunction]], assuming this MLValue has a type of the form `MLValue[D => R]`.
@@ -230,7 +233,7 @@ class MLValue[A] protected (/** the ID of the referenced object in the Isabelle 
 class MLStoreFunction[A] private (val id: Future[ID]) {
   /** Calls the compile ML function on `data` in the Isabelle process and returns
    * an [[MLValue]] containing the result of that function. */
-  def apply(data: Data)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[A] = {
+  def apply(data: Data)(implicit isabelle: Isabelle): MLValue[A] = {
     MLValue.unsafeFromId(isabelle.applyFunction(this.id, data).map {
       case DObject(id) => id
       case _ => throw IsabelleMiscException("MLStoreFunction")
@@ -241,7 +244,7 @@ class MLStoreFunction[A] private (val id: Future[ID]) {
    * The returned [[MLValue]] `mlVal` will then internally contain that future (i.e.,
    * for example `mlVal.`[[MLValue.retrieveNow retrieveNow]] will wait for `data` to complete first).
    **/
-  def apply(data: Future[Data])(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[A] =
+  def apply(data: Future[Data])(implicit isabelle: Isabelle): MLValue[A] =
     MLValue.unsafeFromId(for (data <- data; DObject(id) <- isabelle.applyFunction(this.id, data)) yield id)
 }
 
@@ -254,7 +257,7 @@ object MLStoreFunction {
    * This method will not invoke `converter.`[[MLValue.Converter.store store]] or
    * `converter.`[[MLValue.Converter.retrieve retrieve]].
    **/
-  def apply[A](ml: String)(implicit isabelle: Isabelle, ec: ExecutionContext, converter: Converter[A]) : MLStoreFunction[A] =
+  def apply[A](ml: String)(implicit isabelle: Isabelle, converter: Converter[A]) : MLStoreFunction[A] =
     new MLStoreFunction(isabelle.storeValue(s"E_Function (DObject o (${converter.valueToExn}) o ($ml))"))
 }
 
@@ -278,15 +281,15 @@ object MLStoreFunction {
  **/
 class MLRetrieveFunction[A] private (id: Future[ID]) {
 /*
-  private def apply(id: ID)(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Isabelle.Data] =
+  private def apply(id: ID)(implicit isabelle: Isabelle): Future[Isabelle.Data] =
     isabelle.applyFunction(this.id, DObject(id))
-  private def apply(id: Future[ID])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Isabelle.Data] =
+  private def apply(id: Future[ID])(implicit isabelle: Isabelle): Future[Isabelle.Data] =
     for (id <- id; data <- isabelle.applyFunction(this.id, DObject(id))) yield data
 */
 
   /** Calls the compiled function on the value of ML type `a` referenced by `value`
    * and returns the result to the Isabelle process (in a [[scala.concurrent.Future Future]]). */
-  def apply(value: MLValue[A])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[Data] =
+  def apply(value: MLValue[A])(implicit isabelle: Isabelle): Future[Data] =
     for (valueId <- value.id; data <- isabelle.applyFunction(this.id, DObject(valueId))) yield data
 }
 
@@ -299,7 +302,7 @@ class MLRetrieveFunction[A] private (id: Future[ID]) {
  * `converter.`[[MLValue.Converter.retrieve retrieve]].
  **/
 object MLRetrieveFunction {
-  def apply[A](ml: String)(implicit isabelle: Isabelle, ec: ExecutionContext, converter: Converter[A]) : MLRetrieveFunction[A] =
+  def apply[A](ml: String)(implicit isabelle: Isabelle, converter: Converter[A]) : MLRetrieveFunction[A] =
     new MLRetrieveFunction(isabelle.storeValue(s"E_Function (fn DObject x => ($ml) ((${converter.exnToValue}) x))"))
 }
 
@@ -334,10 +337,10 @@ object MLValue extends OperationCollection {
 
   private val logger = log4s.getLogger
 
-  override protected def newOps(implicit isabelle: Isabelle, ec: ExecutionContext) : Ops = new Ops()
+  override protected def newOps(implicit isabelle: Isabelle) : Ops = new Ops()
 
   //noinspection TypeAnnotation
-  protected[mlvalue] class Ops(implicit val isabelle: Isabelle, ec: ExecutionContext) {
+  protected[mlvalue] class Ops(implicit val isabelle: Isabelle) {
     /*isabelle.executeMLCodeNow(
       """exception E_List of exn list
          exception E_Bool of bool
@@ -466,7 +469,7 @@ object MLValue extends OperationCollection {
    * {{{
    * final object IntConverter extends MLValue.Converter[A] {
    *     ...
-   *     override def valueToExn(implicit isabelle: Isabelle, ec: ExecutionContext): String = "fn x => E_Int x"  // or equivalently: = "E_Int"
+   *     override def valueToExn(implicit isabelle: Isabelle): String = "fn x => E_Int x"  // or equivalently: = "E_Int"
    *     ...
    *   }
    * }}}
@@ -475,7 +478,7 @@ object MLValue extends OperationCollection {
    * {{{
    *   final object IntConverter extends MLValue.Converter[A] {
    *     ...
-   *     override def exnToValue(implicit isabelle: Isabelle, ec: ExecutionContext): String = "fn (E_Int x) => x"
+   *     override def exnToValue(implicit isabelle: Isabelle): String = "fn (E_Int x) => x"
    *     ...
    *   }
    * }}}
@@ -497,7 +500,7 @@ object MLValue extends OperationCollection {
    *   final object IntConverter extends MLValue.Converter[A] {
    *     ...
    *     override def retrieve(value: MLValue[Int])
-   *                          (implicit isabelle: Isabelle, ec: ExecutionContext): Future[Int] = {
+   *                          (implicit isabelle: Isabelle): Future[Int] = {
    *        val retrieveInt = MLRetrieveFunction[Int]("fn i => DInt i")   // compile retrieveInt
    *        for (data <- retrieveInt(value); // invoke retrieveInt to transfer from Isabelle
    *             DInt(long) = data)             // decode the data (simple pattern match)
@@ -522,7 +525,7 @@ object MLValue extends OperationCollection {
    * {{{
    *   final object IntConverter extends MLValue.Converter[A] {
    *     ...
-   *     override def store(value: Int)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[Int] = {
+   *     override def store(value: Int)(implicit isabelle: Isabelle): MLValue[Int] = {
    *       val storeInt = MLStoreFunction[Int]("fn DInt i => i")   // compile storeInt
    *       val data = DInt(value)       // encode the integer as Data
    *       Ops.storeInt(data)           // invoke storeInt to get the MLValue
@@ -569,7 +572,7 @@ object MLValue extends OperationCollection {
     /** Returns the ML type corresponding to `A`.
      *
      * This function should always return the same value, at least for the same `isabelle`. */
-    def mlType(implicit isabelle: Isabelle, ec: ExecutionContext) : String
+    def mlType(implicit isabelle: Isabelle) : String
     /** Given an [[mlvalue.MLValue]] `value`, retrieves and returns the value referenced by `value` in the Isabelle
      * object store.
      *
@@ -577,7 +580,7 @@ object MLValue extends OperationCollection {
      * invoke `this.`[[retrieve]]. (But calling [[mlvalue.MLValue.retrieve retrieve]] or [[mlvalue.MLValue.retrieveNow retrieveNow]]
      * on other [[mlvalue.MLValue MLValue]]s is allowed as long as no cyclic dependencies are created.)
      **/
-    def retrieve(value: MLValue[A])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[A]
+    def retrieve(value: MLValue[A])(implicit isabelle: Isabelle): Future[A]
 
     /** Given a `value : A`, transfers and stores `value` in the Isabelle object store and returns
      * an [[mlvalue.MLValue]] referencing the value in the object store.
@@ -586,7 +589,7 @@ object MLValue extends OperationCollection {
      * invokes `this.`[[store]]. (But calling [[mlvalue.MLValue.apply MLValue]]`(...)`
      * on other values is allowed as long as no cyclic dependencies are created.)
      **/
-    def store(value: A)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[A]
+    def store(value: A)(implicit isabelle: Isabelle): MLValue[A]
 
     /** Returns ML code for an (anonymous) function of type `exn -> a` that converts a value
      * encoded as an exception back into the original value.
@@ -595,7 +598,7 @@ object MLValue extends OperationCollection {
      * [[de.unruh.isabelle.mlvalue.MLValue.matchFailExn MLValue.matchFailExn]] is a helper function that facilitates this.
      *
      * This function should always return the same value, at least for the same `isabelle`. */
-    def exnToValue(implicit isabelle: Isabelle, ec: ExecutionContext) : String
+    def exnToValue(implicit isabelle: Isabelle) : String
 
     /** Returns ML code for an (anonymous) function of type `a -> exn` that converts a value
      * into its encoding as an exception.
@@ -604,13 +607,13 @@ object MLValue extends OperationCollection {
      * [[de.unruh.isabelle.mlvalue.MLValue.matchFailExn MLValue.matchFailExn]] is a helper function that facilitates this.
      *
      * This function should always return the same value, at least for the same `isabelle`. */
-    def valueToExn(implicit isabelle: Isabelle, ec: ExecutionContext) : String
+    def valueToExn(implicit isabelle: Isabelle) : String
   }
 
   /** Creates an MLValue containing the value `value`.
    * This transfers `value` to the Isabelle process and stores it in the object store there.
    * @return an [[MLValue]] that references the location in the object store */
-  @inline def apply[A](value: A)(implicit conv: Converter[A], isabelle: Isabelle, executionContext: ExecutionContext) : MLValue[A] =
+  @inline def apply[A](value: A)(implicit conv: Converter[A], isabelle: Isabelle) : MLValue[A] =
     conv.store(value)
 
   /** Converts a future containing an [[MLValue]] into an [[MLValue]].
@@ -618,7 +621,7 @@ object MLValue extends OperationCollection {
    * The resulting [[MLValue]] then holds both the computation of the future, as well as the computation held by
    * the MLValue contained in that future.
    **/
-  def removeFuture[A](future: Future[MLValue[A]])(implicit ec: ExecutionContext) : MLValue[A] =
+  def removeFuture[A](future: Future[MLValue[A]])(implicit isabelle: Isabelle) : MLValue[A] =
     MLValue.unsafeFromId[A](future.flatMap(_.id))
 
   /** Compiles `ml` code and inserts it into the object store (without any conversion).
@@ -633,7 +636,7 @@ object MLValue extends OperationCollection {
    * or [[compileFunction[D,R]* compileFunction]] or [[MLStoreFunction]] or [[MLRetrieveFunction]] that take care of the encoding as exceptions
    * automatically.
    **/
-  def compileValueRaw[A](ml: String)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[A] =
+  def compileValueRaw[A](ml: String)(implicit isabelle: Isabelle): MLValue[A] =
     new MLValue[A](isabelle.storeValue(ml)).logError(s"""Error while compiling value "$ml":""")
 
   /** Compiles ML code `ml` and inserts it into the object store.
@@ -644,11 +647,11 @@ object MLValue extends OperationCollection {
    *
    * If `ml` is an ML function, [[compileFunction[D,R]* compileFunction]] below might be more convenient.
    **/
-  def compileValue[A](ml: String)(implicit isabelle: Isabelle, ec: ExecutionContext, converter: Converter[A]): MLValue[A] =
+  def compileValue[A](ml: String)(implicit isabelle: Isabelle, converter: Converter[A]): MLValue[A] =
     compileValueRaw[A](s"(${converter.valueToExn}) (($ml) : (${converter.mlType}))")
 
 /*  @deprecated("will be removed, use compileFunction or compileValueRaw", "0.1.1-SNAPSHOT")
-  def compileFunctionRaw[D, R](ml: String)(implicit isabelle: Isabelle, ec: ExecutionContext): MLFunction[D, R] =
+  def compileFunctionRaw[D, R](ml: String)(implicit isabelle: Isabelle): MLFunction[D, R] =
     MLFunction.unsafeFromId[D,R](isabelle.storeValue(s"E_Function (fn DObject x => ($ml) x |> DObject)")).logError(s"""Error while compiling function "$ml":""")*/
 
   /** Compiles an ML function and inserts it into the object store.
@@ -662,7 +665,7 @@ object MLValue extends OperationCollection {
    * [[compileFunction[D1,D2,D3,R]* compileFunction[D1,D2,D3,R]]], etc.
    **/
   //noinspection ScalaDeprecation
-  def compileFunction[D, R](ml: String)(implicit isabelle: Isabelle, ec: ExecutionContext, converterD: Converter[D], converterR: Converter[R]): MLFunction[D, R] =
+  def compileFunction[D, R](ml: String)(implicit isabelle: Isabelle, converterD: Converter[D], converterR: Converter[R]): MLFunction[D, R] =
     MLFunction.unsafeFromId[D,R](isabelle.storeValue(
       s"E_Function (DObject o (${converterR.valueToExn}) o (($ml) : ((${converterD.mlType}) -> (${converterR.mlType}))) o (${converterD.exnToValue}) o (fn DObject d => d))"
     )).logError(s"""Error while compiling function "$ml":""")
@@ -672,7 +675,7 @@ object MLValue extends OperationCollection {
    * also as `f()` and not only as `f(())` (as would be the case if we had used
    * [[compileFunction[D,R]* compileFunction[D,R]]]`[Unit,R](ml)` to compile the function).
    **/
-  def compileFunction0[R](ml: String)(implicit isabelle: Isabelle, ec: ExecutionContext, converter: Converter[R]): MLFunction0[R] =
+  def compileFunction0[R](ml: String)(implicit isabelle: Isabelle, converter: Converter[R]): MLFunction0[R] =
     compileFunction[Unit, R](ml).function0
 
   /** Like [[compileFunction[D,R]* compileFunction[D,R]]], except that the ML code `ml` must be a function of type `d1 * d2 -> r`
@@ -681,41 +684,41 @@ object MLValue extends OperationCollection {
    * [[compileFunction[D,R]* compileFunction[D,R]]]`[(D1,D2),R](ml)` to compile the function).
    **/
   def compileFunction[D1, D2, R](ml: String)
-                                (implicit isabelle: Isabelle, ec: ExecutionContext,
+                                (implicit isabelle: Isabelle,
                                  converter1: Converter[D1], converter2: Converter[D2], converterR: Converter[R]): MLFunction2[D1, D2, R] =
     compileFunction[(D1,D2), R](ml).function2
 
   /** Analogous to [[compileFunction[D1,D2,R]* compileFunction[D1,D2,R]]], except for 3-tuples instead of 2-tuples. */
   def compileFunction[D1, D2, D3, R](ml: String)
-                                    (implicit isabelle: Isabelle, ec: ExecutionContext,
+                                    (implicit isabelle: Isabelle,
                                      converter1: Converter[D1], converter2: Converter[D2], converter3: Converter[D3],
                                      converterR: Converter[R]): MLFunction3[D1, D2, D3, R] =
     compileFunction[(D1,D2,D3), R](ml).function3
 
   /** Analogous to [[compileFunction[D1,D2,R]* compileFunction[D1,D2,R]]], except for 4-tuples instead of 2-tuples. */
   def compileFunction[D1, D2, D3, D4, R](ml: String)
-                                    (implicit isabelle: Isabelle, ec: ExecutionContext,
+                                    (implicit isabelle: Isabelle,
                                      converter1: Converter[D1], converter2: Converter[D2], converter3: Converter[D3],
                                      converter4: Converter[D4], converterR: Converter[R]): MLFunction4[D1, D2, D3, D4, R] =
     compileFunction[(D1,D2,D3,D4), R](ml).function4
 
   /** Analogous to [[compileFunction[D1,D2,R]* compileFunction[D1,D2,R]]], except for 5-tuples instead of 2-tuples. */
   def compileFunction[D1, D2, D3, D4, D5, R](ml: String)
-                                        (implicit isabelle: Isabelle, ec: ExecutionContext,
+                                        (implicit isabelle: Isabelle,
                                          converter1: Converter[D1], converter2: Converter[D2], converter3: Converter[D3],
                                          converter4: Converter[D4], converter5: Converter[D5], converterR: Converter[R]): MLFunction5[D1, D2, D3, D4, D5, R] =
     compileFunction[(D1,D2,D3,D4,D5), R](ml).function5
 
   /** Analogous to [[compileFunction[D1,D2,R]* compileFunction[D1,D2,R]]], except for 6-tuples instead of 2-tuples. */
   def compileFunction[D1, D2, D3, D4, D5, D6, R](ml: String)
-                                                (implicit isabelle: Isabelle, ec: ExecutionContext,
+                                                (implicit isabelle: Isabelle,
                                                  converter1: Converter[D1], converter2: Converter[D2], converter3: Converter[D3],
                                                  converter4: Converter[D4], converter5: Converter[D5], converter6: Converter[D6], converterR: Converter[R]): MLFunction6[D1, D2, D3, D4, D5, D6, R] =
     compileFunction[(D1,D2,D3,D4,D5,D6), R](ml).function6
 
   /** Analogous to [[compileFunction[D1,D2,R]* compileFunction[D1,D2,R]]], except for 7-tuples instead of 2-tuples. */
   def compileFunction[D1, D2, D3, D4, D5, D6, D7, R](ml: String)
-                                                    (implicit isabelle: Isabelle, ec: ExecutionContext,
+                                                    (implicit isabelle: Isabelle,
                                                      converter1: Converter[D1], converter2: Converter[D2], converter3: Converter[D3],
                                                      converter4: Converter[D4], converter5: Converter[D5], converter6: Converter[D6],
                                                      converter7: Converter[D7], converterR: Converter[R]): MLFunction7[D1, D2, D3, D4, D5, D6, D7, R] =

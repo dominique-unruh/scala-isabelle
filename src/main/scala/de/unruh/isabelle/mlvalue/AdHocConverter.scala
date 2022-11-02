@@ -3,7 +3,7 @@ package de.unruh.isabelle.mlvalue
 import de.unruh.isabelle.control.{Isabelle, OperationCollection}
 import de.unruh.isabelle.misc.{FutureValue, Utils}
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 import scala.util.Random
 
 /** This class allows to add support for Isabelle ML types in Scala in a quick ad-hoc way.
@@ -71,7 +71,7 @@ abstract class AdHocConverter protected(val mlType: String) extends OperationCol
    * The name is guaranteed not to conflict with existing names (randomized name).
    * And the exception is guaranteed to be declared in ML when this function returns.
    **/
-  def exceptionName(implicit isabelle: Isabelle, ec: ExecutionContext): String = {
+  def exceptionName(implicit isabelle: Isabelle): String = {
     init(); _exceptionName }
 
   /** [[MLValueConverter]] for [[T]]. This [[MLValueConverter]] does not need to be explicitly imported
@@ -80,25 +80,25 @@ abstract class AdHocConverter protected(val mlType: String) extends OperationCol
    * [[https://www.scala-lang.org/files/archive/spec/2.13/07-implicits.html#implicit-parameters Scala spec]]). */
   // Implicit can be used without importing this.converter. Inspired by https://stackoverflow.com/a/64105099/2646248
   implicit object converter extends MLValue.Converter[T] {
-    override def mlType(implicit isabelle: Isabelle, ec: ExecutionContext): String =
+    override def mlType(implicit isabelle: Isabelle): String =
       AdHocConverter.this.mlType
 
-    override def retrieve(value: MLValue[T])(implicit isabelle: Isabelle, ec: ExecutionContext): Future[T] =
+    override def retrieve(value: MLValue[T])(implicit isabelle: Isabelle): Future[T] =
       Future.successful(new T(value))
 
-    override def store(value: T)(implicit isabelle: Isabelle, ec: ExecutionContext): MLValue[T] =
+    override def store(value: T)(implicit isabelle: Isabelle): MLValue[T] =
       value.mlValue
 
-    override def exnToValue(implicit isabelle: Isabelle, ec: ExecutionContext): String =
+    override def exnToValue(implicit isabelle: Isabelle): String =
       s"fn ${exceptionName} x => x"
 
-    override def valueToExn(implicit isabelle: Isabelle, ec: ExecutionContext): String =
+    override def valueToExn(implicit isabelle: Isabelle): String =
       exceptionName
   }
 
-  protected class Ops(implicit isabelle: Isabelle, ec: ExecutionContext) {
+  protected class Ops(implicit isabelle: Isabelle) {
     isabelle.executeMLCodeNow(s"exception ${_exceptionName} of ($mlType)")
   }
 
-  override protected def newOps(implicit isabelle: Isabelle, ec: ExecutionContext) = new Ops
+  override protected def newOps(implicit isabelle: Isabelle) = new Ops
 }

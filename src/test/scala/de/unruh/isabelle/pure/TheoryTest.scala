@@ -8,7 +8,6 @@ import de.unruh.isabelle.mlvalue.MLValue
 import org.scalatest.funsuite.AnyFunSuite
 
 // Implicits
-import scala.concurrent.ExecutionContext.Implicits.global
 import de.unruh.isabelle.control.IsabelleTest.isabelle
 import de.unruh.isabelle.mlvalue.Implicits._
 

@@ -3,7 +3,6 @@ package de.unruh.isabelle.pure
 import de.unruh.isabelle.control.IsabelleTest.isabelle
 import org.scalatest.funsuite.AnyFunSuite
 
-import scala.concurrent.ExecutionContext.Implicits.global
 
 class ToplevelStateTest extends AnyFunSuite {
   test ("theory of") {
