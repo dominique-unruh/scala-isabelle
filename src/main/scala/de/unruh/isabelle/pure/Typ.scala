@@ -283,6 +283,10 @@ final class MLValueTyp private[pure] (initialMLValue: MLValue[Typ])(implicit val
   override def await: Unit = mlValue.await
 }
 
+object MLValueTyp {
+  def apply(mlValue: MLValue[Typ])(implicit isabelle: Isabelle): MLValueTyp = new MLValueTyp(mlValue)
+}
+
 /** Represents a `ctyp` in Isabelle. In Isabelle, a `ctyp` must be explicitly converted into a `typ`. In contrast,
  * this class inherits from [[Typ]], so no explicit conversions are needed. (They happen automatically on
  * demand.)

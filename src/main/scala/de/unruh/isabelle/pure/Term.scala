@@ -406,6 +406,10 @@ final class MLValueTerm private[pure] (initialMlValue: MLValue[Term])(implicit v
 
 }
 
+object MLValueTerm {
+  def apply(mlValue: MLValue[Term])(implicit isabelle: Isabelle): MLValueTerm = new MLValueTerm(mlValue)
+}
+
 /** A constant (ML constructor `Const`). [[name]] is the fully qualified name of the constant (e.g.,
  * `"HOL.True"`) and [[typ]] its type. */
 final class Const private[pure](val name: String, val typ: Typ, initialMlValue: MLValue[Term]=null)
