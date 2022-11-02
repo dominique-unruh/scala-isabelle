@@ -139,7 +139,7 @@ class TermTest extends AnyFunSuite {
     println(s"Num objects before creating: ${startCount}")
     println("Creating terms")
     for (_ <- 1 to numTerms)
-      buffer.addOne(mkTerm().retrieve)
+      buffer.append(mkTerm().retrieve)
     println("Waiting for terms")
     // Can try with .force or with .concreteRecursive
     // TODO why does the test fail with .concreteRecursive? ANSWER: because Typ's are created and for those we have not updated equals yet.
