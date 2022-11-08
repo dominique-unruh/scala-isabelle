@@ -20,7 +20,7 @@ trait ExceptionManager {
  * Produces messages for all exceptions by pretty printing them in Isabelle with a `Pure` context.
  * Generated exceptions are always [[IsabelleMLException]] instances (no exception specific subclasses).
  *
- * See [[de.unruh.isabelle.pure.Exn.ExceptionManager]] for an alternative [[ExceptionManager]] that supports subclasses.
+ * See [[de.unruh.isabelle.pure.exceptions.MLException.ExceptionManager]] for an alternative [[ExceptionManager]] that supports subclasses.
  **/
 class DefaultExceptionManager(isabelle: Isabelle) extends ExceptionManager {
   private var messageOfException: ID = _

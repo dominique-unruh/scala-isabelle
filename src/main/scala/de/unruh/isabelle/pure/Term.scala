@@ -119,16 +119,19 @@ sealed abstract class Term(
   /** [[control.Isabelle Isabelle]] instance relative to which this term was constructed. */
   implicit val isabelle : Isabelle
 
+  // TODO Provide async version
   override def prettyRaw(ctxt: Context): String =
     Ops.stringOfTerm(MLValue((ctxt, this))).retrieveNow
 
   /** Transforms this term into a [[ConcreteTerm]]. A [[ConcreteTerm]] guarantees
    * that the type of the term ([[App]],[[Const]],[[Abs]]...) corresponds to the top-level
    * constructor on Isabelle side (`$`, `Const`, `Abs`, ...). */
+  // TODO Provide async version
   val concrete : ConcreteTerm
 
   /** Transforms this term into a [[ConcreteTerm]] (see [[concrete]]).
    * In contrast to [[concrete]], it also replaces all subterms by concrete subterms. */
+  // TODO Provide async version
   def concreteRecursive : ConcreteTerm
 
   /** Indicates whether [[concrete]] has already been initialized. (I.e.,
@@ -181,6 +184,7 @@ sealed abstract class Term(
    * and future equality checks will be faster.
    * Note: if both compared values already have ML Values, then the one from `this` will be copied to `that` (so the order matters).
    */
+  // TODO Provide async version
   final override def equals(that: Any): Boolean = (this, that) match {
     case (_, t2: AnyRef) if this eq t2 => true
     case (_, t2: Term) if sameId(t2) => true
@@ -231,6 +235,7 @@ sealed abstract class Term(
    * This method is analogous to `fastype_of` in Isabelle/ML but avoids transferring the term to/from Isabelle when
    * determining the type.
    * */
+  // TODO Provide async version
   final def fastType : Typ = {
     import Breaks._
     tryBreakable {
