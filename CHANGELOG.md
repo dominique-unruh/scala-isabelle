@@ -8,13 +8,13 @@ Main changes are support for Isabelle2022 and improved support for handling of M
 
 * Support for Isabelle2022.
 * [`Isabelle`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/Isabelle.html):
-  Can configure a different [`ExceptionHandler`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/ExceptionHandler.html)
+  Can configure a different [`ExceptionManager`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/ExceptionManager.html)
   for handling exceptions in ML code (instead of raising [`IsabelleMLException`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/IsabelleMLException.html)s).
-  See [`MLException.ExceptionHandler`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/pure/exceptions/MLException.html#ExceptionHandler)
+  See [`MLException.ExceptionManager`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/pure/exceptions/MLException$.html#ExceptionManagerextendsExceptionManager)
   for an alternative to the default.
 * Added an ML value converter for [`IsabelleMLException`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/IsabelleMLException.html)s,
-  see [`MLException.simpleIsabelleMLExceptionConverter`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/pure/exceptions/MLException.html#simpleIsabelleMLExceptionConverter)
-  and [`MLException.distinguishingIsabelleMLExceptionConverter`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/pure/exceptions/MLException.html#distinguishingIsabelleMLExceptionConverter).
+  see [`MLException.simpleIsabelleMLExceptionConverter`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/pure/exceptions/MLException$.html#simpleIsabelleMLExceptionConverter)
+  and [`MLException.distinguishingIsabelleMLExceptionConverter`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/pure/exceptions/MLException$$distinguishingIsabelleMLExceptionConverter$.html).
 * [`Symbols`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/misc/Symbols.html):
   Supporting Unicode subscript symbols when converting between Isabelle symbols and Unicode.
   (See [constructor](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/misc/Symbols.html#%3Cinit%3E(symbolsFile:java.net.URL,extraSymbols:Iterable[(String,Int)]):de.unruh.isabelle.misc.Symbols)
@@ -23,7 +23,7 @@ Main changes are support for Isabelle2022 and improved support for handling of M
   Specify fallback translations for symbols (only used if the symbols table has no translation).
   (See [constructor](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/misc/Symbols.html#%3Cinit%3E(symbolsFile:java.net.URL,extraSymbols:Iterable[(String,Int)]):de.unruh.isabelle.misc.Symbols)
   argument `extraSymbolsLowPri`.)
-* [`Version.versionFromIsabelleDirectory`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/mlvalue/Version.html#versionFromIsabelleDirectory):
+* [`Version.versionFromIsabelleDirectory`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/mlvalue/Version$.html#versionFromIsabelleDirectory(directory:java.nio.file.Path):String):
   Guesses the version of an Isabelle distribution by looking at the Isabelle distribution directory (without initializing the Isabelle process).
 
 ### Changed
