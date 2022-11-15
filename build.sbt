@@ -21,25 +21,25 @@ Global / onChangedBuildSource := ReloadOnSourceChanges
 libraryDependencies += "de.unruh" % "java-patterns" % "0.1.0"
 //resolvers += Resolver.sonatypeRepo("snapshots")
 
-libraryDependencies += "com.vladsch.flexmark" % "flexmark-all" % "0.62.2" % Test // Required by scala-test for HTML output
-libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.10" % Test
+libraryDependencies += "com.vladsch.flexmark" % "flexmark-all" % "0.64.0" % Test // Required by scala-test for HTML output
+libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.14" % Test
 
 // https://mvnrepository.com/artifact/org.log4s/log4s
 libraryDependencies += "org.log4s" %% "log4s" % "1.10.0"
 // https://mvnrepository.com/artifact/org.slf4j/slf4j-simple
-libraryDependencies += "org.slf4j" % "slf4j-simple" % "1.7.32"
+libraryDependencies += "org.slf4j" % "slf4j-simple" % "2.0.3"
 // https://mvnrepository.com/artifact/commons-io/commons-io
 libraryDependencies += "commons-io" % "commons-io" % "2.11.0"
 // https://mvnrepository.com/artifact/org.scalaz/scalaz-core
-libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.3.5"
+libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.3.6"
 // https://mvnrepository.com/artifact/org.apache.commons/commons-lang3
 libraryDependencies += "org.apache.commons" % "commons-lang3" % "3.12.0"
 // https://mvnrepository.com/artifact/org.apache.commons/commons-text
 libraryDependencies += "org.apache.commons" % "commons-text" % "1.10.0"
 // https://mvnrepository.com/artifact/com.google.guava/guava
-libraryDependencies += "com.google.guava" % "guava" % "31.0.1-jre"
+libraryDependencies += "com.google.guava" % "guava" % "31.1-jre"
 libraryDependencies += "org.jetbrains" % "annotations" % "23.0.0"
-libraryDependencies += "com.ibm.icu" % "icu4j" % "70.1"
+libraryDependencies += "com.ibm.icu" % "icu4j" % "72.1"
 
 // See https://stackoverflow.com/a/21516954
 val CompileOnly = config("compileonly").hide
