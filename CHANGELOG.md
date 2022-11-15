@@ -7,37 +7,41 @@ Main changes are support for Isabelle2022 and improved support for handling of M
 ### Added
 
 * Support for Isabelle2022.
-* [`Isabelle`](https://javadoc.io/static/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/Isabelle.html):
-  Can configure a different [`ExceptionHandler`](https://javadoc.io/static/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/ExceptionHandler.html)
-  for handling exceptions in ML code (instead of raising [`IsabelleMLException`](https://javadoc.io/static/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/IsabelleMLException.html)s).
-  See [`MLException.ExceptionHandler`](https://javadoc.io/static/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/pure/exceptions/MLException.html#ExceptionHandler)
+* [`Isabelle`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/Isabelle.html):
+  Can configure a different [`ExceptionHandler`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/ExceptionHandler.html)
+  for handling exceptions in ML code (instead of raising [`IsabelleMLException`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/IsabelleMLException.html)s).
+  See [`MLException.ExceptionHandler`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/pure/exceptions/MLException.html#ExceptionHandler)
   for an alternative to the default.
-* Added an ML value converter for [`IsabelleMLException`](https://javadoc.io/static/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/IsabelleMLException.html)s,
-  see [`MLException.simpleIsabelleMLExceptionConverter`](https://javadoc.io/static/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/pure/exceptions/MLException.html#simpleIsabelleMLExceptionConverter)
-  and [`MLException.distinguishingIsabelleMLExceptionConverter`](https://javadoc.io/static/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/pure/exceptions/MLException.html#distinguishingIsabelleMLExceptionConverter).
+* Added an ML value converter for [`IsabelleMLException`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/IsabelleMLException.html)s,
+  see [`MLException.simpleIsabelleMLExceptionConverter`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/pure/exceptions/MLException.html#simpleIsabelleMLExceptionConverter)
+  and [`MLException.distinguishingIsabelleMLExceptionConverter`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/pure/exceptions/MLException.html#distinguishingIsabelleMLExceptionConverter).
 * [`Symbols`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/misc/Symbols.html):
   Supporting Unicode subscript symbols when converting between Isabelle symbols and Unicode.
-  (See [constructor](https://javadoc.io/static/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/misc/Symbols.html#%3Cinit%3E(symbolsFile:java.net.URL,extraSymbols:Iterable[(String,Int)]):de.unruh.isabelle.misc.Symbols)
+  (See [constructor](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/misc/Symbols.html#%3Cinit%3E(symbolsFile:java.net.URL,extraSymbols:Iterable[(String,Int)]):de.unruh.isabelle.misc.Symbols)
   argument `processSubSuper`.)
 * [`Symbols`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/misc/Symbols.html):
   Specify fallback translations for symbols (only used if the symbols table has no translation).
-  (See [constructor](https://javadoc.io/static/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/misc/Symbols.html#%3Cinit%3E(symbolsFile:java.net.URL,extraSymbols:Iterable[(String,Int)]):de.unruh.isabelle.misc.Symbols)
+  (See [constructor](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/misc/Symbols.html#%3Cinit%3E(symbolsFile:java.net.URL,extraSymbols:Iterable[(String,Int)]):de.unruh.isabelle.misc.Symbols)
   argument `extraSymbolsLowPri`.)
-* [`Version.versionFromIsabelleDirectory`](https://javadoc.io/static/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/mlvalue/Version.html#versionFromIsabelleDirectory):
+* [`Version.versionFromIsabelleDirectory`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/mlvalue/Version.html#versionFromIsabelleDirectory):
   Guesses the version of an Isabelle distribution by looking at the Isabelle distribution directory (without initializing the Isabelle process).
 
 ### Changed
 
-* `IsabelleException` was renamed to [`IsabelleMLException`](https://javadoc.io/static/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/IsabelleMLException.html).
+* `IsabelleException` was renamed to [`IsabelleMLException`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/IsabelleMLException.html).
   It is only used raised when exceptions occur in ML code.
-  Use [`IsabelleMiscException`](https://javadoc.io/static/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/IsabelleMiscException.html)
+  Use [`IsabelleMiscException`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/IsabelleMiscException.html)
   for other purposes.
-* [`IsabelleMLException`](https://javadoc.io/static/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/IsabelleMLException.html)
+* [`IsabelleMLException`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/IsabelleMLException.html)
   contains the actual ML exception object
-* [`IsabelleMLException`](https://javadoc.io/static/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/IsabelleMLException.html):
+* [`IsabelleMLException`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/IsabelleMLException.html):
   The exception message contains the associated data of the exception (e.g., a `TERM` exception will contain the terms in the message).
   This message is lazily computed when needed.
 * Isabelle is initialized with `quick_and_dirty` flag `true`, this means imported theories can use `sorry`.
+
+### Removed
+
+None
 
 
 ## [0.4.0] – 2021-12-27
@@ -71,6 +75,7 @@ The main changes are support up to Isabelle2021-1, and better invocation of the 
 ### Removed
 
 * [`Setup.build`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/0.4.0/de/unruh/isabelle/control/Isabelle$$Setup.html#build:Boolean) is currently ignored. (Isabelle will always check all theory files whether a build is needed.)
+
 
 ## [0.3.0] – 2020-11-05
 
