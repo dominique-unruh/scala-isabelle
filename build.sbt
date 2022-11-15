@@ -11,9 +11,9 @@ lazy val component = RootProject(file("component"))
 name := "scala-isabelle"
 version := "master-SNAPSHOT"
 
-crossScalaVersions := List("2.13.7", "2.12.15")
+crossScalaVersions := List("2.13.10", "2.12.17")
 
-scalaVersion := "2.13.7"
+scalaVersion := "2.13.10"
 //scalaVersion := "2.12.15"
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
@@ -35,7 +35,7 @@ libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.3.5"
 // https://mvnrepository.com/artifact/org.apache.commons/commons-lang3
 libraryDependencies += "org.apache.commons" % "commons-lang3" % "3.12.0"
 // https://mvnrepository.com/artifact/org.apache.commons/commons-text
-libraryDependencies += "org.apache.commons" % "commons-text" % "1.9"
+libraryDependencies += "org.apache.commons" % "commons-text" % "1.10.0"
 // https://mvnrepository.com/artifact/com.google.guava/guava
 libraryDependencies += "com.google.guava" % "guava" % "31.0.1-jre"
 libraryDependencies += "org.jetbrains" % "annotations" % "23.0.0"
