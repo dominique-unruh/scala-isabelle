@@ -20,7 +20,7 @@
 
 With sbt, use one of
 ```sbt
-libraryDependencies += "de.unruh" %% "scala-isabelle" % "0.4.0"  // release
+libraryDependencies += "de.unruh" %% "scala-isabelle" % "0.4.1"  // release
 
 libraryDependencies += "de.unruh" %% "scala-isabelle" % "master-SNAPSHOT"  // development snapshot
 resolvers += Resolver.sonatypeRepo("snapshots")
@@ -28,6 +28,6 @@ resolvers += Resolver.sonatypeRepo("snapshots")
 to add scala-isabelle to your build.
 
 Furthermore, you need to download the Isabelle distribution and unpack it somewhere (not needed for compilation,
-so your application could also do it at runtime). In the example below, we will assume that you have installed
-Isabelle2021-1 at `/opt/Isabelle2021-1`.
+so your application could also do it at runtime). In the [example](example.md) below, we will assume that you have installed
+Isabelle2022 at `/opt/Isabelle2022`.
 

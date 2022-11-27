@@ -14,7 +14,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 // Initialize the Isabelle process with session HOL.
 // We assume an Isabelle installation in /opt/Isabelle2021-1
-val setup = Isabelle.Setup(isabelleHome = Path.of("/opt/Isabelle2021-1"), logic = "HOL")
+val setup = Isabelle.Setup(isabelleHome = Path.of("/opt/Isabelle2022"), logic = "HOL")
 implicit val isabelle: Isabelle = new Isabelle(setup)
 
 // Load the Isabelle/HOL theory "Main" and create a context object
