@@ -5,7 +5,7 @@ import java.nio.file.{Files, Path}
 import de.unruh.isabelle.control.Isabelle
 import de.unruh.isabelle.control.Isabelle.{DInt, DList, DString}
 import de.unruh.isabelle.control.IsabelleTest.{isabelleHome, setup}
-import de.unruh.isabelle.experiments.ExecuteIsar.ScalaCommand.{Code, Empty, Preamble}
+//import de.unruh.isabelle.experiments.ExecuteIsar.ScalaCommand.{Code, Empty, Preamble}
 import de.unruh.isabelle.experiments.ExecuteIsar._
 import de.unruh.isabelle.experiments.ScalaTransition.Info
 import de.unruh.isabelle.mlvalue.{AdHocConverter, MLRetrieveFunction, MLValue}
@@ -81,19 +81,20 @@ object ExecuteIsar {
     }
   }
 
-  Theory.registerSessionDirectoriesNow("ScalaKeywords" -> setup.workingDirectory)
+//  Theory.registerSessionDirectoriesNow("ScalaKeywords" -> setup.workingDirectory)
 
   //  val masterDir = isabelle.setup.workingDirectory
   //  val masterDir = Paths.get("/tmp/fsdfasdfasdofji/sdfasdf")
   val theorySource = TheoryManager.Text(
-    """theory Test imports ScalaKeywords.ScalaKeywords Main begin
+    /*"""theory Test imports ScalaKeywords.ScalaKeywords Main begin
       |preamble "import de.unruh.isabelle.experiments._"
       |lemma test: "1+1=(2::nat)"
       |  scala TestTransition
       |  by -
       |
       |end
-      |""".stripMargin,
+      |""".stripMargin*/
+    """theory Test imports Main begin lemma test: "1+1=(2::nat)" by simp end""",
     setup.workingDirectory.resolve("Test.thy"))
 
 //  Context.init()
@@ -133,12 +134,12 @@ object ExecuteIsar {
 
   val toplevel_string_of_state = compileFunction[ToplevelState, String]("Toplevel.string_of_state")
 
-  val scalaKeywordsThy = Theory("ScalaKeywords.ScalaKeywords").force
-  val scalaKeywordsStruct = await(scalaKeywordsThy.importMLStructure("ScalaKeywords"))
+//  val scalaKeywordsThy = Theory("ScalaKeywords.ScalaKeywords").force
+//  val scalaKeywordsStruct = await(scalaKeywordsThy.importMLStructure("ScalaKeywords"))
 //  val initialize_data = compileFunction[ToplevelState,ToplevelState](s"$scalaKeywordsStruct.initialize_data")
 
   trait ScalaCommand
-  implicit object ScalaCommand extends MLValue.Converter[ScalaCommand] {
+/*  implicit object ScalaCommand extends MLValue.Converter[ScalaCommand] {
     val global = null
 
     final case class Code(code: String) extends ScalaCommand
@@ -157,12 +158,12 @@ object ExecuteIsar {
     override def exnToValue(implicit isabelle: Isabelle): String =
       s"fn $scalaKeywordsStruct.E_ScalaCommand sc => sc"
     override def valueToExn(implicit isabelle: Isabelle): String = s"$scalaKeywordsStruct.E_ScalaCommand"
-  }
+  }*/
 
-  val retrieveScalaCommand = MLRetrieveFunction[ScalaCommand](
-    s"fn $scalaKeywordsStruct.Empty => DInt 0 | $scalaKeywordsStruct.Code str => DList[DInt 1, DString str] | $scalaKeywordsStruct.Preamble str => DList[DInt 2, DString str]")
+/*  val retrieveScalaCommand = MLRetrieveFunction[ScalaCommand](
+    s"fn $scalaKeywordsStruct.Empty => DInt 0 | $scalaKeywordsStruct.Code str => DList[DInt 1, DString str] | $scalaKeywordsStruct.Preamble str => DList[DInt 2, DString str]")*/
 
-  val retrieve_command = compileFunction[ToplevelState,ScalaCommand](s"$scalaKeywordsStruct.retrieve_command")
+//  val retrieve_command = compileFunction[ToplevelState,ScalaCommand](s"$scalaKeywordsStruct.retrieve_command")
 
 
   def printTheoryInfo(thy: Theory): Unit = {
@@ -187,7 +188,7 @@ object ExecuteIsar {
       println(s"""Transition: "${text.strip}"""")
       toplevel = command_exception(true, transition, toplevel).retrieveNow.force
 
-      val cmd = retrieve_command(toplevel).retrieveNow
+/*      val cmd = retrieve_command(toplevel).retrieveNow
       cmd match {
         case Empty =>
         case Code(scala) =>
@@ -198,7 +199,7 @@ object ExecuteIsar {
           toplevel = transition(toplevel, info)
         case Preamble(code) =>
           preamble.append(code).append('\n')
-      }
+      }*/
     }
 
     val finalThy = toplevel_end_theory(toplevel).retrieveNow.force

@@ -19,7 +19,7 @@ class TheoryManager {
     case Heap(name) => Theory(name)
     case Text(text, path, position) =>
       var toplevel = init_toplevel().force.retrieveNow
-      var thy0 = beginTheory(source)
+      val thy0 = beginTheory(source)
       for ((transition, text) <- parse_text(thy0, text).force.retrieveNow) {
         toplevel = command_exception(true, transition, toplevel).retrieveNow.force
       }
@@ -28,7 +28,7 @@ class TheoryManager {
 
   def beginTheory(source: Source)(implicit isabelle: Isabelle): Theory = {
     val header = getHeader(source)
-    val masterDir = source.path.getParent
+    val masterDir = Option(source.path.getParent).getOrElse(Paths.get(""))
     Ops.begin_theory(masterDir, header, header.imports.map(getTheorySource).map(getTheory)).retrieveNow
   }
   def getHeader(source: Source)(implicit isabelle: Isabelle): TheoryHeader = source match {

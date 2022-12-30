@@ -2,6 +2,7 @@ package de.unruh.isabelle.misc
 
 import java.nio.file.Path
 import org.apache.commons.lang3.SystemUtils
+import org.jetbrains.annotations.NotNull
 import org.log4s
 
 import scala.util.Random
@@ -74,7 +75,7 @@ object Utils {
 
   /** Converts `path` to a path understood by Cygwin.
    * (Only available when running under Windows.) */
-  def cygwinPath(path: Path): String =
+  def cygwinPath(@NotNull path: Path): String =
     if (path.isAbsolute) {
       assert(SystemUtils.IS_OS_WINDOWS)
       val root = path.getRoot.toString.stripSuffix(":\\")
