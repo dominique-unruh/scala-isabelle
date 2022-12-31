@@ -4,7 +4,7 @@
 
  - git checkout release-candidate
  - If this is the first RC for a new release, reset release-candidate to master
- - Update CHANGELOG.md if needed
+ - Update CHANGELOG.md if needed (all changes, version number in heading, links at the end of file)
  - Set correct date (today) for this version in CHANGELOG.md (only for releases)
  - git commit (to be able to cherry pick those changes separately into master)
  - Set version in build.sbt
