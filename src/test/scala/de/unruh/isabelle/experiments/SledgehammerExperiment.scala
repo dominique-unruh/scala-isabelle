@@ -22,7 +22,7 @@ object SledgehammerExperiment {
   val theoryManager: TheoryManager = new TheoryManager {
     private implicit val global: Unit = {} // hide global execution context to avoid a conflict
     override def getTheorySource(name: String): TheoryManager.Source = super.getTheorySource(name)
-    override def getHeader(source: TheoryManager.Source)(implicit isabelle: Isabelle, ec: ExecutionContext): TheoryHeader = super.getHeader(source)
+    override def getHeader(source: TheoryManager.Source)(implicit isabelle: Isabelle): TheoryHeader = super.getHeader(source)
   }
 
   def main(args: Array[String]): Unit = {
