@@ -52,6 +52,14 @@ publishTo := sonatypePublishToBundle.value
 
 publishMavenStyle := true
 
+/*
+Format of ~/.sbt/sonatype_credentials:
+
+realm=Sonatype Nexus Repository Manager
+host=oss.sonatype.org
+user=unruh
+password=************
+*/
 credentials += Credentials(Path.userHome / ".sbt" / "sonatype_credentials")
 credentials += Credentials("GnuPG Key ID", "gpg", "B12742E4CC2172D894730C1AE1F9C7FA4BA66FE2", "ignored")
 
