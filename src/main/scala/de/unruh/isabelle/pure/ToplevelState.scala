@@ -1,6 +1,6 @@
 package de.unruh.isabelle.pure
 import de.unruh.isabelle.control.Isabelle
-import de.unruh.isabelle.mlvalue.{MLValue, MLValueWrapper}
+import de.unruh.isabelle.mlvalue.{MLValue, MLValueWrapper, Version}
 import de.unruh.isabelle.mlvalue.MLValue.compileFunction
 import de.unruh.isabelle.pure.ToplevelState.Ops
 
@@ -40,6 +40,10 @@ object ToplevelState extends MLValueWrapper.Companion[ToplevelState] {
   protected class Ops(implicit isabelle: Isabelle) extends super.Ops {
     lazy val getContext = compileFunction[ToplevelState, Context]("Toplevel.context_of")
     lazy val getTheory = compileFunction[ToplevelState, Theory]("Toplevel.theory_of")
-    lazy val theoryToplevel = compileFunction[Theory, ToplevelState]("Toplevel.theory_toplevel")
+    lazy val theoryToplevel =
+      if (Version.from2023)
+        compileFunction[Theory, ToplevelState]("Toplevel.make_state o SOME")
+      else
+        compileFunction[Theory, ToplevelState]("Toplevel.theory_toplevel")
   }
 }
