@@ -39,7 +39,7 @@
     </option>
     <option name="javaOptions" value="-Dorg.slf4j.simpleLogger.defaultLogLevel=debug -Dscala.control.noTraceSuppression=true" />
     <option name="shortenClasspath" value="NONE" />
-    <option name="workingDirectory" value="C:\Users\unruh\r\qrhl-tool\scala-isabelle" />
+    <option name="workingDirectory" value="$PROJECT_DIR$" />
     <method v="2">
       <option name="Make" enabled="true" />
     </method>

@@ -222,7 +222,9 @@ object Theory extends OperationCollection {
 
     logger.debug(Ops.sessionPaths.toString)
 
-    if (Version.from2021_1)
+    if (Version.from2023)
+      Ops.updateKnownTheories2023(Ops.sessionPaths.asScala.toList.map { case (n, p) => (p, n) }).retrieve
+    else if (Version.from2021_1)
       Ops.updateKnownTheories2021_1(Ops.sessionPaths.asScala.toList.map { case (n,p) => (p,n) }).retrieve
     else if (Version.from2021)
       Ops.updateKnownTheories2021(Ops.sessionPaths.asScala.toList.map { case (n,p) => (p,n) }).retrieve
@@ -258,18 +260,31 @@ object Theory extends OperationCollection {
 
     val sessionPaths = new ConcurrentHashMap[String, Path]()
 
-    /** Expects (directory, session-name) pairs. Works on Isabelle2021-1+ */
-    lazy val updateKnownTheories2021_1 = compileFunction[List[(Path, String)], Unit] (
+    /** Expects (directory, session-name) pairs. Works on Isabelle2023+ */
+    lazy val updateKnownTheories2023 = compileFunction[List[(Path, String)], Unit](
       s"""fn known => let
-        val known = map (apfst Path.implode) known
-        val names = Thy_Info.get_names ()
-        val global = names |> List.mapPartial (fn n => case Resources.global_theory n of SOME session => SOME (n,session) | NONE => NONE)
-        val loaded = names |> filter Resources.loaded_theory
-        in
-          Resources.init_session {session_directories=known, session_positions=[], global_theories=global,
-              loaded_theories=loaded, bibtex_entries=[], command_timings=[], scala_functions=[], load_commands=[]}
-        end
-        """)
+    val known = map (apfst Path.implode) known
+    val names = Thy_Info.get_names ()
+    val global = names |> List.mapPartial (fn n => case Resources.global_theory n of SOME session => SOME (n,session) | NONE => NONE)
+    val loaded = names |> filter Resources.loaded_theory
+    in
+      Resources.init_session {session_directories=known, session_positions=[], global_theories=global,
+          loaded_theories=loaded, command_timings=[], scala_functions=[], load_commands=[]}
+    end
+    """)
+
+    /** Expects (directory, session-name) pairs. Works on Isabelle2021-1, 2022 */
+    lazy val updateKnownTheories2021_1 = compileFunction[List[(Path, String)], Unit](
+      s"""fn known => let
+    val known = map (apfst Path.implode) known
+    val names = Thy_Info.get_names ()
+    val global = names |> List.mapPartial (fn n => case Resources.global_theory n of SOME session => SOME (n,session) | NONE => NONE)
+    val loaded = names |> filter Resources.loaded_theory
+    in
+      Resources.init_session {session_directories=known, session_positions=[], global_theories=global,
+          loaded_theories=loaded, bibtex_entries=[], command_timings=[], scala_functions=[], load_commands=[]}
+    end
+    """)
 
     /** Expects (directory, session-name) pairs. Works on Isabelle2021 */
     lazy val updateKnownTheories2021 = compileFunction[List[(Path, String)], Unit] (
