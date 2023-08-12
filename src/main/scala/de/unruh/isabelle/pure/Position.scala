@@ -28,8 +28,10 @@ final class Position private [Position](val mlValue : MLValue[Position]) extends
   def file(implicit isabelle: Isabelle): Option[String] = Ops.fileOf(this).retrieveNow
   def id(implicit isabelle: Isabelle): Option[String] = Ops.idOf(this).retrieveNow
 
-  /** Returns the substring at this position. */
+  /** Returns the substring at this position, given the complete source text. */
   def extract(text: String)(implicit isabelle: Isabelle): String = Ops.extract(this, text).retrieveNow
+  /** Returns the substring from this position's offset (inclusive) to another's offset (exclusive). */
+  def extractUntil(end: Position, text: String)(implicit isabelle: Isabelle): String = Ops.extractRange(this, end, text).retrieveNow
 }
 
 object Position extends MLValueWrapper.Companion[Position] {
@@ -76,9 +78,6 @@ object Position extends MLValueWrapper.Companion[Position] {
   def startWithFileName(fileName: String)(implicit isabelle: Isabelle): Position = Ops.startWithFileName(fileName).retrieveNow
   /** Represents the starting position in a given text (`Position.id` in ML). */
   def startWithId(id: String)(implicit isabelle: Isabelle): Position = Ops.startWithId(id).retrieveNow
-
-  /** Returns the substring from this position's offset (inclusive) to another's offset (exclusive). */
-  def extractRange(start: Position, end: Position, text: String)(implicit isabelle: Isabelle): String = Ops.extractRange(start, end, text).retrieveNow
 
   override protected def newOps(implicit isabelle: Isabelle): Ops = new Ops
 }

@@ -4,6 +4,7 @@ import de.unruh.isabelle.control.IsabelleMLException
 import de.unruh.isabelle.control.IsabelleTest.isabelle
 import java.nio.file.Path
 import org.scalatest.funsuite.AnyFunSuite
+import scala.concurrent.duration.{Duration, MILLISECONDS}
 
 
 class TransitionTest extends AnyFunSuite {
@@ -20,7 +21,6 @@ class TransitionTest extends AnyFunSuite {
   }
 
   test ("basic transition execution") {
-    val thy_header = "theory Foo imports Main begin"
     val source = "lemma foo: True by simp"
     val theory = Theory.mergeTheories("Foo", endTheory=false, List(Theory("Main")))
     val transitions = Transition.parseOuterSyntax(theory, source)
@@ -35,8 +35,9 @@ class TransitionTest extends AnyFunSuite {
     val theory = Theory.mergeTheories("Foo", endTheory=false, List(Theory("Main")))
     val transitions = Transition.parseOuterSyntax(theory, s"$thy_header $source end")
     var state = ToplevelState()
-    for ((tr, s) <- transitions)
-        state = tr.execute(state)
+    for ((tr, s) <- transitions) {
+      state = tr.execute(state)
+    }
     assert(state.isEndTheory)
   }
 
@@ -47,7 +48,7 @@ class TransitionTest extends AnyFunSuite {
     val transitions = Transition.parseOuterSyntax(theory, s"$thy_header $source end").filter(!_._1.isIgnored)
 
     var state = ToplevelState()
-    assert(state.mode == "top-level")
+    assert(state.mode == ToplevelState.Modes.Toplevel)
     assert(!state.isEndTheory)
 
     assert(transitions(0)._2 == "theory Foo imports Main begin")
@@ -55,7 +56,7 @@ class TransitionTest extends AnyFunSuite {
     assert(transitions(0)._1.isInit)
     state = transitions(0)._1.execute(state)
 
-    assert(state.mode == "theory")
+    assert(state.mode == ToplevelState.Modes.Theory)
     assert(state.proofLevel == 0)
     assert(state.localTheoryDescription == "theory Foo")
     assert(state.proofStateDescription == "")
@@ -65,7 +66,7 @@ class TransitionTest extends AnyFunSuite {
     assert(!transitions(1)._1.isInit)
     state = transitions(1)._1.execute(state)
 
-    assert(state.mode == "proof")
+    assert(state.mode == ToplevelState.Modes.Proof)
     assert(state.proofLevel == 1)
     assert(state.localTheoryDescription == "theory Foo")
     assert(state.proofStateDescription.replaceAll("\\s+", " ") == "proof (prove) goal (1 subgoal): 1. True")
@@ -74,7 +75,7 @@ class TransitionTest extends AnyFunSuite {
     assert(transitions(2)._1.name == "by")
     state = transitions(2)._1.execute(state)
 
-    assert(state.mode == "theory")
+    assert(state.mode == ToplevelState.Modes.Theory)
     assert(state.proofLevel == 0)
     assert(state.localTheoryDescription == "theory Foo")
     assert(state.proofStateDescription == "")
@@ -84,7 +85,7 @@ class TransitionTest extends AnyFunSuite {
     assert(transitions(3)._1.name == "end")
     state = transitions(3)._1.execute(state)
 
-    assert(state.mode == "top-level")
+    assert(state.mode == ToplevelState.Modes.Toplevel)
     assert(state.localTheoryDescription == "")
     assert(state.isEndTheory)
   }
@@ -116,8 +117,8 @@ class TransitionTest extends AnyFunSuite {
 
       theory Foo
       imports
-      Main
-      Stuff
+        Main
+        "HOL-Library.Extended_Real"
       begin
 
       section \<open>Foo\<close>
@@ -130,6 +131,9 @@ class TransitionTest extends AnyFunSuite {
 
       definition arc_to_ends :: "('a,'b) pre_digraph \<Rightarrow> 'b \<Rightarrow> 'a \<times> 'a" where
       "arc_to_ends G e \<equiv> (tail G e, head G e)"
+
+      definition arcs_ends :: "('a,'b) pre_digraph \<Rightarrow> ('a \<times> 'a) set" where
+      "arcs_ends G \<equiv> arc_to_ends G ` arcs G"
 
       locale pre_digraph =
       fixes G :: "('a, 'b) pre_digraph" (structure)
@@ -153,7 +157,8 @@ class TransitionTest extends AnyFunSuite {
       assumes "finite (verts G)"
       assumes "finite (arcs G)"
       shows "fin_digraph G"
-      using assms by unfold_locales
+      using assms
+      sorry
 
       subsection \<open>Reachability\<close>
 
@@ -161,6 +166,9 @@ class TransitionTest extends AnyFunSuite {
       "dominates G u v \<equiv> (u,v) \<in> arcs_ends G"
 
       context wf_digraph begin
+
+      lemma arcs_ends_conv: "arcs_ends G = (\<lambda>e. (tail G e, head G e)) ` arcs G"
+      by (auto simp: arc_to_ends_def arcs_ends_def)
 
       lemma adj_in_verts:
       assumes "u \<rightarrow>\<^bsub>G\<^esub> v" shows "u \<in> verts G" "v \<in> verts G"
@@ -186,7 +194,7 @@ class TransitionTest extends AnyFunSuite {
 
       // Check that extracting the source from positions gives the same substring as parseOuterSyntax.
       if (prev_tr != null)
-        assert(prev_s == Position.extractRange(prev_tr.position, tr.position, source))
+        assert(prev_s == prev_tr.position.extractUntil(tr.position, source))
       prev_tr = tr
       prev_s = s
     }

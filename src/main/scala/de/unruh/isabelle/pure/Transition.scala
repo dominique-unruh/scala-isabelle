@@ -6,12 +6,13 @@ import de.unruh.isabelle.mlvalue.{MLValue, MLValueWrapper}
 import Transition.Ops
 
 import scala.language.postfixOps
+import scala.concurrent.duration.Duration
 
 // Implicits
 import de.unruh.isabelle.mlvalue.Implicits._
 import de.unruh.isabelle.pure.Implicits.theoryConverter
 
-/** Represents a transition between proof states (ML type `Transition`) in the Isabelle process.
+/** Represents a transition between proof states (ML type `Toplevel.transition`) in the Isabelle process.
   *
   * Use `Transition.parseOuterSyntax` to parse Isar source code into into a list of transitions.
   *
@@ -42,16 +43,18 @@ final class Transition private[Transition] (val mlValue: MLValue[Transition])
 
   /** Execute the transition on a TopLevelState (ML function `Toplevel.command_exception`).
    *
-   * TODO What does the `int` parameter do? Probably only affects internal Isabelle 'presentation'.
+   * @param state The state on which to execute the transition.
+   * @param timeout Maximum duration (otherwise the command is aborted).
+   * @param interactive Whether the command is run interactively (as in jEdit) or in a batch (as in `isabelle build`).
    */
   def execute(
       state: ToplevelState,
-      timeout_in_millis: Option[Int] = None,
-      int: Boolean = true
+      timeout: Option[Duration] = None,
+      interactive: Boolean = false
   )(implicit isabelle: Isabelle): ToplevelState = {
-    (timeout_in_millis match {
-      case Some(value) => Ops.commandExceptionWithTimeout(value, int, this, state)
-      case None => Ops.commandException(int, this, state)
+    (timeout match {
+      case Some(value) => Ops.commandExceptionWithTimeout(value.toMillis, interactive, this, state)
+      case None => Ops.commandException(interactive, this, state)
     }).retrieveNow.force
   }
 }
@@ -82,7 +85,7 @@ object Transition extends MLValueWrapper.Companion[Transition] {
       "fn (int, tr, st) => Toplevel.command_exception int tr st"
     )
     lazy val commandExceptionWithTimeout =
-      compileFunction[Int, Boolean, Transition, ToplevelState, ToplevelState](
+      compileFunction[Long, Boolean, Transition, ToplevelState, ToplevelState](
         """fn (timeout, int, tr, st) =>
           |  Timeout.apply (Time.fromMilliseconds timeout) Toplevel.command_exception int tr st
         """.stripMargin

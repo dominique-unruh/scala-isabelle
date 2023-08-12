@@ -33,12 +33,13 @@ object TheoryHeader extends MLValueWrapper.Companion[TheoryHeader] {
   override protected val predefinedException: String = "E_TheoryHeader"
 
   /**
-    * Parses a theory header from text.
+    * Parses a theory header from text (with ML function `Thy_Header.read`).
     *
-    * The text can be a prefix like "theory Foo imports Bar Baz begin" or a full theory file.
+    * The text can be a prefix like "theory Foo imports Bar Baz begin" or a full theory file
+    * (anything after "begin" is ignored and not even parsed).
     */
-  def parse(text: String)(implicit isabelle: Isabelle) : TheoryHeader =
-    Ops.parse(text).retrieveNow
+  def read(text: String)(implicit isabelle: Isabelle) : TheoryHeader =
+    Ops.read(text).retrieveNow
 
   //noinspection TypeAnnotation
   protected final class Ops(implicit isabelle: Isabelle) extends super.Ops {
@@ -47,7 +48,7 @@ object TheoryHeader extends MLValueWrapper.Companion[TheoryHeader] {
       "fn {name, ...} => fst name")
     lazy val getImports = compileFunction[TheoryHeader, List[String]](
       "fn {imports, ...} => map fst imports")
-    lazy val parse = compileFunction[String, TheoryHeader](
+    lazy val read = compileFunction[String, TheoryHeader](
       "fn (text) => Thy_Header.read Position.start text")
   }
   override protected def newOps(implicit isabelle: Isabelle): Ops = new Ops

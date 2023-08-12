@@ -8,6 +8,8 @@ import de.unruh.isabelle.pure.ToplevelState.Ops
 import de.unruh.isabelle.pure.Implicits.theoryConverter
 import de.unruh.isabelle.mlvalue.Implicits._
 
+import ToplevelState.Modes
+
 /** Represents a toplevel state (the state when processing an Isar .thy document). ML type: `Toplevel.state`
  *
  * An instance of this class is merely a thin wrapper around an [[mlvalue.MLValue MLValue]],
@@ -44,12 +46,12 @@ final class ToplevelState private (val mlValue: MLValue[ToplevelState]) extends 
   def isSkippedMode(implicit isabelle: Isabelle): Boolean = Ops.isSkippedMode(this).retrieveNow
   /** Returns whether the state is after a theory "end". */
   def isEndTheory(implicit isabelle: Isabelle): Boolean = Ops.isEndTheory(this).retrieveNow
-  /** Returns the mode of the state, one of: top-level/theory/local-theory/proof/skipped-proof. */
-  def mode(implicit isabelle: Isabelle): String = {
-    if (isTopLevelMode) "top-level"
-    else if (isTheoryMode) { if (isLocalTheoryMode) "local-theory" else "theory" }
-    else if (isProofMode) "proof"
-    else if (isSkippedMode) "skipped-proof"
+  /** Returns the mode of the state (roughly similar to ML function `Toplevel.str_of_state`). */
+  def mode(implicit isabelle: Isabelle): Modes.Mode = {
+    if (isTopLevelMode) Modes.Toplevel
+    else if (isTheoryMode) { if (isLocalTheoryMode) Modes.LocalTheory else Modes.Theory }
+    else if (isProofMode) Modes.Proof
+    else if (isSkippedMode) Modes.SkippedProof
     else throw new RuntimeException("Unknown ToplevelState mode.")
   }
 
@@ -64,10 +66,10 @@ object ToplevelState extends MLValueWrapper.Companion[ToplevelState] {
   override protected val predefinedException: String = "E_ToplevelState"
   override protected def instantiate(mlValue: MLValue[ToplevelState]): ToplevelState = new ToplevelState(mlValue)
 
-  /** Initializes a new toplevel state based on the theory `theory`. (ML function `Toplevel.theory_toplevel`). */
+  /** Initializes a new toplevel state in the theory `theory`. (ML function `Toplevel.theory_toplevel`). */
   def apply(theory: Theory)(implicit isabelle: Isabelle): ToplevelState =
     Ops.theoryToplevel(theory).retrieveNow
-  /** Initializes a new empty toplevel state (based on the 'Pure' theory). */
+  /** Initializes a new empty toplevel state (which only knows of the 'Pure' theory). */
   def apply()(implicit isabelle: Isabelle) : ToplevelState = Ops.initTopLevel().retrieveNow
 
   override protected def newOps(implicit isabelle: Isabelle): Ops = new Ops
@@ -102,5 +104,11 @@ object ToplevelState extends MLValueWrapper.Companion[ToplevelState] {
         compileFunction[Theory, ToplevelState]("Toplevel.make_state o SOME")
       else
         compileFunction[Theory, ToplevelState]("Toplevel.theory_toplevel")
+  }
+
+  /** Mode in which a top-level state can be. */
+  object Modes extends Enumeration {
+    type Mode = Value
+    val Toplevel, Theory, LocalTheory, Proof, SkippedProof = Value
   }
 }
