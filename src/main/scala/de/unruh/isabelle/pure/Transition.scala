@@ -1,7 +1,6 @@
 package de.unruh.isabelle.pure
 
 import de.unruh.isabelle.control.Isabelle
-import de.unruh.isabelle.mlvalue.Implicits.listConverter
 import de.unruh.isabelle.mlvalue.{MLValue, MLValueWrapper}
 import Transition.Ops
 
@@ -44,17 +43,20 @@ final class Transition private[Transition] (val mlValue: MLValue[Transition])
   /** Execute the transition on a TopLevelState (ML function `Toplevel.command_exception`).
    *
    * @param state The state on which to execute the transition.
-   * @param timeout Maximum duration (otherwise the command is aborted).
+   * @param timeout Maximum duration (after which the execution is aborted with an IsabelleMLException).
+   *  The minimum granularity should be 1 ms, but it seems the timeout gets rounded up to full seconds by ML.
+   *  Timeouts smaller than 1ms are treated as 1ms (rather than infinite, as in ML `Timeout.apply`).
+   *  Timeouts are scaled by the Isabelle `timeout_scale` system option, though the default is 1.
    * @param interactive Whether the command is run interactively (as in jEdit) or in a batch (as in `isabelle build`).
    */
   def execute(
       state: ToplevelState,
-      timeout: Option[Duration] = None,
+      timeout: Duration = Duration.Inf,
       interactive: Boolean = false
   )(implicit isabelle: Isabelle): ToplevelState = {
     (timeout match {
-      case Some(value) => Ops.commandExceptionWithTimeout(value.toMillis, interactive, this, state)
-      case None => Ops.commandException(interactive, this, state)
+      case Duration.Inf => Ops.commandException(interactive, this, state)
+      case timeout => Ops.commandExceptionWithTimeout(timeout.toMillis.max(1), interactive, this, state)
     }).retrieveNow.force
   }
 }
@@ -87,7 +89,7 @@ object Transition extends MLValueWrapper.Companion[Transition] {
     lazy val commandExceptionWithTimeout =
       compileFunction[Long, Boolean, Transition, ToplevelState, ToplevelState](
         """fn (timeout, int, tr, st) =>
-          |  Timeout.apply (Time.fromMilliseconds timeout) Toplevel.command_exception int tr st
+          |  Timeout.apply (Time.fromMilliseconds timeout) (Toplevel.command_exception int tr) st
         """.stripMargin
       )
 

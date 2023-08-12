@@ -2,7 +2,6 @@ package de.unruh.isabelle.pure
 
 import de.unruh.isabelle.control.IsabelleMLException
 import de.unruh.isabelle.control.IsabelleTest.isabelle
-import java.nio.file.Path
 import org.scalatest.funsuite.AnyFunSuite
 import scala.concurrent.duration.{Duration, MILLISECONDS}
 
@@ -35,9 +34,8 @@ class TransitionTest extends AnyFunSuite {
     val theory = Theory.mergeTheories("Foo", endTheory=false, List(Theory("Main")))
     val transitions = Transition.parseOuterSyntax(theory, s"$thy_header $source end")
     var state = ToplevelState()
-    for ((tr, s) <- transitions) {
+    for ((tr, s) <- transitions)
       state = tr.execute(state)
-    }
     assert(state.isEndTheory)
   }
 
@@ -107,6 +105,24 @@ class TransitionTest extends AnyFunSuite {
     assert(msg.contains("Outer syntax error"))
     assert(msg.contains("command expected"))
     assert(msg.contains("but identifier foo (line 1) was found"))
+  }
+
+  test("execution timeout") {
+    val source = raw"lemma foo: True by (sleep 3.0) simp"
+    val theory = Theory.mergeTheories("Foo", endTheory=false, List(Theory("Main")))
+    val transitions = Transition.parseOuterSyntax(theory, source)
+    var state = ToplevelState(theory)
+    var start = System.currentTimeMillis
+    val thrown = intercept[IsabelleMLException] {
+      for ((tr, s) <- transitions) {
+        start = System.currentTimeMillis
+        state = tr.execute(state, timeout=Duration(2, MILLISECONDS))
+      }
+    }
+    // The timeout gets rounded up to a full second for some reason.
+    assert(System.currentTimeMillis - start < 1200)
+    val msg = thrown.getMessage
+    assert(msg.contains("Timeout"))
   }
 
   test("parsing a full theory") {
