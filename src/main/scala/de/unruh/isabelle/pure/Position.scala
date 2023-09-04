@@ -53,10 +53,10 @@ object Position extends MLValueWrapper.Companion[Position] {
     lazy val endOffsetOf = compileFunction[Position, Option[Int]]("Position.end_offset_of")
     lazy val fileOf = compileFunction[Position, Option[String]]("Position.file_of")
     lazy val idOf =
-      if (Version.from2021)
+      if (Version.from2021_1)
         compileFunction[Position, Option[String]]("Position.id_of")
       else
-        throw IsabelleMiscException("Position.id_of not available before Isabelle2021")
+        throw IsabelleMiscException("Position.id_of not available before Isabelle2021-1")
 
     lazy val extract = compileFunction[Position, String, String](
       """fn (pos, s) =>

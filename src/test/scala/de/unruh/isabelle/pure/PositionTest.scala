@@ -20,7 +20,7 @@ class PositionTest extends AnyFunSuite {
     assert(pos.offset.isEmpty)
     assert(pos.endOffset.isEmpty)
     assert(pos.file.isEmpty)
-    if (Version.from2021)
+    if (Version.from2021_1)
       assert(pos.id.isEmpty)
   }
 
@@ -30,7 +30,7 @@ class PositionTest extends AnyFunSuite {
     assert(pos.offset  == Some(1))
     assert(pos.endOffset.isEmpty)
     assert(pos.file.isEmpty)
-    if (Version.from2021)
+    if (Version.from2021_1)
       assert(pos.id.isEmpty)
   }
 
@@ -41,7 +41,7 @@ class PositionTest extends AnyFunSuite {
     assert(pos.offset  == Some(1))
     assert(pos.endOffset.isEmpty)
     assert(pos.file == Some(fileName))
-    if (Version.from2021)
+    if (Version.from2021_1)
       assert(pos.id.isEmpty)
   }
 

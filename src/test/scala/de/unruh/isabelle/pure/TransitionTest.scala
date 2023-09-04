@@ -99,7 +99,7 @@ class TransitionTest extends AnyFunSuite {
     assert(transitions.length == 1)
     val tr = transitions(0)._1
     assert(tr.name == "<malformed>")
-    if (Version.from2021)
+    if (Version.from2021_1)
       assert(tr.isMalformed) // Not supported before 2020
 
     val state = ToplevelState(theory)
