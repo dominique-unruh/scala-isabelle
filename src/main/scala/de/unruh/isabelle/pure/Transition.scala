@@ -83,10 +83,10 @@ object Transition extends MLValueWrapper.Companion[Transition] {
     lazy val isInit = compileFunction[Transition, Boolean]("Toplevel.is_init")
     lazy val isIgnored = compileFunction[Transition, Boolean]("Toplevel.is_ignored")
     lazy val isMalformed =
-      if (Version.from2020)
+      if (Version.from2021)
         compileFunction[Transition, Boolean]("Toplevel.is_malformed")
       else
-        throw IsabelleMiscException("Transition.isMalformed not available before Isabelle2020")
+        throw IsabelleMiscException("Transition.isMalformed not available before Isabelle2021")
     lazy val commandException = compileFunction[Boolean, Transition, ToplevelState, ToplevelState](
       "fn (int, tr, st) => Toplevel.command_exception int tr st")
     lazy val commandExceptionWithTimeout =

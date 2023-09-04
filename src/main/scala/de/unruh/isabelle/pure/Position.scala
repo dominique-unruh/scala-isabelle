@@ -27,7 +27,7 @@ final class Position private [Position](val mlValue : MLValue[Position]) extends
   def endOffset(implicit isabelle: Isabelle): Option[Int] = Ops.endOffsetOf(this).retrieveNow
   def file(implicit isabelle: Isabelle): Option[String] = Ops.fileOf(this).retrieveNow
   /** Returns the id of the position.
-   * Supported only since Isabelle2022 */
+   * Supported only since Isabelle2021 */
   def id(implicit isabelle: Isabelle): Option[String] = Ops.idOf(this).retrieveNow
 
   /** Returns the substring at this position, given the complete source text. */
@@ -53,10 +53,10 @@ object Position extends MLValueWrapper.Companion[Position] {
     lazy val endOffsetOf = compileFunction[Position, Option[Int]]("Position.end_offset_of")
     lazy val fileOf = compileFunction[Position, Option[String]]("Position.file_of")
     lazy val idOf =
-      if (Version.from2020)
+      if (Version.from2021)
         compileFunction[Position, Option[String]]("Position.id_of")
       else
-        throw IsabelleMiscException("Position.id_of not available before Isabelle2020")
+        throw IsabelleMiscException("Position.id_of not available before Isabelle2021")
 
     lazy val extract = compileFunction[Position, String, String](
       """fn (pos, s) =>
