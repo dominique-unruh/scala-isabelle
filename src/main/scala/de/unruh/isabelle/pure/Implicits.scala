@@ -26,6 +26,7 @@ object Implicits {
   implicit val mutexConverter = Mutex.converter
   implicit val keywordsConverter = Keywords.converter
   implicit val toplevelStateConverter = ToplevelState.converter
+  implicit val transitionConverter = Transition.converter
   implicit val pathConverter = PathConverter
   implicit val prooftermConverter = Proofterm.converter
   implicit val prooftermBodyConverter = Proofterm.ThmBody.converter
