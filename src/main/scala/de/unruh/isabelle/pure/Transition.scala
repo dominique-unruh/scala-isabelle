@@ -1,7 +1,7 @@
 package de.unruh.isabelle.pure
 
-import de.unruh.isabelle.control.Isabelle
-import de.unruh.isabelle.mlvalue.{MLValue, MLValueWrapper}
+import de.unruh.isabelle.control.{Isabelle, IsabelleMiscException}
+import de.unruh.isabelle.mlvalue.{MLValue, MLValueWrapper, Version}
 import Transition.Ops
 
 import scala.language.postfixOps
@@ -82,16 +82,18 @@ object Transition extends MLValueWrapper.Companion[Transition] {
     lazy val getPosition = compileFunction[Transition, Position]("Toplevel.pos_of")
     lazy val isInit = compileFunction[Transition, Boolean]("Toplevel.is_init")
     lazy val isIgnored = compileFunction[Transition, Boolean]("Toplevel.is_ignored")
-    lazy val isMalformed = compileFunction[Transition, Boolean]("Toplevel.is_malformed")
+    lazy val isMalformed =
+      if (Version.from2020)
+        compileFunction[Transition, Boolean]("Toplevel.is_malformed")
+      else
+        throw IsabelleMiscException("Transition.isMalformed not available before Isabelle2020")
     lazy val commandException = compileFunction[Boolean, Transition, ToplevelState, ToplevelState](
-      "fn (int, tr, st) => Toplevel.command_exception int tr st"
-    )
+      "fn (int, tr, st) => Toplevel.command_exception int tr st")
     lazy val commandExceptionWithTimeout =
       compileFunction[Long, Boolean, Transition, ToplevelState, ToplevelState](
         """fn (timeout, int, tr, st) =>
           |  Timeout.apply (Time.fromMilliseconds timeout) (Toplevel.command_exception int tr) st
-        """.stripMargin
-      )
+        """.stripMargin)
 
     // Calls Outer_Syntax.parse_text and pairs each transition with the text that it corresponds to.
     lazy val parseOuterSyntax = compileFunction[Theory, String, List[(Transition, String)]](

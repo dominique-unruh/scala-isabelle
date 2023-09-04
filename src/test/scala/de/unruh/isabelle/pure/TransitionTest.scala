@@ -2,7 +2,9 @@ package de.unruh.isabelle.pure
 
 import de.unruh.isabelle.control.IsabelleMLException
 import de.unruh.isabelle.control.IsabelleTest.isabelle
+import de.unruh.isabelle.mlvalue.Version
 import org.scalatest.funsuite.AnyFunSuite
+
 import scala.concurrent.duration.{Duration, MILLISECONDS}
 
 
@@ -97,7 +99,8 @@ class TransitionTest extends AnyFunSuite {
     assert(transitions.length == 1)
     val tr = transitions(0)._1
     assert(tr.name == "<malformed>")
-    assert(tr.isMalformed)
+    if (Version.from2020)
+      assert(tr.isMalformed) // Not supported before 2020
 
     val state = ToplevelState(theory)
     val thrown = intercept[IsabelleMLException] { tr.execute(state) }

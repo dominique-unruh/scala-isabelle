@@ -2,9 +2,9 @@ package de.unruh.isabelle.pure
 
 import de.unruh.isabelle.control.IsabelleTest.isabelle
 import org.scalatest.funsuite.AnyFunSuite
-
 import de.unruh.isabelle.mlvalue.MLValue.compileFunction
 import de.unruh.isabelle.mlvalue.Implicits._
+import de.unruh.isabelle.mlvalue.Version
 
 class PositionTest extends AnyFunSuite {
   // Explode a string into tokens, and return a list of (token, position) pairs.
@@ -20,7 +20,8 @@ class PositionTest extends AnyFunSuite {
     assert(pos.offset.isEmpty)
     assert(pos.endOffset.isEmpty)
     assert(pos.file.isEmpty)
-    assert(pos.id.isEmpty)
+    if (Version.from2020)
+      assert(pos.id.isEmpty)
   }
 
   test ("position start") {
@@ -29,7 +30,8 @@ class PositionTest extends AnyFunSuite {
     assert(pos.offset  == Some(1))
     assert(pos.endOffset.isEmpty)
     assert(pos.file.isEmpty)
-    assert(pos.id.isEmpty)
+    if (Version.from2020)
+      assert(pos.id.isEmpty)
   }
 
   test ("position startWithFile") {
@@ -39,7 +41,8 @@ class PositionTest extends AnyFunSuite {
     assert(pos.offset  == Some(1))
     assert(pos.endOffset.isEmpty)
     assert(pos.file == Some(fileName))
-    assert(pos.id.isEmpty)
+    if (Version.from2020)
+      assert(pos.id.isEmpty)
   }
 
   test ("position basic") {

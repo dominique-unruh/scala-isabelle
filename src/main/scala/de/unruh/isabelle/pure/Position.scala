@@ -1,8 +1,8 @@
 package de.unruh.isabelle.pure
 
-import de.unruh.isabelle.control.Isabelle
-import de.unruh.isabelle.mlvalue.{MLValue, MLValueWrapper}
-import de.unruh.isabelle.mlvalue.MLValue.{compileValue, compileFunction}
+import de.unruh.isabelle.control.{Isabelle, IsabelleMiscException}
+import de.unruh.isabelle.mlvalue.{MLValue, MLValueWrapper, Version}
+import de.unruh.isabelle.mlvalue.MLValue.{compileFunction, compileValue}
 import de.unruh.isabelle.mlvalue.Implicits._
 import Position.Ops
 
@@ -26,6 +26,8 @@ final class Position private [Position](val mlValue : MLValue[Position]) extends
   def offset(implicit isabelle: Isabelle): Option[Int] = Ops.offsetOf(this).retrieveNow
   def endOffset(implicit isabelle: Isabelle): Option[Int] = Ops.endOffsetOf(this).retrieveNow
   def file(implicit isabelle: Isabelle): Option[String] = Ops.fileOf(this).retrieveNow
+  /** Returns the id of the position.
+   * Supported only since Isabelle2022 */
   def id(implicit isabelle: Isabelle): Option[String] = Ops.idOf(this).retrieveNow
 
   /** Returns the substring at this position, given the complete source text. */
@@ -50,7 +52,11 @@ object Position extends MLValueWrapper.Companion[Position] {
     lazy val offsetOf = compileFunction[Position, Option[Int]]("Position.offset_of")
     lazy val endOffsetOf = compileFunction[Position, Option[Int]]("Position.end_offset_of")
     lazy val fileOf = compileFunction[Position, Option[String]]("Position.file_of")
-    lazy val idOf = compileFunction[Position, Option[String]]("Position.id_of")
+    lazy val idOf =
+      if (Version.from2020)
+        compileFunction[Position, Option[String]]("Position.id_of")
+      else
+        throw IsabelleMiscException("Position.id_of not available before Isabelle2020")
 
     lazy val extract = compileFunction[Position, String, String](
       """fn (pos, s) =>
