@@ -96,7 +96,7 @@ object ToplevelState extends MLValueWrapper.Companion[ToplevelState] {
 
     lazy val initTopLevel =
        if (Version.from2023)
-        compileFunction0[ToplevelState]("Toplevel.make_state o NONE")
+        compileFunction0[ToplevelState]("fn _ => Toplevel.make_state NONE")
       else
         compileFunction0[ToplevelState]("Toplevel.init_toplevel")
     lazy val theoryToplevel =
