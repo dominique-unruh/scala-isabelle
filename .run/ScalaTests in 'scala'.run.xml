@@ -21,7 +21,10 @@
         <option value="de.unruh.isabelle.pure.CtermTest" />
         <option value="de.unruh.isabelle.pure.TheoryTest" />
         <option value="de.unruh.isabelle.pure.ContextTest" />
+        <option value="de.unruh.isabelle.pure.PositionTest" />
         <option value="de.unruh.isabelle.pure.ProoftermTest" />
+        <option value="de.unruh.isabelle.pure.TransitionTest" />
+        <option value="de.unruh.isabelle.pure.TheoryHeaderTest" />
         <option value="de.unruh.isabelle.pure.PathConverterTest" />
         <option value="de.unruh.isabelle.pure.ToplevelStateTest" />
         <option value="de.unruh.isabelle.pure.StringInterpolatorsTest" />
