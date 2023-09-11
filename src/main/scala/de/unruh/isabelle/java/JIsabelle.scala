@@ -4,7 +4,7 @@ import java.nio.file.Path
 
 import de.unruh.isabelle.control
 import de.unruh.isabelle.control.Isabelle
-import scala.jdk.CollectionConverters._
+import collection.JavaConverters._ // Using this to be Scala 2.12 compatible
 
 /**
  * This object contains utility methods for invoking scala-isabelle methods from Java
