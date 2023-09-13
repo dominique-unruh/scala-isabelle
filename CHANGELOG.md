@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.4.2] - ???
+
+The main change is support for Isabelle2023.
+
+### Added
+
+* Support for Isabelle2023
+* `Position`: New methods `line`, `offset`, `endOffset`, `file`, `id` to access the corresponding fields in the ML-type.
+  `extract`, `extractUntil` to extract text from a string given position(s).
+* `TheoryHeader`: New method `name` to get the name of the theory. `read` to parse a theory from a string.
+* `Toplevel`: New methods `proofLevel`, `mode`, `isProofMode` etc., `proofStateDescription`, `localTheoryDescription`.
+  `Toplevel()` creates a toplevel based on `Pure`.
+* `Transition`: New Scala class. Represents A toplevel transition (roughly speaking one command in a theory file).
+* `JIsabelle`: New methods `setupSetVerbose`, `setupSetUserDir`, `setupSetWorkingDirectory`, `setupSetSessionRoots` to
+  set the corresponding fields in a `Setup` object from Java.
+
+### Changed
+
+* [`Isabelle`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/Isabelle.html): Execution context is stored inside `Isabelle` instance, and configured via `Setup.executionContext`.
+  Most `scala-isabelle` methods now use that execution context.
+
+### Removed
+
+None.
+
 ## [0.4.1] – 2022-11-27
 
 Main changes are support for Isabelle2022 and improved support for handling of ML exceptions.
@@ -208,3 +233,4 @@ for loading theory files that are not in the session image.
 [0.3.0]: https://github.com/dominique-unruh/scala-isabelle/compare/v0.2.0...v0.3.0
 [0.4.0]: https://github.com/dominique-unruh/scala-isabelle/compare/v0.3.0...v0.4.0
 [0.4.1]: https://github.com/dominique-unruh/scala-isabelle/compare/v0.4.0...v0.4.1
+[0.4.1]: https://github.com/dominique-unruh/scala-isabelle/compare/v0.4.1...v0.4.2
