@@ -49,6 +49,14 @@ object JIsabelle {
   def setupSetWorkingDirectory(workingDirectory: Path, setup: Isabelle.Setup): Isabelle.Setup =
     setup.copy(workingDirectory = workingDirectory)
 
+  /** Sets the [[de.unruh.isabelle.control.Isabelle.Setup.logic logic]] directory in the setup `setup`.
+   *
+   * @return `setup` with [[de.unruh.isabelle.control.Isabelle.Setup.logic logic]] set to `logic`
+   * @param logic the new value for `setup.`[[de.unruh.isabelle.control.Isabelle.Setup.logic logic]]
+   * */
+  def setupSetLogic(logic: String, setup: Isabelle.Setup): Isabelle.Setup =
+    setup.copy(logic = logic)
+
   /** Sets the [[de.unruh.isabelle.control.Isabelle.Setup.sessionRoots sessionRoots]] directories in the setup `setup`.
    *
    * @return `setup` with [[de.unruh.isabelle.control.Isabelle.Setup.sessionRoots sessionRoots]] set to `sessionRoots`
