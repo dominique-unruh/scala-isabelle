@@ -111,7 +111,7 @@ class TransitionTest extends AnyFunSuite {
   }
 
   test("execution timeout") {
-    val source = raw"lemma foo: True by (sleep 3.0) simp"
+    val source = raw"lemma foo: True by (sleep 300.0) simp"
     val theory = Theory.mergeTheories("Foo", endTheory=false, List(Theory("Main")))
     val transitions = Transition.parseOuterSyntax(theory, source)
     var state = ToplevelState(theory)
@@ -123,7 +123,8 @@ class TransitionTest extends AnyFunSuite {
       }
     }
     // The timeout gets rounded up to a full second for some reason.
-    assert(System.currentTimeMillis - start < 1200)
+    // We allow it to be up to 10 seconds in order not to fail the test under high load.
+    assert(System.currentTimeMillis - start < 10000)
     val msg = thrown.getMessage
     assert(msg.contains("Timeout"))
   }
