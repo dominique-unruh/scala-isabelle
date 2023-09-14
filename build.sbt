@@ -72,6 +72,6 @@ Compile / packageSrc / mappings ++= makeGitrevision.value pair relativeTo((Compi
 Compile / packageDoc / mappings ++= makeGitrevision.value pair relativeTo((Compile / resourceManaged).value)
 
 Compile / doc / scalacOptions ++=
-    Opts.doc.sourceUrl(s"https://github.com/dominique-unruh/scala-isabelle/tree/${"git rev-parse HEAD".!!}€{FILE_PATH_EXT}#L€{FILE_LINE}")
+    Opts.doc.sourceUrl(s"https://github.com/dominique-unruh/scala-isabelle/tree/${"git rev-parse HEAD".!!.trim}€{FILE_PATH_EXT}#L€{FILE_LINE}")
 Compile / doc / scalacOptions ++= Seq("-sourcepath", baseDirectory.value.toString)
 Compile / doc / scalacOptions ++= Seq("-skip-packages", "scalaz") // Otherwise documentation for scalaz.syntax is included for some reason
