@@ -1,24 +1,47 @@
 # Changelog
 
-## [0.4.2] - ???
+## [0.4.2] - 2023-09-25
 
 The main change is support for Isabelle2023.
 
 ### Added
 
-* Support for Isabelle2023
-* `Position`: New methods `line`, `offset`, `endOffset`, `file`, `id` to access the corresponding fields in the ML-type.
-  `extract`, `extractUntil` to extract text from a string given position(s).
-* `TheoryHeader`: New method `name` to get the name of the theory. `read` to parse a theory from a string.
-* `Toplevel`: New methods `proofLevel`, `mode`, `isProofMode` etc., `proofStateDescription`, `localTheoryDescription`.
-  `Toplevel()` creates a toplevel based on `Pure`.
-* `Transition`: New Scala class. Represents A toplevel transition (roughly speaking one command in a theory file).
-* `JIsabelle`: New methods `setupSetVerbose`, `setupSetUserDir`, `setupSetWorkingDirectory`, `setupSetSessionRoots` to
-  set the corresponding fields in a `Setup` object from Java.
+* Support for [Isabelle2023](https://isabelle.in.tum.de/website-Isabelle2023/).
+* [`Position`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/0.4.2/de/unruh/isabelle/pure/Position.html):
+  New methods [`line`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/0.4.2/de/unruh/isabelle/pure/Position.html#line(implicitisabelle:de.unruh.isabelle.control.Isabelle):Option[Int]),
+  [`offset`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/0.4.2/de/unruh/isabelle/pure/Position.html#offset(implicitisabelle:de.unruh.isabelle.control.Isabelle):Option[Int]),
+  [`endOffset`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/0.4.2/de/unruh/isabelle/pure/Position.html#endOffset(implicitisabelle:de.unruh.isabelle.control.Isabelle):Option[Int]),
+  [`file`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/0.4.2/de/unruh/isabelle/pure/Position.html#file(implicitisabelle:de.unruh.isabelle.control.Isabelle):Option[String]),
+  [`id`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/0.4.2/de/unruh/isabelle/pure/Position.html#id(implicitisabelle:de.unruh.isabelle.control.Isabelle):Option[String])
+  to access the corresponding fields in the ML-type.
+  [`extract`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/0.4.2/de/unruh/isabelle/pure/Position.html#extract(text:String)(implicitisabelle:de.unruh.isabelle.control.Isabelle):String),
+  [`extractUntil`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/0.4.2/de/unruh/isabelle/pure/Position.html#extractUntil(end:de.unruh.isabelle.pure.Position,text:String)(implicitisabelle:de.unruh.isabelle.control.Isabelle):String)
+  to extract text from a string given position(s).
+* [`TheoryHeader`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/0.4.2/de/unruh/isabelle/pure/TheoryHeader.html):
+  New method [`name`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/0.4.2/de/unruh/isabelle/pure/TheoryHeader.html#name(implicitisabelle:de.unruh.isabelle.control.Isabelle):String)
+  to get the name of the theory. [`read`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/0.4.2/de/unruh/isabelle/pure/TheoryHeader$.html#read(text:String)(implicitisabelle:de.unruh.isabelle.control.Isabelle):de.unruh.isabelle.pure.TheoryHeader)
+  to parse a theory from a string.
+* [`ToplevelState`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/0.4.2/de/unruh/isabelle/pure/ToplevelState.html):
+  New methods [`proofLevel`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/0.4.2/de/unruh/isabelle/pure/ToplevelState.html#proofLevel(implicitisabelle:de.unruh.isabelle.control.Isabelle):Int),
+  [`mode`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/0.4.2/de/unruh/isabelle/pure/ToplevelState.html#mode(implicitisabelle:de.unruh.isabelle.control.Isabelle):de.unruh.isabelle.pure.ToplevelState.Modes.Mode),
+  [`isProofMode`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/0.4.2/de/unruh/isabelle/pure/ToplevelState.html#isProofMode(implicitisabelle:de.unruh.isabelle.control.Isabelle):Boolean)
+  etc., [`proofStateDescription`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/0.4.2/de/unruh/isabelle/pure/ToplevelState.html#proofStateDescription(implicitisabelle:de.unruh.isabelle.control.Isabelle):String),
+  [`localTheoryDescription`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/0.4.2/de/unruh/isabelle/pure/ToplevelState.html#localTheoryDescription(implicitisabelle:de.unruh.isabelle.control.Isabelle):String).
+  [`ToplevelState()`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/0.4.2/de/unruh/isabelle/pure/ToplevelState$.html#apply()(implicitisabelle:de.unruh.isabelle.control.Isabelle):de.unruh.isabelle.pure.ToplevelState) creates a toplevel based on `Pure`.
+* [`Transition`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/0.4.2/de/unruh/isabelle/pure/Transition.html):
+  New Scala class. Represents A toplevel transition (roughly speaking one command in a theory file).
+* [`JIsabelle`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/0.4.2/de/unruh/isabelle/java/JIsabelle$.html):
+  New methods [`setupSetVerbose`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/0.4.2/de/unruh/isabelle/java/JIsabelle$.html#setupSetVerbose(verbose:Boolean,setup:de.unruh.isabelle.control.Isabelle.Setup):de.unruh.isabelle.control.Isabelle.Setup),
+  [`setupSetUserDir`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/0.4.2/de/unruh/isabelle/java/JIsabelle$.html#setupSetUserDir(userDir:java.nio.file.Path,setup:de.unruh.isabelle.control.Isabelle.Setup):de.unruh.isabelle.control.Isabelle.Setup),
+  [`setupSetWorkingDirectory`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/0.4.2/de/unruh/isabelle/java/JIsabelle$.html#setupSetWorkingDirectory(workingDirectory:java.nio.file.Path,setup:de.unruh.isabelle.control.Isabelle.Setup):de.unruh.isabelle.control.Isabelle.Setup),
+  [`setupSetSessionRoots`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/0.4.2/de/unruh/isabelle/java/JIsabelle$.html#setupSetSessionRoots(sessionRoots:Iterable[java.nio.file.Path],setup:de.unruh.isabelle.control.Isabelle.Setup):de.unruh.isabelle.control.Isabelle.Setup),
+  [`setupSetLogic`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/0.4.2/de/unruh/isabelle/java/JIsabelle$.html#setupSetLogic(verbose:String,setup:de.unruh.isabelle.control.Isabelle.Setup):de.unruh.isabelle.control.Isabelle.Setup)
+  to set the corresponding fields in a [`Setup`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/0.4.2/de/unruh/isabelle/control/Isabelle$$Setup.html)
+  object from Java.
 
 ### Changed
 
-* [`Isabelle`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/control/Isabelle.html): Execution context is stored inside `Isabelle` instance, and configured via `Setup.executionContext`.
+* [`Isabelle`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/0.4.2/de/unruh/isabelle/control/Isabelle.html): Execution context is stored inside `Isabelle` instance, and configured via `[Setup](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/0.4.2/de/unruh/isabelle/control/Isabelle$$Setup.html).executionContext`.
   Most `scala-isabelle` methods now use that execution context.
 
 ### Removed
@@ -233,4 +256,4 @@ for loading theory files that are not in the session image.
 [0.3.0]: https://github.com/dominique-unruh/scala-isabelle/compare/v0.2.0...v0.3.0
 [0.4.0]: https://github.com/dominique-unruh/scala-isabelle/compare/v0.3.0...v0.4.0
 [0.4.1]: https://github.com/dominique-unruh/scala-isabelle/compare/v0.4.0...v0.4.1
-[0.4.1]: https://github.com/dominique-unruh/scala-isabelle/compare/v0.4.1...v0.4.2
+[0.4.2]: https://github.com/dominique-unruh/scala-isabelle/compare/v0.4.1...v0.4.2
