@@ -32,12 +32,17 @@ object Version extends OperationCollection {
   override protected def newOps(implicit isabelle: Isabelle): Ops = new Ops
   protected class Ops(implicit isabelle: Isabelle) {
 //    MLValue.init()
-    val versionString: String =
-      try
+    val versionString: String = {
+      val hasIsabelleIdentifier =
+        // Find out whether there is `Isabelle_System.isabelle_identifier` without producing an error message in the log
+        try { MLValue.compileValueRaw[Any](s"Isabelle_System.isabelle_identifier; E_Int 0", logError = false).force; true }
+        catch { case _: IsabelleMLException => false}
+
+      if (hasIsabelleIdentifier)
         MLValue.compileValue[Option[String]]("Isabelle_System.isabelle_identifier()").retrieveNow.getOrElse("dev")
-      catch {
-        case _ : IsabelleMLException => MLValue.compileValue[String]("Distribution.version").retrieveNow
-      }
+      else
+        MLValue.compileValue[String]("Distribution.version").retrieveNow
+    }
 
     val (year, step, rc) = {
       isabelleVersionRegex.findFirstMatchIn(versionString) match {

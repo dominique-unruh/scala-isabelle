@@ -635,9 +635,18 @@ object MLValue extends OperationCollection {
    * In most situations, it is preferrable to use higher level compilation functions such as [[compileValue]]
    * or [[compileFunction[D,R]* compileFunction]] or [[MLStoreFunction]] or [[MLRetrieveFunction]] that take care of the encoding as exceptions
    * automatically.
+   *
+   * @param ml The ML code to compile
+   * @param logError Whether an error message should be logged upon compilation errors.
+   *                 (Compilation errors are not raised directly as exceptions because they happen in a future.)
    **/
-  def compileValueRaw[A](ml: String)(implicit isabelle: Isabelle): MLValue[A] =
-    new MLValue[A](isabelle.storeValue(ml)).logError(s"""Error while compiling value "$ml":""")
+  def compileValueRaw[A](ml: String, logError: Boolean = true)(implicit isabelle: Isabelle): MLValue[A] = {
+    val mlvalue = new MLValue[A](isabelle.storeValue(ml))
+    if (logError)
+      mlvalue.logError(s"""Error while compiling value "$ml":""")
+    else
+      mlvalue
+  }
 
   /** Compiles ML code `ml` and inserts it into the object store.
    *
