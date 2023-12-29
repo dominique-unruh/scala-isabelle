@@ -4,7 +4,7 @@ import de.unruh.isabelle.control.IsabelleTest.isabelle
 import org.scalatest.funsuite.AnyFunSuite
 
 class CtermTest extends AnyFunSuite {
-  val ctxt: Context = Context("Main")
+  lazy val ctxt: Context = Context("Main")
 
   test ("Create Cterm from term") {
     val term = Term(ctxt, "1+1::nat")

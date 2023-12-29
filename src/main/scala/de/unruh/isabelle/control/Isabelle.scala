@@ -102,6 +102,8 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
   private val cleanupFiles = !Utils.checkEnvironmentFlag("SCALA_ISABELLE_NO_CLEANUP")
   private val logQueries = Utils.checkEnvironmentFlag("SCALA_ISABELLE_LOG_QUERIES")
 
+//  logger.debug(new RuntimeException(s"${hashCode()}"))(s"${hashCode()}")
+
   /** This promise will be completed when initializing the Isabelle process finished (first successful communication).
    * Contains an exception if initilization fails. */
   private val initializedPromise : Promise[Unit] = Promise()
@@ -735,7 +737,7 @@ class Isabelle(val setup: SetupGeneral) extends FutureValue {
   private val lastMessages = new mutable.Queue[String]()
   private def logStream(stream: InputStream, level: LogLevel) : Unit = {
     val log = logger(level)
-    val thread = new Thread(s"Isabelle output logger, $level") {
+    val thread = new Thread(s"Isabelle output logger (instance ${this.hashCode()}), $level") {
       override def run(): Unit = {
         try
           new BufferedReader(new InputStreamReader(stream)).lines().forEach { line =>

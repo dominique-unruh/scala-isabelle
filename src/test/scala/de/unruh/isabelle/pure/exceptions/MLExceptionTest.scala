@@ -15,7 +15,7 @@ import de.unruh.isabelle.pure.Implicits._
 
 class MLExceptionTest extends AnyFunSuite {
   implicit lazy val isabelle: Isabelle = IsabelleTest.isabelle
-  val ctxt: Context = Context("Pure")
+  lazy val ctxt: Context = Context("Pure")
 
   def recognizeExceptionTest[T <: IsabelleMLException](code: String)(implicit classTag: ClassTag[T]) : T = {
     val id = Await.result(isabelle.storeValue(code), Duration.Inf)

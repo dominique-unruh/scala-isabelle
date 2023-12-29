@@ -4,7 +4,7 @@ import de.unruh.isabelle.control.IsabelleTest.isabelle
 import org.scalatest.funsuite.AnyFunSuite
 
 class CtypTest extends AnyFunSuite {
-  val ctxt: Context = Context("Main")
+  lazy val ctxt: Context = Context("Main")
 
   test ("Create Ctyp from term") {
     val term = Typ(ctxt, "nat => nat")
