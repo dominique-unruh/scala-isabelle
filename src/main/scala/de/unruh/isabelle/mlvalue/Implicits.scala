@@ -2,11 +2,19 @@ package de.unruh.isabelle.mlvalue
 
 import de.unruh.isabelle.mlvalue.MLValue.Converter
 
+import scala.runtime.BoxedUnit
+
 object Implicits {
   @inline implicit val booleanConverter: BooleanConverter.type = BooleanConverter
+  /** In Java, [[booleanConverter]] does not have the right type. You may try to use this instead. */
+  @inline val javaBooleanConverter: MLValue.Converter[java.lang.Boolean] = booleanConverter.asInstanceOf[MLValue.Converter[java.lang.Boolean]]
   @inline implicit val intConverter: IntConverter.type = IntConverter
+  /** In Java, [[intConverter]] does not have the right type. You may try to use this instead. */
+  @inline val javaIntConverter: MLValue.Converter[java.lang.Integer] = IntConverter.asInstanceOf[MLValue.Converter[java.lang.Integer]]
   @inline implicit val bigIntConverter: BigIntConverter.type = BigIntConverter
   @inline implicit val longConverter: LongConverter.type = LongConverter
+  /** In Java, [[longConverter]] does not have the right type. You may try to use this instead. */
+  @inline val javaLongConverter: MLValue.Converter[java.lang.Long] = LongConverter.asInstanceOf[MLValue.Converter[java.lang.Long]]
   @inline implicit val unitConverter: UnitConverter.type = UnitConverter
   @inline implicit val stringConverter: StringConverter.type = StringConverter
   @inline implicit val dataConverter: DataConverter.type = DataConverter
