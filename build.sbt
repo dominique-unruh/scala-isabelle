@@ -11,10 +11,10 @@ lazy val component = RootProject(file("component"))
 name := "scala-isabelle"
 version := "master-SNAPSHOT"
 
-crossScalaVersions := List("2.13.12", "2.12.18")
+crossScalaVersions := List("2.13.14", "2.12.19")
 
-scalaVersion := "2.13.12"
-//scalaVersion := "2.12.18"
+scalaVersion := "2.13.14"
+//scalaVersion := "2.12.19"
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
