@@ -31,7 +31,7 @@ libraryDependencies += "org.slf4j" % "slf4j-simple" % "2.0.13"
 // https://mvnrepository.com/artifact/commons-io/commons-io
 libraryDependencies += "commons-io" % "commons-io" % "2.16.1"
 // https://mvnrepository.com/artifact/org.scalaz/scalaz-core
-libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.3.7"
+libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.3.8"
 // https://mvnrepository.com/artifact/org.apache.commons/commons-lang3
 libraryDependencies += "org.apache.commons" % "commons-lang3" % "3.14.0"
 // https://mvnrepository.com/artifact/org.apache.commons/commons-text
