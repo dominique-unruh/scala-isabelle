@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.4.3] - 2024-???
+
+The main change is support for Isabelle2024.
+
+### Added
+
+* Support for [Isabelle2024](https://isabelle.in.tum.de/website-Isabelle2024/).
+* [`Implicits.javaBooleanConverter`](https://oss.sonatype.org/service/local/repositories/snapshots/archive/de/unruh/scala-isabelle_2.13/master-SNAPSHOT/scala-isabelle_2.13-master-SNAPSHOT-javadoc.jar/!/de/unruh/isabelle/mlvalue/Implicits$.html#javaBooleanConverter:de.unruh.isabelle.mlvalue.MLValue.Converter[Boolean]), [`.javaIntConverter`](https://oss.sonatype.org/service/local/repositories/snapshots/archive/de/unruh/scala-isabelle_2.13/master-SNAPSHOT/scala-isabelle_2.13-master-SNAPSHOT-javadoc.jar/!/de/unruh/isabelle/mlvalue/Implicits$.html#javaIntConverter:de.unruh.isabelle.mlvalue.MLValue.Converter[Integer]), [`.javaLongConverter`](https://oss.sonatype.org/service/local/repositories/snapshots/archive/de/unruh/scala-isabelle_2.13/master-SNAPSHOT/scala-isabelle_2.13-master-SNAPSHOT-javadoc.jar/!/de/unruh/isabelle/mlvalue/Implicits$.html#javaLongConverter:de.unruh.isabelle.mlvalue.MLValue.Converter[Long]):
+   MLValue converters for the Java types Boolean, Integer, and Long.
+   The Scala versions of these converters do not have the right types for use in Java. 
+
+### Fixed
+
+* Methods of [`Version`](https://javadoc.io/doc/de.unruh/scala-isabelle_2.13/latest/de/unruh/isabelle/mlvalue/Version$.html)
+  did output some bogus error messages in Isabelle2021 and earlier.
+
 ## [0.4.2] - 2023-09-25
 
 The main change is support for Isabelle2023.
@@ -257,3 +273,4 @@ for loading theory files that are not in the session image.
 [0.4.0]: https://github.com/dominique-unruh/scala-isabelle/compare/v0.3.0...v0.4.0
 [0.4.1]: https://github.com/dominique-unruh/scala-isabelle/compare/v0.4.0...v0.4.1
 [0.4.2]: https://github.com/dominique-unruh/scala-isabelle/compare/v0.4.1...v0.4.2
+[0.4.3]: https://github.com/dominique-unruh/scala-isabelle/compare/v0.4.2...v0.4.3
