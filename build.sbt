@@ -22,7 +22,7 @@ libraryDependencies += "de.unruh" % "java-patterns" % "0.1.0"
 //resolvers += Resolver.sonatypeRepo("snapshots")
 
 libraryDependencies += "com.vladsch.flexmark" % "flexmark-all" % "0.64.8" % Test // Required by scala-test for HTML output
-libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.17" % Test
+libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.19" % Test
 
 // https://mvnrepository.com/artifact/org.log4s/log4s
 libraryDependencies += "org.log4s" %% "log4s" % "1.10.0"
