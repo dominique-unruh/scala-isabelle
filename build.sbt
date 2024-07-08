@@ -38,7 +38,7 @@ libraryDependencies += "org.apache.commons" % "commons-lang3" % "3.14.0"
 libraryDependencies += "org.apache.commons" % "commons-text" % "1.12.0"
 // https://mvnrepository.com/artifact/com.google.guava/guava
 libraryDependencies += "com.google.guava" % "guava" % "33.2.1-jre"
-libraryDependencies += "org.jetbrains" % "annotations" % "24.0.1"
+libraryDependencies += "org.jetbrains" % "annotations" % "24.1.0"
 libraryDependencies += "com.ibm.icu" % "icu4j" % "75.1"
 
 // See https://stackoverflow.com/a/21516954
