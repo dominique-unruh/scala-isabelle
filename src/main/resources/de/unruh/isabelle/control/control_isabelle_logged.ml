@@ -37,7 +37,7 @@ structure Control_Isabelle : sig
   exception E_ToplevelState of Toplevel.state
   exception E_Transition of Toplevel.transition
   exception E_Keywords of Thy_Header.keywords
-  exception E_Mutex of Mutex.mutex
+  exception E_Mutex of mcp_mutex
   exception E_Proofterm of Proofterm.proof
   exception E_Data of data
 
@@ -74,7 +74,7 @@ exception E_Position of Position.T
 exception E_ToplevelState of Toplevel.state
 exception E_Transition of Toplevel.transition
 exception E_Keywords of Thy_Header.keywords
-exception E_Mutex of Mutex.mutex
+exception E_Mutex of mcp_mutex
 exception E_Proofterm of Proofterm.proof
 exception E_Data of data
 
@@ -174,11 +174,11 @@ fun logSendReplyData seq data =
 (* val outStream = BinIO.openOut outputPipeName *)
 
 (* Any sending of data, and any adding of data to the object store must use this mutex *)
-val mutex = Mutex.mutex ()
+val mutex = mcp_mutex ()
 fun withMutex f x = let
-  val _ = Mutex.lock mutex
-  val result = f x handle e => (Mutex.unlock mutex; Exn.reraise e)
-  val _ = Mutex.unlock mutex
+  val _ = mcp_mutex_lock mutex
+  val result = f x handle e => (mcp_mutex_unlock mutex; Exn.reraise e)
+  val _ = mcp_mutex_unlock mutex
 in result end
 
 val objectsMax = Unsynchronized.ref 0
@@ -373,12 +373,12 @@ fun runAsync seq f =
 (* Context for compiling ML code in. Can be mutated when declaring new ML symbols *)
 val ml_compilation_context = Unsynchronized.ref (Context.Theory \<^theory>)
 (* Mutex for updating the context above *)
-val ml_compilation_mutex = Mutex.mutex ()
+val ml_compilation_mutex = mcp_mutex ()
 fun update_ml_compilation_context f = let
-  val _ = Mutex.lock ml_compilation_mutex
+  val _ = mcp_mutex_lock ml_compilation_mutex
   val _ = (ml_compilation_context := f (!ml_compilation_context))
-             handle e => (Mutex.unlock ml_compilation_mutex; Exn.reraise e)
-  val _ = Mutex.unlock ml_compilation_mutex
+             handle e => (mcp_mutex_unlock ml_compilation_mutex; Exn.reraise e)
+  val _ = mcp_mutex_unlock ml_compilation_mutex
   in () end
 (* Executes ML code in the namespace of context, and updates that namespace (side effect) *)
 fun executeML_update (ml:string) = let
