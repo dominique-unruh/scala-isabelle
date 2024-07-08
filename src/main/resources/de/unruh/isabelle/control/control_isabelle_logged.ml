@@ -48,6 +48,7 @@ structure Control_Isabelle : sig
   val message_of_exn : Proof.context option -> exn -> string
   val string_of_data : data -> string
   val sendToScala : data -> unit
+  type mutex = mcp_mutex
 end
 =
 struct
@@ -461,5 +462,8 @@ fun handleLines' seq = (handleLine seq; handleLines' (seq+1))
 fun handleLines () = (checkSecret (); handleLines' 0)
 
 val _ = TextIO.StreamIO.setBufferMode (TextIO.getOutstream TextIO.stdOut, IO.LINE_BUF)
+
+(* This provides a name for Thread.Mutex.mutex / Mutex.mutex that is independent of the Isabelle version *)
+type mutex = mcp_mutex
 
 end

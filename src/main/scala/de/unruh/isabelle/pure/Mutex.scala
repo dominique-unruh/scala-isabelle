@@ -1,10 +1,10 @@
 package de.unruh.isabelle.pure
 
 import de.unruh.isabelle.control.Isabelle
-import de.unruh.isabelle.mlvalue.{MLValue, MLValueWrapper}
+import de.unruh.isabelle.mlvalue.{MLValue, MLValueWrapper, Version}
 import de.unruh.isabelle.mlvalue.MLValue.{compileFunction, compileFunction0, compileValue}
 
-/** Represents a mutex (ML type `Mutex.mutex`) in the Isabelle process.
+/** Represents a mutex (ML type `Thread.Mutex.mutex`) in the Isabelle process.
  *
  * An instance of this class is merely a thin wrapper around an [[mlvalue.MLValue MLValue]],
  * all explanations and examples given for [[Context]] also apply here.
@@ -17,15 +17,19 @@ final class Mutex private [Mutex](val mlValue : MLValue[Mutex]) extends MLValueW
 }
 
 object Mutex extends MLValueWrapper.Companion[Mutex] {
-  override protected val mlType = "Mutex.mutex"
+  /** This is equivalent to `Thread.Mutex.mutex` or `Mutex.mutex`, depending on the Isabelle version. */
+  override lazy protected val mlType = "Control_Isabelle.mutex"
   override protected val predefinedException: String = "E_Mutex"
 
   override protected def instantiate(mlValue: MLValue[Mutex]): Mutex = new Mutex(mlValue)
 
   //noinspection TypeAnnotation
   protected class Ops(implicit isabelle: Isabelle) extends super.Ops {
-    lazy val createMutex = compileFunction0[Mutex]("Mutex.mutex")
+    lazy val createMutex = compileFunction0[Mutex](s"$mutexStruct.mutex")
   }
+
+  private def mutexStruct(implicit isabelle: Isabelle) =
+    if (Version.from2024) "Thread.Mutex" else "Mutex"
 
   /** Creates a new mutex */
   def apply()(implicit isabelle: Isabelle) : Mutex = Ops.createMutex().retrieveNow
@@ -44,8 +48,8 @@ object Mutex extends MLValueWrapper.Companion[Mutex] {
    * `Thy_Info.use_thy` is not thread safe. (In practice, better use [[Theory.mutex]] as the mutex instead
    * of your own in this specific case.)
    **/
-  def wrapWithMutex(mutex: String, code: String) =
-    s"let val _ = Mutex.lock $mutex val result = ($code) handle e => (Mutex.unlock $mutex; Exn.reraise e) val _ = Mutex.unlock $mutex in result end"
+  def wrapWithMutex(mutex: String, code: String)(implicit isabelle: Isabelle) =
+    s"let val _ = $mutexStruct.lock $mutex val result = ($code) handle e => ($mutexStruct.unlock $mutex; Exn.reraise e) val _ = $mutexStruct.unlock $mutex in result end"
 
   override protected def newOps(implicit isabelle: Isabelle): Ops = new Ops
 }
