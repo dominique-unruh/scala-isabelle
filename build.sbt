@@ -33,9 +33,9 @@ libraryDependencies += "commons-io" % "commons-io" % "2.13.0"
 // https://mvnrepository.com/artifact/org.scalaz/scalaz-core
 libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.3.7"
 // https://mvnrepository.com/artifact/org.apache.commons/commons-lang3
-libraryDependencies += "org.apache.commons" % "commons-lang3" % "3.13.0"
+libraryDependencies += "org.apache.commons" % "commons-lang3" % "3.14.0"
 // https://mvnrepository.com/artifact/org.apache.commons/commons-text
-libraryDependencies += "org.apache.commons" % "commons-text" % "1.10.0"
+libraryDependencies += "org.apache.commons" % "commons-text" % "1.12.0"
 // https://mvnrepository.com/artifact/com.google.guava/guava
 libraryDependencies += "com.google.guava" % "guava" % "32.1.2-jre"
 libraryDependencies += "org.jetbrains" % "annotations" % "24.0.1"
