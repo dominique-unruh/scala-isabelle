@@ -11,10 +11,10 @@ lazy val component = RootProject(file("component"))
 name := "scala-isabelle"
 version := "master-SNAPSHOT"
 
-crossScalaVersions := List("2.13.12", "2.12.18")
+crossScalaVersions := List("2.13.14", "2.12.19")
 
-scalaVersion := "2.13.12"
-//scalaVersion := "2.12.18"
+scalaVersion := "2.13.14"
+//scalaVersion := "2.12.19"
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
@@ -22,24 +22,24 @@ libraryDependencies += "de.unruh" % "java-patterns" % "0.1.0"
 //resolvers += Resolver.sonatypeRepo("snapshots")
 
 libraryDependencies += "com.vladsch.flexmark" % "flexmark-all" % "0.64.8" % Test // Required by scala-test for HTML output
-libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.17" % Test
+libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.19" % Test
 
 // https://mvnrepository.com/artifact/org.log4s/log4s
 libraryDependencies += "org.log4s" %% "log4s" % "1.10.0"
 // https://mvnrepository.com/artifact/org.slf4j/slf4j-simple
-libraryDependencies += "org.slf4j" % "slf4j-simple" % "2.0.9"
+libraryDependencies += "org.slf4j" % "slf4j-simple" % "2.0.13"
 // https://mvnrepository.com/artifact/commons-io/commons-io
-libraryDependencies += "commons-io" % "commons-io" % "2.13.0"
+libraryDependencies += "commons-io" % "commons-io" % "2.16.1"
 // https://mvnrepository.com/artifact/org.scalaz/scalaz-core
-libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.3.7"
+libraryDependencies += "org.scalaz" %% "scalaz-core" % "7.3.8"
 // https://mvnrepository.com/artifact/org.apache.commons/commons-lang3
-libraryDependencies += "org.apache.commons" % "commons-lang3" % "3.13.0"
+libraryDependencies += "org.apache.commons" % "commons-lang3" % "3.14.0"
 // https://mvnrepository.com/artifact/org.apache.commons/commons-text
-libraryDependencies += "org.apache.commons" % "commons-text" % "1.10.0"
+libraryDependencies += "org.apache.commons" % "commons-text" % "1.12.0"
 // https://mvnrepository.com/artifact/com.google.guava/guava
-libraryDependencies += "com.google.guava" % "guava" % "32.1.2-jre"
-libraryDependencies += "org.jetbrains" % "annotations" % "24.0.1"
-libraryDependencies += "com.ibm.icu" % "icu4j" % "73.2"
+libraryDependencies += "com.google.guava" % "guava" % "33.2.1-jre"
+libraryDependencies += "org.jetbrains" % "annotations" % "24.1.0"
+libraryDependencies += "com.ibm.icu" % "icu4j" % "75.1"
 
 // See https://stackoverflow.com/a/21516954
 val CompileOnly = config("compileonly").hide

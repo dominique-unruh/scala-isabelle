@@ -57,8 +57,10 @@ Format of ~/.sbt/sonatype_credentials:
 
 realm=Sonatype Nexus Repository Manager
 host=oss.sonatype.org
-user=unruh
-password=************
+user=XXX
+password=YYY
+
+where XXX, YYY are the token-user and token-key, see https://central.sonatype.org/publish/generate-token/
 */
 credentials += Credentials(Path.userHome / ".sbt" / "sonatype_credentials")
 credentials += Credentials("GnuPG Key ID", "gpg", "B12742E4CC2172D894730C1AE1F9C7FA4BA66FE2", "ignored")

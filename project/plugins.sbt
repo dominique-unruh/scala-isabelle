@@ -1,5 +1,5 @@
 // https://mvnrepository.com/artifact/org.apache.commons/commons-lang3
-libraryDependencies += "org.apache.commons" % "commons-lang3" % "3.12.0"
+libraryDependencies += "org.apache.commons" % "commons-lang3" % "3.14.0"
 
 addSbtPlugin("com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings" % "3.0.0")
 addSbtPlugin("org.xerial.sbt" % "sbt-sonatype" % "3.9.10")

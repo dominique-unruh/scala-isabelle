@@ -8,8 +8,9 @@ ML \<open>
 fun run_one_of_these_ml mls = let
   val errors = Unsynchronized.ref []
   fun run_single ml = 
-    Context.>> (Local_Theory.touch_ml_env #> ML_Context.exec (fn () =>
-                ML_Context.eval_source (ML_Compiler.verbose true ML_Compiler.flags) ml) #>
+    Context.>> ((* Local_Theory.touch_ml_env #> (* Does not exist in Isabelle \<le>2021 *) *)
+                ML_Context.exec (fn () =>
+                  ML_Context.eval_source (ML_Compiler.verbose true ML_Compiler.flags) ml) #>
                 Local_Theory.propagate_ml_env)
   fun run [] = raise ERROR ("Could not run any of the ML codes. Errors were:\n" ^
                             String.concatWith "\n" (!errors))
