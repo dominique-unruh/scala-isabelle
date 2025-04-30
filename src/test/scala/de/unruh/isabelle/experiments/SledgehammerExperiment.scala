@@ -74,7 +74,7 @@ object SledgehammerExperiment {
            |             val results = ${Sledgehammer}.run_sledgehammer params ${Sledgehammer_Prover}.Normal NONE 1 override p_state;
            |             val (result, (outcome, step)) = results;
            |           in
-           |             (result, (${Sledgehammer}.short_string_of_sledgehammer_outcome outcome, [YXML.content_of step]))
+           |             (result, (${Sledgehammer}.short_string_of_sledgehammer_outcome outcome, [XML.content_of (YXML.parse_body step)]))
            |           end;
            |    in
            |      Timeout.apply (Time.fromSeconds 35) go_run (state, thy) end
