@@ -1030,10 +1030,15 @@ object Isabelle {
    * */
   sealed trait Data
   final case class DInt(int: Long) extends Data
-  final case class DString(string: String) extends Data
+  final case class DString(string: String) extends Data {
+    if (string.length > maxStringLength)
+      throw IsabelleMiscException(s"Encoding string of length ${string.length} for transfer to Isabelle. Maximum supported length: $maxStringLength")
+  }
   final case class DList(list: Data*) extends Data
   final case class DObject(id: ID) extends Data
 
+  final val maxStringLength = 67108856
+""
   private final class ProcessCleaner(destroyActions: ConcurrentLinkedQueue[Runnable]) extends Runnable {
     override def run(): Unit = {
       while (!destroyActions.isEmpty) {

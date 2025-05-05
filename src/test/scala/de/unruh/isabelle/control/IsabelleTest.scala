@@ -76,7 +76,7 @@ class IsabelleTest extends AnyFunSuite {
 
   test("too long string") {
     val str = "x".repeat(70*1000*1000)
-    assertThrows[IsabelleMLException] {
+    assertThrows[IsabelleMiscException] {
       roundTrip(DString(str))
     }
   }
@@ -84,7 +84,7 @@ class IsabelleTest extends AnyFunSuite {
   // Checks that the protocol doesn't get desynced by too long strings.
   test("too long string & continue") {
     val str = "x".repeat(70*1000*1000)
-    assertThrows[IsabelleMLException] {
+    assertThrows[IsabelleMiscException] {
       roundTrip(DString(str))
     }
     println("Roundtrip of string finished")
@@ -93,6 +93,10 @@ class IsabelleTest extends AnyFunSuite {
     failAfter(Span(30, Seconds)) {
       roundTrip(DInt(0))
     }
+  }
+
+  test("Send non-ASCII string") {
+    roundTrip(DString("ä"))
   }
 
   test("destroy & wait for a future") {
