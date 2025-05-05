@@ -4,7 +4,7 @@ import java.nio.file.{Files, Path}
 
 import de.unruh.isabelle.control.Isabelle
 import de.unruh.isabelle.control.Isabelle.{DInt, DList, DString}
-import de.unruh.isabelle.control.Isabelle.{setup}
+import de.unruh.isabelle.control.IsabelleTest.{setup}
 //import de.unruh.isabelle.experiments.ExecuteIsar.ScalaCommand.{Code, Empty, Preamble}
 import de.unruh.isabelle.experiments.ExecuteIsar._
 import de.unruh.isabelle.experiments.ScalaTransition.Info
