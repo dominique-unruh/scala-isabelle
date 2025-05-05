@@ -87,7 +87,7 @@ fun string_of_exn exn =
   handle Size => "<exn description too long>"
 
 fun message_of_exn ctxt exn =
-  exn |> Runtime.exn_context (SOME (the_default \<^context> ctxt)) |> Runtime.exn_message |> YXML.content_of
+  exn |> Runtime.exn_context (SOME (the_default \<^context> ctxt)) |> Runtime.exn_message |> YXML.parse_body |> XML.content_of
   handle Size => "<exn message too long>"
 
 fun string_of_data (DInt i) = string_of_int i

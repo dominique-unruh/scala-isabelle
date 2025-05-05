@@ -55,7 +55,7 @@ object Thm extends OperationCollection {
     val cpropOf: MLFunction[Thm, Cterm] =
       compileFunction[Thm, Cterm]("Thm.cprop_of")
     val stringOfThm: MLFunction2[Context, Thm, String] =
-      compileFunction("fn (ctxt, thm) => Thm.pretty_thm ctxt thm |> Pretty.unformatted_string_of |> YXML.content_of")
+      compileFunction("fn (ctxt, thm) => Thm.pretty_thm ctxt thm |> Pretty.unformatted_string_of |> YXML.parse_body |> XML.content_of")
     val proofOf = compileFunction[Thm, Proofterm]("Thm.proof_of")
 //    val reconstructProofOf = compileFunction[Thm, Proofterm]("Thm.reconstruct_proof_of")
   }

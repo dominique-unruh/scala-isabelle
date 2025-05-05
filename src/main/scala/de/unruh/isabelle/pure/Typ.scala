@@ -529,9 +529,9 @@ object Typ extends OperationCollection {
     val readType: MLFunction2[Context, String, Typ] =
       compileFunction("fn (ctxt, str) => Syntax.read_typ ctxt str")
     val stringOfType: MLFunction2[Context, Typ, String] =
-      compileFunction("fn (ctxt, typ) => Syntax.pretty_typ ctxt typ |> Pretty.unformatted_string_of |> YXML.content_of")
+      compileFunction("fn (ctxt, typ) => Syntax.pretty_typ ctxt typ |> Pretty.unformatted_string_of |> YXML.parse_body |> XML.content_of")
     val stringOfCtyp: MLFunction2[Context, Ctyp, String] =
-      compileFunction("fn (ctxt, ctyp) => Thm.typ_of ctyp |> Syntax.pretty_typ ctxt |> Pretty.unformatted_string_of |> YXML.content_of")
+      compileFunction("fn (ctxt, ctyp) => Thm.typ_of ctyp |> Syntax.pretty_typ ctxt |> Pretty.unformatted_string_of |> YXML.parse_body |> XML.content_of")
     val typOfCtyp : MLFunction[Ctyp, Typ] =
       compileFunction("Thm.typ_of")
     val ctypOfTyp : MLFunction2[Context, Typ, Ctyp] =

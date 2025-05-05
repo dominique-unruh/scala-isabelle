@@ -67,7 +67,9 @@ exception E_Mutex of mcp_mutex
 exception E_Proofterm of Proofterm.proof
 exception E_Data of data
 
+(* s"""(BinIO.openIn "$inFile", BinIO.openOut "$outFile")""" *)
 val (inStream, outStream) = COMMUNICATION_STREAMS
+(* s"(${mlInteger(inSecret)}, ${mlInteger(outSecret)})" *)
 val (inSecret, outSecret) = SECRETS
 
 (* val (inStream, outStream) = Socket_IO.open_streams (host ^ ":" ^ string_of_int port) *)
@@ -294,7 +296,7 @@ fun string_of_exn exn =
   handle Size => "<exn description too long>"
 
 fun message_of_exn ctxt exn =
-  exn |> Runtime.exn_context (SOME (the_default \<^context> ctxt)) |> Runtime.exn_message |> YXML.content_of
+  exn |> Runtime.exn_context (SOME (the_default \<^context> ctxt)) |> Runtime.exn_message |> YXML.parse_body |> XML.content_of
   handle Size => "<exn message too long>"
 
 fun string_of_data (DInt i) = string_of_int i
