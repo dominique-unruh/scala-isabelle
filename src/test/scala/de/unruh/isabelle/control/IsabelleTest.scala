@@ -96,7 +96,9 @@ class IsabelleTest extends AnyFunSuite {
   }
 
   test("Send non-ASCII string") {
-    roundTrip(DString("ä"))
+    val future = isabelle.applyFunction(identityId, DString("ä"))
+    val returned = await(future)
+    assert(returned == DString("?"))
   }
 
   test("destroy & wait for a future") {

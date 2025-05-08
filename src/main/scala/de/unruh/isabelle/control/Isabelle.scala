@@ -1019,10 +1019,10 @@ object Isabelle {
    * dereferences object IDs as needed.
    *
    * The data that can be stored in these trees is subject to the following additional limitations:
-   *  - Strings must be ASCII (non-ASCII characters will be replaced by default characters).
+   *  - Strings must be ASCII (non-ASCII characters will be silently replaced by default characters).
    *  - Integers must be 64bit signed integers (this is enforced in Scala due to the size of the type
    *    [[scala.Long Long]] but ML integers have no size limit (like [[scala.BigInt BigInt]])). Larger integers will
-   *    be truncated to 64 bits.
+   *    be silently truncated to 64 bits.
    *  - Strings must be at most 67.108.856 characters long (`String.maxSize` in ML). Otherwise there an exception is
    *    raised in the Isabelle process
    *
