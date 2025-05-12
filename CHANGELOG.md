@@ -1,11 +1,12 @@
 # Changelog
 
-## [0.4.3] - 2024-???
+## [0.4.3] - 2025-???
 
-The main change is support for Isabelle2024.
+The main change is support for Isabelle2024/2025.
 
 ### Added
 
+* Support for [Isabelle2025](https://isabelle.in.tum.de/website-Isabelle2025/).
 * Support for [Isabelle2024](https://isabelle.in.tum.de/website-Isabelle2024/).
 * [`Implicits.javaBooleanConverter`](https://oss.sonatype.org/service/local/repositories/snapshots/archive/de/unruh/scala-isabelle_2.13/master-SNAPSHOT/scala-isabelle_2.13-master-SNAPSHOT-javadoc.jar/!/de/unruh/isabelle/mlvalue/Implicits$.html#javaBooleanConverter:de.unruh.isabelle.mlvalue.MLValue.Converter[Boolean]), [`.javaIntConverter`](https://oss.sonatype.org/service/local/repositories/snapshots/archive/de/unruh/scala-isabelle_2.13/master-SNAPSHOT/scala-isabelle_2.13-master-SNAPSHOT-javadoc.jar/!/de/unruh/isabelle/mlvalue/Implicits$.html#javaIntConverter:de.unruh.isabelle.mlvalue.MLValue.Converter[Integer]), [`.javaLongConverter`](https://oss.sonatype.org/service/local/repositories/snapshots/archive/de/unruh/scala-isabelle_2.13/master-SNAPSHOT/scala-isabelle_2.13-master-SNAPSHOT-javadoc.jar/!/de/unruh/isabelle/mlvalue/Implicits$.html#javaLongConverter:de.unruh.isabelle.mlvalue.MLValue.Converter[Long]):
    MLValue converters for the Java types Boolean, Integer, and Long.

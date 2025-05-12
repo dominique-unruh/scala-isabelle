@@ -76,7 +76,7 @@ class IsabelleTest extends AnyFunSuite {
 
   test("too long string") {
     val str = "x".repeat(70*1000*1000)
-    assertThrows[IsabelleMLException] {
+    assertThrows[IsabelleMiscException] {
       roundTrip(DString(str))
     }
   }
@@ -84,7 +84,7 @@ class IsabelleTest extends AnyFunSuite {
   // Checks that the protocol doesn't get desynced by too long strings.
   test("too long string & continue") {
     val str = "x".repeat(70*1000*1000)
-    assertThrows[IsabelleMLException] {
+    assertThrows[IsabelleMiscException] {
       roundTrip(DString(str))
     }
     println("Roundtrip of string finished")
@@ -93,6 +93,12 @@ class IsabelleTest extends AnyFunSuite {
     failAfter(Span(30, Seconds)) {
       roundTrip(DInt(0))
     }
+  }
+
+  test("Send non-ASCII string") {
+    val future = isabelle.applyFunction(identityId, DString("ä"))
+    val returned = await(future)
+    assert(returned == DString("?"))
   }
 
   test("destroy & wait for a future") {
@@ -190,7 +196,7 @@ class IsabelleTest extends AnyFunSuite {
 
 object IsabelleTest {
   val isabelleHome: Path = {
-    val version = "2024"
+    val version = "2025"
     val config = Paths.get(".isabelle-home") // For setting the Isabelle home in Github Action etc.
     val path = if (Files.exists(config))
       new BufferedReader(new FileReader(config.toFile)).readLine()

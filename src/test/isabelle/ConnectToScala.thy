@@ -4,12 +4,45 @@ theory ConnectToScala
 begin
 
 ML \<open>
+(* prefix_up_to: string -> Path.T -> Path.T option *)
+fun path_prefix_up_to parent_name path =
+let
+  val full_path = File.absolute_path path;
+  fun check_else_parent_path opt_p = (case opt_p of 
+    SOME p => 
+      if File.platform_path (Path.base p) = parent_name 
+      then SOME p 
+      else (case try Path.dir p of 
+        SOME q => if can Path.dir q 
+          then check_else_parent_path (SOME q) 
+          else NONE
+        | NONE => NONE)
+    | NONE => NONE)
+in check_else_parent_path (SOME full_path) end;
+\<close>
+
+ML\<open>
+val curr_path = File.absolute_path Path.current;
+val scala_isa = "scala-isabelle";
+val path_parts = [scala_isa, "scripts", "connect-to-running-isabelle.py"];
+val path_to_scala_isabelle = path_prefix_up_to "scala-isabelle" curr_path;
+val path_to_script_from_scala_isabelle = Path.make (drop 1 path_parts);
+val path_to_script = (case path_to_scala_isabelle of
+  SOME p => File.platform_path (p + path_to_script_from_scala_isabelle)
+  | NONE => 
+    let
+      val script = File.platform_path (Path.make path_parts)
+      val err_mssg = "File not found: " ^ script ^ ". Probably you are running sbt from outside scala-isabelle."
+    in raise Fail err_mssg end);
+\<close>
+
+ML \<open>
 fun system string = if OS.Process.system string |> OS.Process.isSuccess then () else
   error ("Command " ^ string ^ " returned non-zero error code")
 val random = string_of_int (Random.random_range 0 100000000000) ^ serial_string ()
 val inputPipeName = "/tmp/input-pipe" ^ random
 val outputPipeName = "/tmp/output-pipe" ^ random
-val _ = system ("/home/unruh/svn/qrhl-tool/scala-isabelle/scripts/connect-to-running-isabelle.py "
+val _ = system (path_to_script
           ^ inputPipeName ^ " " ^ outputPipeName ^ " " ^ "/tmp/scala-isabelle.log")
 \<close>
 

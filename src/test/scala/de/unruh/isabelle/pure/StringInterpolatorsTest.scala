@@ -55,14 +55,14 @@ class StringInterpolatorsTest extends AnyFunSuite {
     }
   }
 
-  test("%type annotation") {
+  test("%term annotation") {
     val term = Term(context, "1+2")
     term match {
-      case term"$x%term + _" => assert(x.pretty(context) == "1::'a")
+      case term"$x%term + _" => assert(List("1::'a", "1") contains x.pretty(context))
     }
   }
 
-  test("%term annotation") {
+  test("%type annotation") {
     val term = Term(context, "TYPE(nat)")
     term match {
       case term"TYPE($typ%type)" => assert(typ.pretty(context) == "nat")

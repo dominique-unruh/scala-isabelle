@@ -101,17 +101,22 @@ object Proofterm extends OperationCollection {
       "fn (thy, t, prf) => Proofterm.reconstruct_proof thy t prf")
     val thm_body_proof_open = compileFunction[ThmBody, Proofterm]("Proofterm.thm_body_proof_open")
 
-    val ofClassName = if (Version.from2021) "PClass" else "OfClass"
 
-    val retrieve = MLRetrieveFunction[Proofterm](s"""
+    val retrieve = {
+      val ofClassName = if (Version.from2021) "PClass" else "OfClass"
+      val hdr = if (Version.from2025)
+        "fun hdr {serial, command_pos, theory_name, thm_name=((name,index),pos), prop, types} = " +
+          """DList[DInt serial, DList[position pos], DString theory_name, DString (if index=0 then name else  name ^ enclose "(" ")" (string_of_int index)), term prop, opt (list typ) types]"""
+      else
+        "fun hdr {serial, pos, theory_name, name, prop, types} = DList[DInt serial, list position pos, DString theory_name, DString name, term prop, opt (list typ) types]"
+      MLRetrieveFunction[Proofterm](s"""
       let fun opt f NONE = DList []
             | opt f (SOME x) = DList [f x]
           fun list f l = DList (map f l)
           val typ = DObject o E_Typ
           val term = DObject o E_Term
           val position = DObject o E_Position
-          fun hdr {serial, pos, theory_name, name, prop, types} =
-              DList[DInt serial, list position pos, DString theory_name, DString name, term prop, opt (list typ) types]
+          $hdr
           fun f MinProof = DInt 0
             | f (PBound i) = DList [DInt 1, DInt i]
             | f (Abst (name,T,prf)) = DList [DInt 2, DString name, opt typ T, f prf]
@@ -125,6 +130,7 @@ object Proofterm extends OperationCollection {
             | f (PThm (header, body)) = DList [DInt 10, hdr header, DObject (${ThmBody.exceptionName} body)]
         in f end
         """)
+    }
 //    val store = MLStoreFunction[Proofterm]("""fn DInt 0 => MinProof""")
   }
 

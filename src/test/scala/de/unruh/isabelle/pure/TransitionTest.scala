@@ -117,11 +117,12 @@ class TransitionTest extends AnyFunSuite {
     var state = ToplevelState(theory)
     var start = System.currentTimeMillis
     val thrown = intercept[IsabelleMLException] {
-      for ((tr, s) <- transitions) {
+      for ((tr, _) <- transitions) {
         start = System.currentTimeMillis
         state = tr.execute(state, timeout=Duration(2, MILLISECONDS))
       }
     }
+    println(thrown)
     // The timeout gets rounded up to a full second for some reason.
     // We allow it to be up to 10 seconds in order not to fail the test under high load.
     assert(System.currentTimeMillis - start < 10000)
