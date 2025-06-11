@@ -3,18 +3,15 @@
 (See the [setup instructions](setup.md) to for information how to build a program using scala-isabelle.)
 
 ```Scala
-import de.unruh.isabelle.mlvalue.{MLFunction2, MLValue}
-import de.unruh.isabelle.pure.{Abs, App, Const, Term}
-import de.unruh.isabelle.control.Isabelle
-import de.unruh.isabelle.pure.Context
-// Importing implicits
+// Implicits
 import de.unruh.isabelle.mlvalue.Implicits._
 import de.unruh.isabelle.pure.Implicits._
-import scala.concurrent.ExecutionContext.Implicits.global
 
 // Initialize the Isabelle process with session HOL.
-// We assume an Isabelle installation in /opt/Isabelle2021-1
-val setup = Isabelle.Setup(isabelleHome = Path.of("/opt/Isabelle2022"), logic = "HOL")
+// The first command line argument must be the Isabelle installation directory
+val isabelleHome = args(0)
+// Differs from example in README: we skip building to make tests faster
+val setup = Isabelle.Setup(isabelleHome = Path.of("/opt/Isabelle2025"), logic = "HOL", build=false)
 implicit val isabelle: Isabelle = new Isabelle(setup)
 
 // Load the Isabelle/HOL theory "Main" and create a context object
@@ -48,5 +45,8 @@ val term3 = simplify(ctxt,term2).retrieveNow
 
 println("term3: " + term3.pretty(ctxt))
 // ==> term3: x = y
+
+// Destroy to save resources. (Not needed if the application ends here anyway.)
+isabelle.destroy()
 ```
 The source code for this example can be found in [Example.scala](https://raw.githubusercontent.com/dominique-unruh/scala-isabelle/master/src/test/scala/de/unruh/isabelle/Example.scala).
