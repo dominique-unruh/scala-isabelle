@@ -1,36 +1,54 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="ScalaTests in 'scala'" type="ScalaTestRunConfiguration" factoryName="ScalaTest" nameIsGenerated="true" show_console_on_std_err="false" show_console_on_std_out="false">
-    <module name="scala-isabelle" />
+    <module name="scala-isabelle.test" />
+    <option name="VMParameters" value="-Dorg.slf4j.simpleLogger.defaultLogLevel=debug -Dscala.control.noTraceSuppression=true" />
     <option name="allowRunningInParallel" value="false" />
+    <option name="alternativeJrePath" />
+    <option name="alternativeJrePathEnabled" value="false" />
+    <option name="classpathModifications">
+      <list />
+    </option>
+    <option name="envFilePaths">
+      <list />
+    </option>
+    <option name="envs">
+      <map>
+        <entry key="SCALA_ISABELLE_LOG_QUERIES" value="true" />
+        <entry key="SCALA_ISABELLE_NO_CLEANUP" value="true" />
+      </map>
+    </option>
+    <option name="passParentEnvs" value="true" />
+    <option name="programParameters" value="" />
     <option name="projectPathOnTarget" />
     <option name="selectedOptions">
       <list />
     </option>
     <option name="testKind" value="All in package" />
+    <option name="workingDirectory" value="$PROJECT_DIR$" />
     <option name="classBuf">
       <list>
         <option value="de.unruh.isabelle.Test" />
-        <option value="de.unruh.isabelle.mlvalue.MLValueTest" />
-        <option value="de.unruh.isabelle.mlvalue.VersionTest" />
         <option value="de.unruh.isabelle.mlvalue.BigIntConverterTest" />
         <option value="de.unruh.isabelle.mlvalue.FunctionConverterTest" />
-        <option value="de.unruh.isabelle.pure.ThmTest" />
-        <option value="de.unruh.isabelle.pure.TypTest" />
-        <option value="de.unruh.isabelle.pure.CtypTest" />
-        <option value="de.unruh.isabelle.pure.TermTest" />
-        <option value="de.unruh.isabelle.pure.CtermTest" />
-        <option value="de.unruh.isabelle.pure.TheoryTest" />
+        <option value="de.unruh.isabelle.mlvalue.MLValueTest" />
+        <option value="de.unruh.isabelle.mlvalue.VersionTest" />
         <option value="de.unruh.isabelle.pure.ContextTest" />
+        <option value="de.unruh.isabelle.pure.CtermTest" />
+        <option value="de.unruh.isabelle.pure.CtypTest" />
+        <option value="de.unruh.isabelle.pure.PathConverterTest" />
         <option value="de.unruh.isabelle.pure.PositionTest" />
         <option value="de.unruh.isabelle.pure.ProoftermTest" />
-        <option value="de.unruh.isabelle.pure.TransitionTest" />
-        <option value="de.unruh.isabelle.pure.TheoryHeaderTest" />
-        <option value="de.unruh.isabelle.pure.PathConverterTest" />
-        <option value="de.unruh.isabelle.pure.ToplevelStateTest" />
         <option value="de.unruh.isabelle.pure.StringInterpolatorsTest" />
+        <option value="de.unruh.isabelle.pure.TermTest" />
+        <option value="de.unruh.isabelle.pure.TheoryHeaderTest" />
+        <option value="de.unruh.isabelle.pure.TheoryTest" />
+        <option value="de.unruh.isabelle.pure.ThmTest" />
+        <option value="de.unruh.isabelle.pure.ToplevelStateTest" />
+        <option value="de.unruh.isabelle.pure.TransitionTest" />
+        <option value="de.unruh.isabelle.pure.TypTest" />
         <option value="de.unruh.isabelle.pure.exceptions.MLExceptionTest" />
-        <option value="de.unruh.isabelle.misc.SymbolsTest" />
         <option value="de.unruh.isabelle.misc.SMLCodeUtilsTest" />
+        <option value="de.unruh.isabelle.misc.SymbolsTest" />
         <option value="de.unruh.isabelle.control.IsabelleTest" />
       </list>
     </option>

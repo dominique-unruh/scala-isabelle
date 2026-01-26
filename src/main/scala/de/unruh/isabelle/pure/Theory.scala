@@ -357,7 +357,7 @@ object Theory extends OperationCollection {
    * which have no qualifier, e.g., `Pure`, `Main`, `Complex_Main`, ...).
    *
    * For a theory to be found, it needs to be included in the current session image (specified via the
-   * [[control.Isabelle.Setup.logic logic]] parameter in [[control.Isabelle.Setup Isabelle.Setup]]), or the directory containing its that theory's
+   * [[control.Isabelle.Setup.logic logic]] parameter in [[control.Isabelle.Setup Isabelle.Setup]]), or the directory containing that theory's
    * session must be configured via [[registerSessionDirectoriesNow]]. The same requirements apply to all theories imported
    * by the theory `name`. (I.e., all theories required to execute `name` must be either in the session image or
    * registered via [[registerSessionDirectoriesNow]].) `ROOT` and `ROOTS` are not taken into account for finding the
