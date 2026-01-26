@@ -12,7 +12,7 @@
  - sbt clean
  - sbt +publishSigned (don't forget the +) (should run tests!)
  - gpg -v --keyserver hkp://keys.openpgp.org --send-keys e1f9c7fa4ba66fe2
- - sbt sonatypeBundleRelease
+ - sbt sonaRelease
  - git tag vXXX (XXX is the version)
  - git push origin vXXX
  - git push
@@ -48,22 +48,26 @@ licenses += "Isabelle" -> url("https://raw.githubusercontent.com/dominique-unruh
 
 pomIncludeRepository := { _ => false }
 
-publishTo := sonatypePublishToBundle.value
-
 publishMavenStyle := true
 
 /*
 Format of ~/.sbt/sonatype_credentials:
 
-realm=Sonatype Nexus Repository Manager
-host=oss.sonatype.org
+host=central.sonatype.com
 user=XXX
 password=YYY
 
-where XXX, YYY are the token-user and token-key, see https://central.sonatype.org/publish/generate-token/
+where XXX, YYY are the token-user and token-key, see https://central.sonatype.org/publish/generate-portal-token/
 */
 credentials += Credentials(Path.userHome / ".sbt" / "sonatype_credentials")
 credentials += Credentials("GnuPG Key ID", "gpg", "B12742E4CC2172D894730C1AE1F9C7FA4BA66FE2", "ignored")
 
 publish := publish.dependsOn(Test / test).value
 PgpKeys.publishSigned := PgpKeys.publishSigned.dependsOn(Test / test).value
+
+// Following https://www.scala-sbt.org/1.x/docs/Using-Sonatype.html
+ThisBuild / publishTo := {
+  val centralSnapshots = "https://central.sonatype.com/repository/maven-snapshots/"
+  if (isSnapshot.value) Some("central-snapshots" at centralSnapshots)
+  else localStaging.value
+}
