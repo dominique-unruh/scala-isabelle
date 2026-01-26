@@ -332,12 +332,22 @@ object Theory extends OperationCollection {
 
     val theoryMutex = Mutex()
 
+    private val use_thy_name = if (Version.from2025_1) "Thy_Info.use_thy_legacy" else "Thy_Info.use_thy"
+    /** This uses Thy_Info.use_thy_legacy which will be removed at a later Isabelle version.
+     * Currently, this executes
+     * {{{
+     *   fun use_thy_legacy name =
+     *   Runtime.toplevel_program (fn () =>
+     *     ignore (use_theories (Options.default ()) Resources.default_qualifier [(name, Position.none)]));
+     * }}}
+     * Maybe the above code will work as a replacement in future version.
+     *  */
     val loadTheoryInternal =
       MLValue.compileFunction[Mutex, String, Theory](
-        s"fn (mutex,name) => (${Mutex.wrapWithMutex("mutex", "Thy_Info.use_thy name")}; Thy_Info.get_theory name)")
+        s"fn (mutex,name) => (${Mutex.wrapWithMutex("mutex", s"$use_thy_name name")}; Thy_Info.get_theory name)")
     val loadTheoryPath =
       MLValue.compileFunction[Mutex, Path, String, Theory](
-        s"fn (mutex,path,name) => (${Mutex.wrapWithMutex("mutex", "Thy_Info.use_thy (Path.implode path)")}; Thy_Info.get_theory name)")
+        s"fn (mutex,path,name) => (${Mutex.wrapWithMutex("mutex", s"$use_thy_name (Path.implode path)")}; Thy_Info.get_theory name)")
     val importMLStructure : MLFunction3[Theory, String, String, Unit] = compileFunction(
       """fn (thy,theirName,ourName) => let
                   val theirAllStruct = Context.setmp_generic_context (SOME (Context.Theory thy))
@@ -363,10 +373,10 @@ object Theory extends OperationCollection {
    * registered via [[registerSessionDirectoriesNow]].) `ROOT` and `ROOTS` are not taken into account for finding the
    * theories.
    *
-   * Note: This function invokes `Thy_Info.use_thy` in the Isabelle process. That function is not thread-safe.
+   * Note: This function invokes `Thy_Info.use_thy_legacy` in the Isabelle process. That function is not thread-safe.
    * Therefore separate invocations of `apply` will not be executed in parallel.
    * (Locking happens on Isabelle side, thus this function returns immediately anyway.)
-   * If you want to invoke `Thy_Info.use_thy` or related functions yourself, please use [[Theory.mutex]]
+   * If you want to invoke `Thy_Info.use_thy_legacy` or related functions yourself, please use [[Theory.mutex]]
    * to avoid concurrent execution with this function.
    **/
   def apply(name: String)(implicit isabelle: Isabelle): Theory =
