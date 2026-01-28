@@ -9,7 +9,7 @@ import scala.sys.process._
 lazy val component = RootProject(file("component"))
 
 name := "scala-isabelle"
-version := "master-SNAPSHOT"  // Format for releases like 0.4.2-RC1
+version := "0.4.5"  // Format for releases like 0.4.2-RC1
 
 crossScalaVersions := List("2.13.14", "2.12.19")
 
