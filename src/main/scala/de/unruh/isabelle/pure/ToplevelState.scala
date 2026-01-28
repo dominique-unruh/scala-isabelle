@@ -88,7 +88,7 @@ object ToplevelState extends MLValueWrapper.Companion[ToplevelState] {
       "fn (st) => Context.cases (K false) (K true) (Toplevel.generic_theory_of st)")
 
     lazy val proofStateDescription = compileFunction[ToplevelState, String](
-      if (Version.from2025_2)
+      if (Version.from2025_1)
         "fn (st) => XML.content_of (YXML.parse_body (Pretty.string_of(" +
           "(Pretty.block o Pretty.breaks) (Toplevel.pretty_state st)" +
           ")))"
