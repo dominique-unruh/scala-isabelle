@@ -11,7 +11,7 @@ import de.unruh.isabelle.pure.Implicits._
 // The first command line argument must be the Isabelle installation directory
 val isabelleHome = args(0)
 // Differs from example in README: we skip building to make tests faster
-val setup = Isabelle.Setup(isabelleHome = Path.of("/opt/Isabelle2025"), logic = "HOL", build=false)
+val setup = Isabelle.Setup(isabelleHome = Path.of("/opt/Isabelle2025-2"), logic = "HOL", build=false)
 implicit val isabelle: Isabelle = new Isabelle(setup)
 
 // Load the Isabelle/HOL theory "Main" and create a context object
