@@ -14,3 +14,4 @@
 /component-example/.bsp/sbt.json
 /.bsp
 /tmp
+/ci/all-files
