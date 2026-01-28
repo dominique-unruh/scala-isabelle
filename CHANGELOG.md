@@ -1,8 +1,12 @@
 # Changelog
 
+## [0.4.5] - 2026-01-28
+
+Support for [Isabelle2025-1](https://isabelle.in.tum.de/website-Isabelle2025-1/) (in addition to Isabelle2025-2).
+
 ## [0.4.4] - 2026-01-26
 
-Support for Isabelle2025-2.
+Support for [Isabelle2025-2](https://isabelle.in.tum.de/website-Isabelle2025-2/).
 
 ## [0.4.3] - 2025-06-11
 
@@ -280,3 +284,4 @@ for loading theory files that are not in the session image.
 [0.4.2]: https://github.com/dominique-unruh/scala-isabelle/compare/v0.4.1...v0.4.2
 [0.4.3]: https://github.com/dominique-unruh/scala-isabelle/compare/v0.4.2...v0.4.3
 [0.4.4]: https://github.com/dominique-unruh/scala-isabelle/compare/v0.4.3...v0.4.4
+[0.4.5]: https://github.com/dominique-unruh/scala-isabelle/compare/v0.4.4...v0.4.5
