@@ -20,7 +20,7 @@
 
 With sbt, use one of
 ```sbt
-libraryDependencies += "de.unruh" %% "scala-isabelle" % "0.4.4"  // release
+libraryDependencies += "de.unruh" %% "scala-isabelle" % "0.4.5"  // release
 
 libraryDependencies += "de.unruh" %% "scala-isabelle" % "master-SNAPSHOT"  // development snapshot
 resolvers += Resolver.sonatypeRepo("snapshots")
