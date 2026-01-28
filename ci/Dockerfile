@@ -1,4 +1,4 @@
-FROM archlinux:latest
+FROM archlinux:latest-cached
 
 RUN bash -ex <<EOT  # Update package keys
 pacman-key --init
