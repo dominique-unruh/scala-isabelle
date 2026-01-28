@@ -55,12 +55,12 @@ Compile / resourceGenerators += makeGitrevision.map(Seq(_))
 makeGitrevision := {
     val file = (Compile / resourceManaged).value / "de" / "unruh" / "isabelle" / "gitrevision.txt"
     file.getParentFile.mkdirs()
-    if (SystemUtils.IS_OS_WINDOWS) {
-        val pr = new PrintWriter(file)
-        pr.println("Built under windows, not adding gitrevision.txt") // On my machine, Windows doesn't have enough tools installed.
-        pr.close()
-    } else if ((baseDirectory.value / ".git").exists())
-        Process(List("bash","-c",s"( date && git describe --tags --long --always --dirty --broken && git describe --always --all ) > ${file}")).!!
+    if ((baseDirectory.value / ".git").exists())
+        if (Process(List("bash","-c",s"( date && git describe --tags --long --always --dirty --broken && git describe --always --all ) > ${file}")).! != 0) {
+            val pr = new PrintWriter(file)
+            pr.println("Creating gitrevision.txt failed.")
+            pr.close()
+        }
     else {
         val pr = new PrintWriter(file)
         pr.println("Not built from a GIT worktree.")
