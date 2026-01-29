@@ -15,3 +15,4 @@
 /.bsp
 /tmp
 /ci/all-files
+/ci/.image

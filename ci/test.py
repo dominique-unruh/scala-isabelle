@@ -22,6 +22,9 @@ class TestConfig:
     def description(self) -> str:
         return f"Isabelle{self.isabelle}, Java {self.java}"
 
+    def dirname(self) -> str:
+        return f"isa{self.isabelle}-java{self.java}"
+
     @staticmethod
     def random(isabelle: str|None = None, java: int|None = None) -> TestConfig:
         if isabelle is None:
@@ -59,7 +62,8 @@ def do_test(config: TestConfig, show_results: bool) -> None:
     ci_dir = Path(__file__).absolute().parent
     scala_isabelle_dir = ci_dir.parent
     print(f"Testing config: {config.description()}")
-    subprocess.run(["rsync", scala_isabelle_dir.as_posix()+"/"] + "all-files -a --exclude /ci --exclude /target --exclude /project/target --delete --delete-excluded".split(),
+    subprocess.run(["rsync", scala_isabelle_dir.as_posix()+"/"] +
+                     "all-files -a --exclude /.idea --exclude /.run --exclude /ci --exclude /target --exclude /project/target --delete --delete-excluded".split(),
                    check=True, cwd=ci_dir)
     cache_image("archlinux:latest")
     docker_cmd: list[str] = "docker build --pull=false --iidfile .image .".split()
@@ -71,25 +75,28 @@ def do_test(config: TestConfig, show_results: bool) -> None:
     image_id = open(ci_dir.joinpath(".image")).read()
     subprocess.run("docker rm temp_container", shell=True, check=False, stderr=subprocess.DEVNULL)
     subprocess.run("docker create --name temp_container".split() + [image_id], check=True, cwd=ci_dir)
-    rm_rf(scala_isabelle_dir / "target/test-reports")
-    rm_rf(scala_isabelle_dir / "target/test-reports-html")
-    (scala_isabelle_dir / "target").mkdir(exist_ok=True)
+    result_dir = scala_isabelle_dir / "target/test-results" / config.dirname()
+    rm_rf(result_dir)
+    result_dir.mkdir(exist_ok=True, parents=True)
     subprocess.run(["docker", "cp", "temp_container:/home/user/scala-isabelle/target/test-reports-html",
-                    (scala_isabelle_dir / "target/").as_posix()], check=True)
+                    result_dir.as_posix()], check=True)
     subprocess.run(["docker", "cp", "temp_container:/home/user/scala-isabelle/target/test-reports",
-                    (scala_isabelle_dir / "target/").as_posix()], check=True)
+                    result_dir.as_posix()], check=True)
     subprocess.run("docker rm temp_container", shell=True, check=True)
-    with open(scala_isabelle_dir / "target/test-reports-html/index.html", "rt") as f:
+    with open(result_dir / "test-reports-html/index.html", "rt") as f:
         html = f.read()
         html = html.replace("ScalaTest Results",
                             config.description() + " @ " + datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-    with open(scala_isabelle_dir / "target/test-reports-html/index.html", "wt") as f:
+    with open(result_dir / "test-reports-html/index.html", "wt") as f:
         f.write(html)
     if show_results:
-        subprocess.run(["firefox", (scala_isabelle_dir / "target/test-reports-html/index.html").as_posix()], check=True)
+        subprocess.run(["firefox", (result_dir / "test-reports-html/index.html").as_posix()], check=True)
 
 
+def main():
+    config = TestConfig.random()
+    # config = TestConfig(isabelle="2025", java=17)
+    do_test(config, show_results=True)
 
-config = TestConfig.random()
-# config = TestConfig(isabelle="2025", java=17)
-do_test(config, show_results=True)
+if __name__ == '__main__':
+    main()
