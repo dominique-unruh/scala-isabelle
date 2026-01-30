@@ -2,66 +2,28 @@ name: scala-isabelle
 on: [push]
 jobs:
     test-sc-isa:
-      strategy:
-        matrix:
-          isabelle: [2025-2, 2025, 2024, 2023, 2022, 2021-1, 2021, 2020, 2019]
-          os: [linux, windows, macos]
-      runs-on: [self-hosted, "${{matrix.os}}"]
+      runs-on: [self-hosted, linux]
       steps:
         - name: Checkout repository
           uses: actions/checkout@v3
           
-        - name: Running tests (Linux)
-          if: matrix.os == 'linux'
-          run: |
-            export SCALA_ISABELLE_NO_CLEANUP=true
-            echo /opt/Isabelle${{matrix.isabelle}} >.isabelle-home
-            sbt '+ testOnly -- -h target/test-reports-html'
-
-        - name: Running tests (Windows)
-          if: matrix.os == 'windows'
-          run: |
-            $Env:SCALA_ISABELLE_NO_CLEANUP = "true"
-            Set-Content -Path .isabelle-home -Value 'c:\Isabelle${{matrix.isabelle}}'
-            Set-Content -Path .afp-home -Value 'c:\afp-2022'
-            sbt '+ testOnly -- -h target/test-reports-html'
-
-        - name: Running tests (MacOS)
-          if: matrix.os == 'macos'
-          run: |
-            ifconfig # To find out address for SSHing
-            ~/keepawake.sh &    # A script to keep the Mac from falling asleep
-            echo $! >keepawake.pid
-            export SCALA_ISABELLE_NO_CLEANUP=true
-            case "${{matrix.isabelle}}" in
-              2019|2020) echo ~/Isabelle${{matrix.isabelle}}.app/Isabelle >.isabelle-home;;
-              *) echo ~/Isabelle${{matrix.isabelle}}.app >.isabelle-home;;
-            esac
-            echo ~/afp-2022 >.afp-home
-            # My Mac is very small. So we make sure there is no other parallel GitHub action running before continuing.
-            while pgrep -l -f sbt-launch.jar; do echo "Another sbt is running. To keep load low, we wait until it finishes."; caffeinate -i -t 300; done
-            ~/keepawake.sh &    # Another invocation in case we waited very long
-            sbt '+ testOnly -- -h target/test-reports-html'
+        - name: Running tests
+          run: ci/test.py --no-show-results --num-tests 5
 
         - name: Upload test results
           uses: actions/upload-artifact@v4
           if: always()
           with:
-            name: test-reports-html-${{matrix.isabelle}}-${{matrix.os}}
-            path: target/test-reports-html
+            name: test-results
+            path: target/test-results
 
-#        - name: Cleanup (MacOS)
-#          if: matrix.os == 'macos'
-#          run: |
-#            kill `cat keepawake.pid` || true
-
-    publish-snapshot:
-      runs-on: [self-hosted, linux]
-      needs: test-sc-isa
-      if: github.ref == 'refs/heads/master'
-      steps:
-        - name: Checkout repository
-          uses: actions/checkout@v3
-
-        - name: Publish snapshot
-          run: sbt "+ publishSigned"
+#    publish-snapshot:
+#      runs-on: [self-hosted, linux]
+#      needs: test-sc-isa
+#      if: github.ref == 'refs/heads/master'
+#      steps:
+#        - name: Checkout repository
+#          uses: actions/checkout@v3
+#
+#        - name: Publish snapshot
+#          run: sbt "+ publishSigned"
