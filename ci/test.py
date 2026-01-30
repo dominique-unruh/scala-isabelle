@@ -105,8 +105,6 @@ def do_test(config: TestConfig, show_results: bool) -> TestResult:
         f.write(html)
     if show_results:
         subprocess.run(["firefox", (result_dir / "test-reports-html/index.html").as_posix()], check=True)
-    print(result_dir.joinpath("test-reports-html/return-code.txt"))
-    print(result_dir.joinpath("test-reports-html/return-code.txt").read_text())
     success = int(result_dir.joinpath("test-reports-html/return-code.txt").read_text()) == 0
     return TestResult(success=success, results_dir=result_dir)
 
