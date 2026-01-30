@@ -68,16 +68,9 @@ RUN sbt +compile  # sbt prefetch
 
 COPY --chown=user all-files .
 
-RUN bash -x <<EOT  # Testing
+RUN bash -ex <<EOT  # Testing
 echo -n /opt/Isabelle >.isabelle-home
 mkdir -p target/test-reports-html
 sbt "+ testOnly -- -h target/test-reports-html" |& tee target/test-reports-html/raw-output.txt
-echo "$?" >target/test-reports-html/return-code.txt
+echo -n "\${PIPESTATUS[0]}" >target/test-reports-html/return-code.txt
 EOT
-
-#RUN echo -n /opt/Isabelle >.isabelle-home
-
-#CMD ["bash", "-c", "/opt/Isabelle/bin/isabelle process_theories -v -O -U < src/test/isabelle/Theory_With_Smt.thy"]
-#CMD ["sbt", "runMain Tmp"]
-#CMD ["sbt", "testOnly"]
-#CMD ["sbt", "testOnly -- -t \"load theory by path, nested\""]
