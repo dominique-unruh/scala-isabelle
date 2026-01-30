@@ -2,7 +2,6 @@
 
 # PYTHON_ARGCOMPLETE_OK
 
-import argparse
 import dataclasses
 import glob
 import html
@@ -11,8 +10,8 @@ import random
 import shutil
 import subprocess
 import sys
+from typing import Iterable, Collection
 
-import argcomplete
 import docker
 from dataclasses import dataclass
 from datetime import datetime
@@ -21,8 +20,15 @@ from pathlib import Path
 from Cython.Utils import modification_time
 
 docker_client = docker.DockerClient()
-ci_dir = Path(__file__).absolute().parent
-scala_isabelle_dir = ci_dir.parent
+
+@dataclass(frozen=True, kw_only=True)
+class Settings:
+    ci_dir: Path
+    main_dir: Path
+    show_results: bool
+    container_repo_dir: str = "scala-isabelle"
+    isabelle_versions: Collection[str] = ("2025-2", "2025-1", "2025", "2024", "2023", "2022", "2021-1", "2021", "2020", "2019")
+    java_versions: Collection[int] = (11, 17, 21, 25)
 
 @dataclass(frozen=True, kw_only=True)
 class TestConfig:
@@ -35,13 +41,13 @@ class TestConfig:
     def dirname(self) -> str:
         return f"isa{self.isabelle}-java{self.java}"
 
-    def random(self, isabelle: str|None = None, java: int|None = None) -> TestConfig:
+    def random(self, settings: Settings) -> TestConfig:
         isabelle = self.isabelle
         if isabelle is None:
-            isabelle = random.choice(["2025-2", "2025-1", "2025", "2024", "2023", "2022", "2021-1", "2021", "2020", "2019"])
+            isabelle = random.choice(settings.isabelle_versions)
         java = self.java
         if java is None:
-            java = random.choice([11, 17, 21, 25])
+            java = random.choice(settings.java_versions)
         return TestConfig(isabelle=isabelle, java=java)
 
 @dataclass(frozen=True, kw_only=True)
@@ -74,7 +80,9 @@ def cache_image(name: str) -> None:
         img.tag(cache_name)
         docker_client.images.remove(name, noprune=True)
 
-def do_test(config: TestConfig, show_results: bool) -> TestResult:
+def do_test(settings: Settings, config: TestConfig) -> TestResult:
+    scala_isabelle_dir = settings.main_dir
+    ci_dir = settings.ci_dir
     print(f"Testing config: {config.description()}")
     subprocess.run(["rsync", scala_isabelle_dir.as_posix()+"/"] +
                      "all-files -a --exclude /.idea --exclude /.run --exclude /ci --exclude /target --exclude /project/target --delete --delete-excluded".split(),
@@ -92,9 +100,9 @@ def do_test(config: TestConfig, show_results: bool) -> TestResult:
     result_dir = scala_isabelle_dir / "target/test-results" / config.dirname()
     rm_rf(result_dir)
     result_dir.mkdir(exist_ok=True, parents=True)
-    subprocess.run(["docker", "cp", "temp_container:/home/user/scala-isabelle/target/test-reports-html",
+    subprocess.run(["docker", "cp", f"temp_container:/home/user/{settings.container_repo_dir}/target/test-reports-html",
                     result_dir.as_posix()], check=True)
-    subprocess.run(["docker", "cp", "temp_container:/home/user/scala-isabelle/target/test-reports",
+    subprocess.run(["docker", "cp", f"temp_container:/home/user/{settings.container_repo_dir}/target/test-reports",
                     result_dir.as_posix()], check=True)
     subprocess.run("docker rm temp_container", shell=True, check=True)
     with open(result_dir / "test-reports-html/index.html", "rt") as f:
@@ -103,25 +111,25 @@ def do_test(config: TestConfig, show_results: bool) -> TestResult:
                             config.description() + " @ " + datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     with open(result_dir / "test-reports-html/index.html", "wt") as f:
         f.write(html)
-    if show_results:
+    if settings.show_results:
         subprocess.run(["firefox", (result_dir / "test-reports-html/index.html").as_posix()], check=True)
     success = int(result_dir.joinpath("test-reports-html/return-code.txt").read_text()) == 0
     return TestResult(success=success, results_dir=result_dir)
 
-def do_tests(base_config: TestConfig, num_tests: int, show_results: bool) -> bool:
+def do_tests(settings: Settings, base_config: TestConfig, num_tests: int) -> bool:
     results: dict[TestConfig, TestResult] = {}
     for test_no in range(1,num_tests+1):
-        config = base_config.random()
+        config = base_config.random(settings)
         if config in results:
             print(f"Skipping test {test_no} due to identical test config.")
             continue
         print(f"Test {test_no}: {config.description()}")
-        result = do_test(config, show_results=show_results)
+        result = do_test(settings, config)
         results[config] = result
 
-    with open(scala_isabelle_dir / "target/test-results/index.html", 'wt') as index_file:
+    with open(settings.main_dir / "target/test-results/index.html", 'wt') as index_file:
         index_file.write("<ul>\n")
-        for file in glob.glob((scala_isabelle_dir / "target/test-results/*/test-reports-html/index.html").as_posix()):
+        for file in glob.glob((settings.main_dir / "target/test-results/*/test-reports-html/index.html").as_posix()):
             file = Path(file)
             modification_time = datetime.fromtimestamp(file.stat().st_mtime).strftime('%Y-%m-%d %H:%M:%S')
             index_file.write(f"""<li><a href="{html.escape(file.as_uri())}">{html.escape(file.parent.parent.name)}</a> ({modification_time})</li>\n""")
@@ -134,6 +142,8 @@ def do_tests(base_config: TestConfig, num_tests: int, show_results: bool) -> boo
     return success
 
 def main():
+    import argparse
+    import argcomplete
     parser = argparse.ArgumentParser()
     parser.add_argument("--isabelle", type=str)
     parser.add_argument("--java", type=int)
@@ -143,10 +153,13 @@ def main():
     argcomplete.autocomplete(parser)
     args = parser.parse_args()
 
+    ci_dir = Path(__file__).absolute().parent
+    scala_isabelle_dir = ci_dir.parent
     show_results = args.show_results or (args.num_tests <= 1)
+    settings = Settings(ci_dir=ci_dir, main_dir=scala_isabelle_dir, show_results=show_results)
 
     config = TestConfig(isabelle=args.isabelle, java=args.java)
-    success = do_tests(config, args.num_tests, show_results=show_results)
+    success = do_tests(settings, config, args.num_tests)
     if not success:
         sys.exit(1)
 
