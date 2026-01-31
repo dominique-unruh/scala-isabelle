@@ -29,6 +29,7 @@ class Settings:
     container_repo_dir: str = "scala-isabelle"
     isabelle_versions: Collection[str] = ("2025-2", "2025-1", "2025", "2024", "2023", "2022", "2021-1", "2021", "2020", "2019")
     java_versions: Collection[int] = (11, 17, 21, 25)
+    exclude: Collection[str] = tuple("/.idea /.run /ci /target /project/target .git".split())
 
 @dataclass(frozen=True, kw_only=True)
 class TestConfig:
@@ -85,7 +86,8 @@ def do_test(settings: Settings, config: TestConfig) -> TestResult:
     ci_dir = settings.ci_dir
     print(f"Testing config: {config.description()}")
     subprocess.run(["rsync", scala_isabelle_dir.as_posix()+"/"] +
-                     "all-files -a --exclude /.idea --exclude /.run --exclude /ci --exclude /target --exclude /project/target --delete --delete-excluded".split(),
+                    [word for file in settings.exclude for word in ("--exclude", file)] +
+                     "all-files -a --delete --delete-excluded".split(),
                    check=True, cwd=ci_dir)
     cache_image("archlinux:latest")
     docker_cmd: list[str] = "docker build --pull=false --iidfile .image .".split()
