@@ -16,3 +16,4 @@
 /tmp
 /ci/all-files
 /ci/.image
+__pycache__/
