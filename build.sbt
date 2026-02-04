@@ -71,7 +71,12 @@ makeGitrevision := {
 Compile / packageSrc / mappings ++= makeGitrevision.value pair relativeTo((Compile / resourceManaged).value)
 Compile / packageDoc / mappings ++= makeGitrevision.value pair relativeTo((Compile / resourceManaged).value)
 
-Compile / doc / scalacOptions ++=
+Compile / doc / scalacOptions ++= (try {
     Opts.doc.sourceUrl(s"https://github.com/dominique-unruh/scala-isabelle/tree/${"git rev-parse HEAD".!!.trim}€{FILE_PATH_EXT}#L€{FILE_LINE}")
+  } catch {
+    case e: RuntimeException if e.getMessage.contains("Nonzero exit value") => // Happens if `git rev-parse HEAD` fails
+      println("Could not determine git revision. Not adding source URL to scala-isabelle package.")
+      Seq.empty[String]
+  })
 Compile / doc / scalacOptions ++= Seq("-sourcepath", baseDirectory.value.toString)
 Compile / doc / scalacOptions ++= Seq("-skip-packages", "scalaz") // Otherwise documentation for scalaz.syntax is included for some reason
