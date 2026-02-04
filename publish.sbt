@@ -17,6 +17,7 @@
  - git push origin vXXX
  - git push
  - git checkout master
+ - git cherry master -v
  - Cherry pick commit with edits to CHANGELOG.md and README.md
  - Check (a while later): https://mvnrepository.com/artifact/de.unruh/scala-isabelle
  - If final release, edit version in https://dominique-unruh.github.io/scala-isabelle/setup.html
