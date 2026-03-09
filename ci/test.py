@@ -107,14 +107,15 @@ def do_test(settings: Settings, config: TestConfig) -> TestResult:
     subprocess.run(["docker", "cp", f"temp_container:/home/user/{settings.container_repo_dir}/target/test-reports",
                     result_dir.as_posix()], check=True)
     subprocess.run("docker rm temp_container", shell=True, check=True)
-    with open(result_dir / "test-reports-html/index.html", "rt") as f:
-        html = f.read()
-        html = html.replace("ScalaTest Results",
-                            config.description() + " @ " + datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-    with open(result_dir / "test-reports-html/index.html", "wt") as f:
-        f.write(html)
-    if settings.show_results:
-        subprocess.run(["firefox", (result_dir / "test-reports-html/index.html").as_posix()], check=True)
+    if (result_dir / "test-reports-html/index.html").exists():
+        with open(result_dir / "test-reports-html/index.html", "rt") as f:
+            html = f.read()
+            html = html.replace("ScalaTest Results",
+                                config.description() + " @ " + datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        with open(result_dir / "test-reports-html/index.html", "wt") as f:
+            f.write(html)
+        if settings.show_results:
+            subprocess.run(["firefox", (result_dir / "test-reports-html/index.html").as_posix()], check=True)
     success = int(result_dir.joinpath("test-reports-html/return-code.txt").read_text()) == 0
     return TestResult(success=success, results_dir=result_dir)
 
